@@ -1,0 +1,221 @@
+# GIVRwrld Cloudflare Configuration Rules
+# Apply these rules in Cloudflare Dashboard > Rules
+
+# ===========================================
+# DNS RECORDS
+# ===========================================
+# Create these DNS records in Cloudflare:
+
+# Main site (proxied - orange cloud)
+# Type: A
+# Name: givrwrldservers.com
+# Content: YOUR_VPS_IP
+# Proxy: Proxied (orange cloud)
+
+# WWW redirect (proxied - orange cloud)
+# Type: CNAME
+# Name: www.givrwrldservers.com
+# Content: givrwrldservers.com
+# Proxy: Proxied (orange cloud)
+
+# Panel (proxied - orange cloud)
+# Type: A
+# Name: panel.givrwrldservers.com
+# Content: YOUR_PANEL_IP
+# Proxy: Proxied (orange cloud)
+
+# Game server nodes (DNS only - gray cloud)
+# Type: A
+# Name: node-1.givrwrldservers.com
+# Content: YOUR_NODE_1_IP
+# Proxy: DNS only (gray cloud)
+
+# Type: A
+# Name: node-2.givrwrldservers.com
+# Content: YOUR_NODE_2_IP
+# Proxy: DNS only (gray cloud)
+
+# Optional: API subdomain (proxied - orange cloud)
+# Type: CNAME
+# Name: api.givrwrldservers.com
+# Content: your-project-ref.functions.supabase.co
+# Proxy: Proxied (orange cloud)
+
+# ===========================================
+# CACHE RULES
+# ===========================================
+# Create these in Cloudflare Dashboard > Rules > Cache Rules
+
+# Rule 1: Bypass cache for APIs and webhooks
+# Name: Bypass API Cache
+# If: URL Path matches any of:
+#   /functions/*
+#   /api/*
+#   /stripe/*
+#   /auth/*
+# Then:
+#   Cache: Bypass
+#   Origin Cache-Control: Respect
+#   Disable: Apps, Performance
+
+# Rule 2: Cache static assets
+# Name: Cache Static Assets
+# If: Path matches any of:
+#   /assets/*
+#   OR Extension in (js, css, png, jpg, jpeg, gif, svg, webp, ico, woff2, ttf, eot)
+# Then:
+#   Cache: Cache everything
+#   Edge TTL: 1 month
+#   Browser TTL: 1 week
+#   Respect ETag/Last-Modified
+
+# ===========================================
+# REDIRECT RULES
+# ===========================================
+# Create these in Cloudflare Dashboard > Rules > Redirects
+
+# Rule 1: WWW to root redirect
+# Name: WWW to Root Redirect
+# If: Hostname equals www.givrwrldservers.com
+# Then: Redirect to https://givrwrldservers.com/$1
+# Status: 301 (Permanent)
+
+# ===========================================
+# FIREWALL RULES
+# ===========================================
+# Create these in Cloudflare Dashboard > Rules > Firewall Rules
+
+# Rule 1: Allow Stripe webhooks
+# Name: Allow Stripe Webhooks
+# If: (IP Source Address in Stripe IP ranges) OR (Host equals "your-project-ref.functions.supabase.co" AND URI Path contains "/stripe-webhook")
+# Then: Skip (Skip all security features)
+
+# Rule 2: Allow Panel WebSockets
+# Name: Allow Panel WebSockets
+# If: Host equals "panel.givrwrldservers.com" AND Request Headers "upgrade" contains "websocket"
+# Then: Skip (Skip all security features)
+
+# Rule 3: Skip Bot Fight for critical paths
+# Name: Skip Bot Fight for APIs
+# If: (URI Path starts with "/checkout") OR (URI Path starts with "/functions/") OR (URI Path starts with "/api/") OR (Host equals "panel.givrwrldservers.com")
+# Then: Skip (Skip all security features)
+
+# ===========================================
+# TRANSFORM RULES
+# ===========================================
+# Create these in Cloudflare Dashboard > Rules > Transform Rules
+
+# Rule 1: Security Headers
+# Name: Add Security Headers
+# If: Always
+# Then: Set static
+#   Header name: X-Content-Type-Options
+#   Value: nosniff
+#   Header name: X-Frame-Options
+#   Value: DENY
+#   Header name: Referrer-Policy
+#   Value: strict-origin-when-cross-origin
+#   Header name: Permissions-Policy
+#   Value: camera=(), microphone=(), geolocation=()
+
+# ===========================================
+# PAGE RULES (Legacy - use Cache Rules instead)
+# ===========================================
+# If using Page Rules instead of Cache Rules:
+
+# Rule 1: Cache static assets
+# URL: givrwrldservers.com/assets/*
+# Settings:
+#   Cache Level: Cache Everything
+#   Edge Cache TTL: 1 month
+#   Browser Cache TTL: 1 week
+
+# Rule 2: Bypass cache for APIs
+# URL: givrwrldservers.com/functions/*
+# Settings:
+#   Cache Level: Bypass
+
+# ===========================================
+# SSL/TLS SETTINGS
+# ===========================================
+# Configure in Cloudflare Dashboard > SSL/TLS
+
+# SSL/TLS encryption mode: Full (strict)
+# Always Use HTTPS: On
+# HSTS: Enable (with preload once confident)
+# Minimum TLS Version: 1.2
+# TLS 1.3: On
+# HTTP/2: On
+# HTTP/3 (with QUIC): On
+# 0-RTT Connection Resumption: Off (until tested)
+
+# ===========================================
+# SPEED OPTIMIZATION
+# ===========================================
+# Configure in Cloudflare Dashboard > Speed
+
+# Auto Minify: Enable for HTML, CSS, JS
+# Brotli: On
+# Rocket Loader: Off (can break React apps)
+# Mirage: On (for images)
+# Polish: Lossless (for images)
+
+# ===========================================
+# SECURITY SETTINGS
+# ===========================================
+# Configure in Cloudflare Dashboard > Security
+
+# Security Level: Medium
+# Bot Fight Mode: On (with exceptions above)
+# Challenge Passage: 30 minutes
+# Browser Integrity Check: On
+# Privacy Pass: On
+
+# ===========================================
+# ANALYTICS & MONITORING
+# ===========================================
+# Configure in Cloudflare Dashboard > Analytics
+
+# Enable Web Analytics
+# Enable Bot Analytics
+# Enable Security Analytics
+
+# ===========================================
+# UPTIME MONITORS
+# ===========================================
+# Create these in Cloudflare Dashboard > Notifications > Uptime Monitors
+
+# Monitor 1: Main Site
+# URL: https://givrwrldservers.com/
+# Check frequency: 1 minute
+# Expected status codes: 200
+# Expected response time: 5 seconds
+
+# Monitor 2: Panel
+# URL: https://panel.givrwrldservers.com/
+# Check frequency: 1 minute
+# Expected status codes: 200
+# Expected response time: 10 seconds
+
+# Monitor 3: API Health
+# URL: https://api.givrwrldservers.com/server-stats?health=1
+# Check frequency: 5 minutes
+# Expected status codes: 200
+# Expected response time: 3 seconds
+
+# ===========================================
+# NOTIFICATION SETTINGS
+# ===========================================
+# Configure in Cloudflare Dashboard > Notifications
+
+# Set up notifications for:
+# - Uptime monitor failures
+# - Security events
+# - High error rates
+# - DDoS attacks
+
+# Recommended channels:
+# - Email alerts
+# - Slack webhook
+# - Discord webhook
+

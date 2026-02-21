@@ -1,0 +1,11 @@
+---
+description: Use Codex 5.3 as the agent for this project
+alwaysApply: true
+---
+
+# Agent: Codex 5.3
+
+This project uses **Codex 5.3** as the default agent for Cursor.
+
+- Prefer Codex 5.3 for agent/composer tasks in this workspace.
+- If model selection is available in Cursor Settings (e.g. Settings > Models / Agent), choose Codex 5.3 for this project.

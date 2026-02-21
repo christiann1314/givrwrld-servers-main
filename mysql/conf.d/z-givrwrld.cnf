@@ -1,0 +1,60 @@
+# GIVRwrld MySQL Configuration
+# Place in: /etc/mysql/mysql.conf.d/z-givrwrld.cnf
+# Restart: sudo systemctl restart mysql
+
+[mysqld]
+# Network binding (private only for security)
+bind-address = 127.0.0.1
+# For multi-host setups, change to your private IP (e.g., 10.0.0.5) or 0.0.0.0 + firewall restrict
+
+# InnoDB Settings
+innodb_buffer_pool_size = 2G
+innodb_flush_log_at_trx_commit = 1
+innodb_log_file_size = 1G
+innodb_log_buffer_size = 64M
+innodb_file_per_table = 1
+innodb_flush_method = O_DIRECT
+
+# Connection Settings
+max_connections = 400
+max_connect_errors = 10000
+wait_timeout = 28800
+interactive_timeout = 28800
+
+# Table & Cache Settings
+table_open_cache = 4000
+table_definition_cache = 2000
+tmp_table_size = 256M
+max_heap_table_size = 256M
+query_cache_type = 0
+query_cache_size = 0
+
+# Logging
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 1
+log_queries_not_using_indexes = 0
+general_log = 0
+
+# Binary Logging (for replication/backups)
+log_bin = mysql-bin
+server_id = 1
+binlog_format = ROW
+binlog_expire_logs_seconds = 1209600  # 14 days
+max_binlog_size = 1G
+gtid_mode = ON
+enforce_gtid_consistency = ON
+
+# Character Set
+character-set-server = utf8mb4
+collation-server = utf8mb4_0900_ai_ci
+
+# Security
+local_infile = 0
+skip_name_resolve = 1
+
+# Performance Schema (optional, can disable if not needed)
+performance_schema = ON
+
+
+

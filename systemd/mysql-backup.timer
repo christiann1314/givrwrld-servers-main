@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily MySQL backup timer for GIVRwrld
+Requires=mysql-backup.service
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
+
+

@@ -1,0 +1,20 @@
+[Unit]
+Description=GIVRwrld API Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/givrwrld-severs/api
+Environment="NODE_ENV=production"
+EnvironmentFile=/home/ubuntu/givrwrld-severs/api/.env
+ExecStart=/usr/bin/node /home/ubuntu/givrwrld-severs/api/server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+

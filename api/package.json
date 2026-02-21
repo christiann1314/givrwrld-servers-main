@@ -1,0 +1,46 @@
+{
+  "name": "givrwrld-api",
+  "version": "1.0.0",
+  "description": "GIVRwrld API Server - Self-hosted replacement for Supabase",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "stripe:delete-old": "node scripts/delete-old-stripe-products.js",
+    "stripe:delete-old:dry-run": "node scripts/delete-old-stripe-products.js --dry-run",
+    "stripe:delete-old:yes": "node scripts/delete-old-stripe-products.js --yes",
+    "stripe:restore-terraria": "node scripts/restore-terraria-product.js",
+    "stripe:restore-palworld": "node scripts/restore-palworld-product.js",
+    "ptero:bootstrap-eggs:dry-run": "node scripts/bootstrap-pterodactyl-eggs.js --dry-run",
+    "ptero:bootstrap-eggs": "node scripts/bootstrap-pterodactyl-eggs.js",
+    "ptero:upgrade-eggs:dry-run": "node scripts/upgrade-pterodactyl-eggs.js --dry-run",
+    "ptero:upgrade-eggs": "node scripts/upgrade-pterodactyl-eggs.js",
+    "ptero:variants:dry-run": "node scripts/create-game-variant-eggs.js --dry-run",
+    "ptero:variants": "node scripts/create-game-variant-eggs.js",
+    "ptero:sync:dry-run": "node scripts/sync-pterodactyl-catalog.js --dry-run",
+    "ptero:sync": "node scripts/sync-pterodactyl-catalog.js --apply",
+    "plans:minecraft:variants:dry-run": "node scripts/seed-minecraft-variant-plans.js --dry-run",
+    "plans:minecraft:variants": "node scripts/seed-minecraft-variant-plans.js",
+    "plans:games:variants:dry-run": "node scripts/seed-game-variant-plans.js --dry-run",
+    "plans:games:variants": "node scripts/seed-game-variant-plans.js",
+    "catalog:variants:all": "npm run ptero:bootstrap-eggs && npm run ptero:upgrade-eggs && npm run ptero:variants && npm run ptero:sync && npm run plans:minecraft:variants && npm run plans:games:variants"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.5",
+    "nodemailer": "^8.0.1",
+    "stripe": "^14.9.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

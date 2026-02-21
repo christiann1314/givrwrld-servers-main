@@ -1,0 +1,90 @@
+# Pterodactyl Panel + Wings - Local Development
+# Ports: Panel 8000 (avoid 80), Wings API 8082 (8080 reserved for frontend), SFTP 2022
+
+services:
+  panel:
+    image: ghcr.io/pterodactyl/panel:latest
+    environment:
+      - APP_URL=http://localhost:8000
+      - APP_TIMEZONE=UTC
+      - APP_SERVICE_AUTHOR=admin@localhost
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_DATABASE=panel
+      - DB_USERNAME=pterodactyl
+      - DB_PASSWORD=${DB_PASSWORD}
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_DRIVER=redis
+      - REDIS_HOST=redis
+      - GUZZLE_TIMEOUT=60
+      - GUZZLE_CONNECT_TIMEOUT=10
+    volumes:
+      - panel-var:/app/var
+      - panel-nginx:/etc/nginx/http.d
+      - panel-logs:/app/storage/logs
+    ports:
+      - "8000:80"
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - pterodactyl-network
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=panel
+      - MYSQL_USER=pterodactyl
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - pterodactyl-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - pterodactyl-network
+    restart: unless-stopped
+
+  wings:
+    image: ghcr.io/pterodactyl/wings:latest
+    environment:
+      - TZ=UTC
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - wings-config:/etc/pterodactyl
+      - wings-data:/var/lib/pterodactyl
+      - /tmp/pterodactyl:/tmp/pterodactyl
+    ports:
+      - "8082:8080"
+      - "2022:2022"
+    networks:
+      - pterodactyl-network
+    restart: unless-stopped
+    depends_on:
+      - panel
+
+volumes:
+  panel-var:
+  panel-nginx:
+  panel-logs:
+  mariadb-data:
+  redis-data:
+  wings-config:
+  wings-data:
+
+networks:
+  pterodactyl-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

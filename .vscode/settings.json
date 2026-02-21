@@ -1,0 +1,5 @@
+{
+  "cursor.general.defaultModel": "codex-5.3",
+  "cursor.chat.defaultModel": "codex-5.3",
+  "git.ignoreLimitWarning": true
+}

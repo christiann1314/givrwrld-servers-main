@@ -1,0 +1,29 @@
+# Folders that should not be indexed by Cursor/AI
+node_modules/
+dist/
+build/
+.tmp/
+.cache/
+.git/
+
+# Logs and local env
+*.log
+.env
+.env.*
+
+# Large archives and generated bundles
+*.tgz
+*.tar
+*.tar.gz
+*.zip
+
+# OS/editor clutter
+.DS_Store
+Thumbs.db
+
+# Vite output (if customized)
+.out/
+
+# Supabase local state
+supabase/.temp/
+

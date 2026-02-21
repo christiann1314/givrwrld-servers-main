@@ -1,0 +1,46 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Sensitive files with API keys
+create-stripe-products.js
+get-price-ids.js
+*.ps1
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.*.local
+api/.env
+pterodactyl/.env
+
+# Backups and secrets (never commit)
+node_modules_backup
+AES_KEY.txt
+PASSWORDS.txt
+*KEYS*.md
+*CREDENTIALS*.md
+*PASSWORD*

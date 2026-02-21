@@ -1,0 +1,22 @@
+{
+  "name": "GIVRWRLD Servers",
+  "short_name": "GIVRWRLD",
+  "description": "Game server hosting platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "cache_policy": {
+    "pages": "cache-first",
+    "assets": "cache-first",
+    "api": "network-first"
+  }
+}

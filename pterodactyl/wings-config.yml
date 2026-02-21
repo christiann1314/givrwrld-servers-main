@@ -1,0 +1,23 @@
+debug: false
+uuid: a2dda254-57ae-4b6c-a946-95030201a62e
+token_id: iN7wutUcw9fITZLa
+token: lLjnbW39a1JcbJdwK3fDg850LqNEQGRzWqZ1gFfP2jYoNxisT0QvTEPOTDUnLQuo
+api:
+  host: 0.0.0.0
+  port: 8082
+  ssl:
+    enabled: false
+    cert: /etc/letsencrypt/live/127.0.0.1/fullchain.pem
+    key: /etc/letsencrypt/live/127.0.0.1/privkey.pem
+  upload_limit: 100
+system:
+  root_directory: /tmp/pterodactyl
+  data: /tmp/pterodactyl/volumes
+  archive_directory: /tmp/pterodactyl/archives
+  backup_directory: /tmp/pterodactyl/backups
+  tmp_directory: /tmp/pterodactyl
+  sftp:
+    bind_port: 2022
+allowed_mounts: []
+remote: 'http://localhost:8000'
+ignore_panel_config_updates: true
