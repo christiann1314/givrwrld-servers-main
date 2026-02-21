@@ -318,7 +318,7 @@ router.post('/create-session', authenticate, async (req, res) => {
 
     const orderId = uuidv4();
     const serverName = server_name || `${plan_id.split('-')[0]}-${Date.now()}`;
-    const regionCode = region || 'us-central';
+    const regionCode = region || 'us-east';
     const billingTerm = term || 'monthly';
     const paypalPlanId = await ensurePayPalPlan(plan, billingTerm);
 

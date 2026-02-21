@@ -146,7 +146,7 @@ const Dashboard = () => {
     const candidates = getGameIconCandidates(gameLabel);
     const ram = server.ram || (server.ram_gb ? `${server.ram_gb}GB` : null);
     const cpu = server.cpu || (server.vcores ? `${server.vcores} vCPU` : null);
-    const location = server.location || server.region || 'us-central';
+    const location = server.location || server.region || 'us-east';
     const specs = server.specs || [ram, cpu, location].filter(Boolean).join(' • ');
 
     return {
@@ -257,9 +257,9 @@ const Dashboard = () => {
               <Menu size={20} />
             </button>
 
-            {/* Welcome Section */}
+            {/* Welcome Section + Quick access */}
             <div className="glass-panel-strong rounded-xl p-6 lg:p-8 mb-6 lg:mb-8">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
                     Welcome back, {displayName}!
@@ -267,16 +267,30 @@ const Dashboard = () => {
                   <p className="text-gray-300 text-lg">
                     Manage your servers, billing, and account settings
                   </p>
-                  <div className="mt-2 text-sm text-emerald-400">
-                    🚀 Live Data Active - Last Updated: {new Date().toLocaleTimeString()}
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-emerald-400">
+                      🚀 Live Data Active — {new Date().toLocaleTimeString()}
+                    </span>
+                    <span className="text-gray-600">|</span>
+                    <button
+                      onClick={() => {
+                        analytics.trackGamePanelAccess(user?.id || '', 'main-panel');
+                        window.open(ENV.PANEL_URL, '_blank');
+                      }}
+                      className="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Server size={16} />
+                      Open Game Panel
+                      <ChevronRight size={14} className="opacity-80" />
+                    </button>
                   </div>
                 </div>
-                <div className="hidden lg:flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-emerald-400">{liveServerData?.onlineServers || servers.length}</div>
+                <div className="flex items-center gap-6 lg:gap-8 shrink-0">
+                  <div className="text-center lg:text-right">
+                    <div className="text-2xl font-bold text-emerald-400">{liveServerData?.onlineServers ?? servers.length}</div>
                     <div className="text-gray-400 text-sm">Online Servers</div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-center lg:text-right">
                     <div className="text-2xl font-bold text-blue-400">
                       {liveBillingData?.totalRevenue !== undefined
                         ? `$${liveBillingData.totalRevenue.toFixed(2)}`
@@ -285,28 +299,6 @@ const Dashboard = () => {
                     <div className="text-gray-400 text-sm">Total Spent</div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-
-            {/* Game Panel Access */}
-            <div className="glass-panel-strong rounded-xl p-6 lg:p-8 mb-6 lg:mb-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4 flex items-center justify-center">
-                  <Server className="mr-3 text-emerald-400" size={28} />
-                  Game Panel Access
-                </h2>
-                <p className="text-gray-300 mb-6">Access your game servers and manage them directly</p>
-                <button
-                  onClick={() => {
-                    analytics.trackGamePanelAccess(user?.id || '', 'main-panel');
-                    window.open(ENV.PANEL_URL, '_blank');
-                  }}
-                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-emerald-500/25 inline-flex items-center"
-                >
-                  <Server className="mr-3" size={24} />
-                  Open Game Panel
-                </button>
               </div>
             </div>
 
@@ -358,6 +350,12 @@ const Dashboard = () => {
                         {server.status}
                       </span>
                       <div className="flex items-center space-x-2">
+                        <Link
+                          to={`/success?order_id=${encodeURIComponent(server.id)}`}
+                          className="bg-gray-600/40 hover:bg-gray-600/60 text-gray-200 hover:text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-gray-500/50"
+                        >
+                          View confirmation
+                        </Link>
                         <a 
                           href={server.pterodactylUrl}
                           target="_blank"

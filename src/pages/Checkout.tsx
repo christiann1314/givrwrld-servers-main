@@ -26,7 +26,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [plan, setPlan] = React.useState<Plan | null>(null);
-  const [region, setRegion] = React.useState("east");
+  const [region] = React.useState('us-east');
   const [loading, setLoading] = React.useState(false);
   const [loadingPlan, setLoadingPlan] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -67,7 +67,7 @@ const Checkout = () => {
           ram: `${matchingPlan.ram_gb}GB`,
           cpu: `${matchingPlan.vcores} vCPU`,
           disk: `${matchingPlan.ssd_gb}GB SSD`,
-          location: 'us-central',
+          location: 'us-east',
           stripe_price_id: matchingPlan.paypal_plan_id || matchingPlan.stripe_price_id || '',
           price: parseFloat(matchingPlan.price_monthly)
         });
@@ -99,7 +99,7 @@ const Checkout = () => {
       const checkoutData = await stripeService.createCheckoutSession({
         plan_id: plan.id,
         item_type: 'game',
-        region: region === 'east' ? 'us-east' : 'us-central',
+        region: 'us-east',
         server_name: `${game}-${Date.now()}`,
         term: 'monthly'
       });
@@ -210,7 +210,7 @@ const Checkout = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold text-orange-400">Region</h4>
-                      <p className="text-2xl font-bold capitalize">{region}</p>
+                      <p className="text-2xl font-bold">US East</p>
                     </div>
                   </div>
 
@@ -256,7 +256,7 @@ const Checkout = () => {
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Region: {region}</span>
+                    <span>Region: US East</span>
                     <span className="text-sm text-gray-400">Included</span>
                   </div>
 

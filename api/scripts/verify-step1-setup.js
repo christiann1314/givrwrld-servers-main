@@ -60,11 +60,11 @@ async function main() {
     if (Number(nodes[0].c) === 0) gaps.push('No enabled ptero_nodes — add node (see sql/seed-ptero-local.sql)');
     if (map.length === 0) gaps.push('region_node_map is empty — add region→node mapping (see sql/seed-ptero-local.sql)');
 
-    const frontendRegions = ['us-central', 'us-east', 'us-west'];
+    const frontendRegions = ['us-east'];
     const mappedRegions = new Set(map.map((r) => r.region_code));
     const missing = frontendRegions.filter((r) => !mappedRegions.has(r));
     if (missing.length > 0) {
-      gaps.push(`Frontend uses regions [us-central, us-east, us-west]; missing in region_node_map: ${missing.join(', ')}`);
+      gaps.push(`Frontend uses region us-east; missing in region_node_map: ${missing.join(', ')}`);
     }
 
     if (gaps.length > 0) {

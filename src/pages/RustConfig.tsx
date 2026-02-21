@@ -10,7 +10,7 @@ const RustConfig = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
-  const [region, setRegion] = useState('us-west');
+  const [region] = useState('us-east');
   const [planId, setPlanId] = useState('rust-6gb');
   const [gameType, setGameType] = useState('rust-generic');
   const [billingTerm, setBillingTerm] = useState<string>('monthly');
@@ -60,7 +60,8 @@ const RustConfig = () => {
   const billingTerms = [
     { id: 'monthly', name: 'Monthly', discount: 0 },
     { id: 'quarterly', name: '3 Months', discount: 5 },
-     { id: 'yearly', name: 'Yearly', discount: 20 }
+    { id: 'semiannual', name: '6 Months', discount: 10 },
+    { id: 'yearly', name: 'Yearly', discount: 20 }
   ];
 
   const selectedEggId = gameType.startsWith('egg-') ? Number(gameType.replace('egg-', '')) : null;
@@ -74,7 +75,7 @@ const RustConfig = () => {
 
   const selectedPlan = visiblePlans.find(p => p.id === planId) || visiblePlans[0];
   const selectedTerm = billingTerms.find(t => t.id === billingTerm);
-  const monthlyBaseline = (selectedPlan?.price || 0) * (selectedTerm?.id === 'quarterly' ? 3 : selectedTerm?.id === 'yearly' ? 12 : 1);
+  const monthlyBaseline = (selectedPlan?.price || 0) * (selectedTerm?.id === 'quarterly' ? 3 : selectedTerm?.id === 'semiannual' ? 6 : selectedTerm?.id === 'yearly' ? 12 : 1);
   const finalPrice = getPriceForTerm(selectedPlan, billingTerm);
   const savings = Math.max(0, monthlyBaseline - finalPrice);
 
@@ -147,27 +148,8 @@ const RustConfig = () => {
                   
                   <div>
                     <label className="block text-white font-semibold mb-2">Server Location</label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setRegion('us-west')}
-                        className={`px-4 py-3 rounded-lg transition-colors ${
-                          region === 'us-west'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        US West (California)
-                      </button>
-                      <button
-                        onClick={() => setRegion('us-east')}
-                        className={`px-4 py-3 rounded-lg transition-colors ${
-                          region === 'us-east'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        US East (New York)
-                      </button>
+                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-300">
+                      US East
                     </div>
                   </div>
                 </div>

@@ -24,18 +24,9 @@ export const stripeService = {
   async createCheckoutSession(data: CheckoutSessionData): Promise<CheckoutSessionResponse> {
     console.log('Creating PayPal checkout session with API:', data);
 
-    const normalizeTerm = (term: BillingTerm): 'monthly' | 'quarterly' | 'yearly' => {
-      if (term === 'semiannual') {
-        // Local DB enum currently supports monthly/quarterly/yearly only.
-        return 'quarterly';
-      }
-      return term === 'yearly' || term === 'quarterly' ? term : 'monthly';
-    };
-
-    const normalizeRegion = (region: string): string => {
-      // Local provisioning map currently uses us-central. Keep local checkouts aligned.
-      if (!region || region === 'us-west') return 'us-central';
-      return region;
+    const normalizeRegion = (_region: string): string => {
+      // Only US East is offered at launch.
+      return 'us-east';
     };
 
     let resolvedPlanId = data.plan_id;
@@ -77,7 +68,7 @@ export const stripeService = {
     const response = await api.createCheckoutSession({
       ...data,
       plan_id: resolvedPlanId,
-      term: normalizeTerm(data.term),
+      term: data.term,
       region: normalizeRegion(data.region),
       success_url: data.success_url || `${window.location.origin}/success`,
       cancel_url: data.cancel_url || `${window.location.origin}/dashboard`,

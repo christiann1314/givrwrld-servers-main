@@ -113,6 +113,8 @@ export async function getUserOrders(userId) {
         o.*,
         p.game,
         p.ram_gb,
+        p.vcores,
+        p.ssd_gb,
         p.display_name as plan_name,
         p.price_monthly,
         COALESCE(o.total_amount, p.price_monthly, 0) AS billed_amount

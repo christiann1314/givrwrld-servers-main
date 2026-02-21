@@ -7,8 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const Status = () => {
   const serverStatus = [
-    { region: "US East 1", status: "Operational", latency: "12ms", uptime: "99.99%" },
-    { region: "US West (California)", status: "Operational", latency: "8ms", uptime: "99.97%" }
+    { region: "US East", status: "Operational", latency: "12ms", uptime: "99.99%" }
   ];
 
   const recentIncidents = [

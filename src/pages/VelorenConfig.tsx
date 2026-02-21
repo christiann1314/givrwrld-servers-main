@@ -10,7 +10,7 @@ const VelorenConfig = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
-  const [region, setRegion] = useState('us-west');
+  const [region] = useState('us-east');
   const [planId, setPlanId] = useState('veloren-4gb');
   const [gameType, setGameType] = useState('veloren');
   const [billingTerm, setBillingTerm] = useState('monthly');
@@ -132,27 +132,8 @@ const VelorenConfig = () => {
                   
                   <div>
                     <label className="block text-white font-semibold mb-2">Server Location</label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setRegion('us-west')}
-                        className={`px-4 py-3 rounded-lg transition-colors ${
-                          region === 'us-west'
-                            ? 'bg-purple-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        US West (California)
-                      </button>
-                      <button
-                        onClick={() => setRegion('us-east')}
-                        className={`px-4 py-3 rounded-lg transition-colors ${
-                          region === 'us-east'
-                            ? 'bg-purple-500 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        US East (New York)
-                      </button>
+                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-300">
+                      US East
                     </div>
                   </div>
                 </div>

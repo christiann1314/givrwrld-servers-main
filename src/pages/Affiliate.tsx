@@ -1,8 +1,14 @@
-
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { DollarSign, Users, TrendingUp, Gift, CheckCircle, Copy } from 'lucide-react';
+import { DollarSign, Users, TrendingUp, Gift, Copy } from 'lucide-react';
+import {
+  affiliateCommissionPercent,
+  affiliatePerformanceCommissionPercent,
+  affiliateCommissionMonthsCap,
+  affiliateMinPayout,
+  affiliateCookieDays,
+} from '@/config/affiliate';
 
 const Affiliate = () => {
   const [referralCode, setReferralCode] = useState('GIVRWRLD-AFFILIATE-2024');
@@ -14,31 +20,31 @@ const Affiliate = () => {
   const benefits = [
     {
       icon: DollarSign,
-      title: "Earn 25% Commission",
-      description: "Get 25% of every sale you refer for the first 12 months"
+      title: `Earn ${affiliateCommissionPercent()} Commission`,
+      description: `Get ${affiliateCommissionPercent()} of every payment from referrals for the first ${affiliateCommissionMonthsCap()} months`,
     },
     {
       icon: Users,
-      title: "Lifetime Commissions",
-      description: "Continue earning from your referrals for as long as they remain customers"
+      title: 'Up to ' + affiliatePerformanceCommissionPercent() + ' for top promoters',
+      description: 'Hit 5+ referrals in 90 days to earn the higher rate on qualifying referrals',
     },
     {
       icon: TrendingUp,
-      title: "Performance Bonuses",
-      description: "Unlock additional bonuses based on your monthly performance"
+      title: 'Performance tier',
+      description: 'Unlock the higher commission rate based on your referral volume',
     },
     {
       icon: Gift,
-      title: "Exclusive Rewards",
-      description: "Access to special promotions and exclusive affiliate-only rewards"
-    }
+      title: 'Clear payouts',
+      description: `Minimum payout ${affiliateMinPayout()}, paid monthly. No hidden caps on commission per sale.`,
+    },
   ];
 
   const stats = [
-    { label: "Average Monthly Earnings", value: "$2,500" },
-    { label: "Top Affiliate Earnings", value: "$15,000" },
-    { label: "Commission Rate", value: "25%" },
-    { label: "Cookie Duration", value: "90 days" }
+    { label: 'Commission rate', value: affiliateCommissionPercent() },
+    { label: 'Performance rate', value: affiliatePerformanceCommissionPercent() },
+    { label: 'Commission cap', value: `First ${affiliateCommissionMonthsCap()} months` },
+    { label: 'Cookie duration', value: `${affiliateCookieDays()} days` },
   ];
 
   return (
@@ -127,7 +133,7 @@ const Affiliate = () => {
                   <span className="text-2xl font-bold text-purple-400">3</span>
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">Earn</h3>
-                <p className="text-gray-300">Receive 25% commission on every successful referral</p>
+                <p className="text-gray-300">Receive {affiliateCommissionPercent()} commission on every qualifying referral payment (first {affiliateCommissionMonthsCap()} months)</p>
               </div>
             </div>
           </div>

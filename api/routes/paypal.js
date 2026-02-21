@@ -114,7 +114,7 @@ router.post('/create-subscription', authenticate, async (req, res) => {
 
     const orderId = uuidv4();
     const serverName = server_name || `${plan_id.split('-')[0]}-${Date.now()}`;
-    const regionCode = region || 'us-central';
+    const regionCode = region || 'us-east';
     const billingTerm = term || 'monthly';
 
     await pool.execute(

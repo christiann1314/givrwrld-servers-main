@@ -60,7 +60,7 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
   const [selectedPlan, setSelectedPlan] = useState(gameData.planOptions.find(plan => plan.recommended) || gameData.planOptions[0]);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriodValue>('monthly');
   const [serverName, setServerName] = useState('');
-  const [location, setLocation] = useState('us-west');
+  const [location, setLocation] = useState('us-east');
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   
   // Server Type state
@@ -116,8 +116,7 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
   ];
 
   const locationOptions = [
-    { value: 'us-west', label: 'US West (California)' },
-    { value: 'us-east', label: 'US East (New York)' }
+    { value: 'us-east', label: 'US East' }
   ];
 
   const getBillingMultiplier = () => {

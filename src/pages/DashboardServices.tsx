@@ -113,7 +113,13 @@ const DashboardServices = () => {
                         <div className="text-xs text-gray-400">Uptime</div>
                         <div className="text-lg font-semibold">{formatUptime(live.uptimeSeconds || 0)}</div>
                       </div>
-                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3 flex items-center justify-center">
+                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-center gap-2">
+                        <Link
+                          to={`/success?order_id=${encodeURIComponent(server.id)}`}
+                          className="text-gray-300 hover:text-white text-sm font-medium"
+                        >
+                          View confirmation
+                        </Link>
                         <a
                           href={server.pterodactyl_url || server.pterodactylUrl || '#'}
                           target="_blank"

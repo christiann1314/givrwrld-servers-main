@@ -1,18 +1,23 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 import { useAuth } from '../hooks/useAuth';
 import { useAffiliateData } from '../hooks/useAffiliateData';
-import { 
-  ArrowLeft, 
-  DollarSign, 
-  Users, 
-  TrendingUp, 
-  Copy, 
+import {
+  affiliateCommissionPercent,
+  affiliateCommissionMonthsCap,
+  affiliateMinPayout,
+  affiliateCookieDays,
+  AFFILIATE,
+} from '@/config/affiliate';
+import {
+  ArrowLeft,
+  DollarSign,
+  Users,
+  TrendingUp,
+  Copy,
   Eye,
-  Calendar,
-  Share2
+  Share2,
 } from 'lucide-react';
 
 const DashboardAffiliate = () => {
@@ -126,18 +131,24 @@ const DashboardAffiliate = () => {
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-6">Recent Referrals</h2>
                 <div className="space-y-4">
-                  {affiliateData.recentReferrals.map((referral) => (
-                    <div key={referral.id} className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
-                      <div>
-                        <div className="text-white font-medium">{referral.user}</div>
-                        <div className="text-gray-400 text-sm">{referral.plan}</div>
+                  {affiliateData.recentReferrals.length === 0 ? (
+                    <p className="text-gray-400 text-sm">
+                      Earnings from referred customers will appear here once referral tracking is active. Share your link to start referring.
+                    </p>
+                  ) : (
+                    affiliateData.recentReferrals.map((referral) => (
+                      <div key={referral.id} className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
+                        <div>
+                          <div className="text-white font-medium">{referral.user}</div>
+                          <div className="text-gray-400 text-sm">{referral.plan}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-emerald-400 font-semibold">{referral.amount}</div>
+                          <div className="text-gray-400 text-sm">{referral.date}</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-emerald-400 font-semibold">{referral.amount}</div>
-                        <div className="text-gray-400 text-sm">{referral.date}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -149,20 +160,24 @@ const DashboardAffiliate = () => {
                 <h2 className="text-xl font-bold text-white mb-4">Commission Structure</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Commission Rate:</span>
-                    <span className="text-emerald-400 font-semibold">25%</span>
+                    <span className="text-gray-400">Commission rate:</span>
+                    <span className="text-emerald-400 font-semibold">{affiliateCommissionPercent()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Cookie Duration:</span>
-                    <span className="text-white">90 days</span>
+                    <span className="text-gray-400">Cap per referral:</span>
+                    <span className="text-white">First {affiliateCommissionMonthsCap()} months</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Minimum Payout:</span>
-                    <span className="text-white">$50.00</span>
+                    <span className="text-gray-400">Cookie duration:</span>
+                    <span className="text-white">{affiliateCookieDays()} days</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Payment Schedule:</span>
-                    <span className="text-white">Monthly</span>
+                    <span className="text-gray-400">Minimum payout:</span>
+                    <span className="text-white">{affiliateMinPayout()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Payment schedule:</span>
+                    <span className="text-white">{AFFILIATE.paymentSchedule}</span>
                   </div>
                 </div>
               </div>
@@ -177,7 +192,7 @@ const DashboardAffiliate = () => {
                     Request Payout
                   </button>
                   <p className="text-gray-400 text-sm mt-2">
-                    Next automatic payout: February 1st
+                    Payouts run monthly in arrears once balance reaches {affiliateMinPayout()}.
                   </p>
                 </div>
               </div>

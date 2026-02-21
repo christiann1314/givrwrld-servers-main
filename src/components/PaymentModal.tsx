@@ -132,7 +132,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       const checkoutData = {
         item_type: 'game' as const,
         plan_id: `${gameData.name.toLowerCase()}-${selectedPlan.ram.toLowerCase().replace(' ', '')}`,
-        region: location || 'us-west',
+        region: location || 'us-east',
         server_name: serverName || `${gameData.name} Server`,
         term: (billingPeriod === '3months' ? 'quarterly' : billingPeriod === '6months' ? 'semiannual' : billingPeriod === '12months' ? 'yearly' : 'monthly') as 'monthly' | 'quarterly' | 'semiannual' | 'yearly',
         success_url: `${window.location.origin}/success`,

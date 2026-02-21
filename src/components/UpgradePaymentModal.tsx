@@ -50,7 +50,7 @@ const UpgradePaymentModal: React.FC<UpgradePaymentModalProps> = ({
       await createCheckoutSession({
         item_type: (packageData.itemType || 'vps') as const,
         plan_id: packageData.planId || packageData.name.toLowerCase().replace(/\s+/g, '-'),
-        region: 'us-west',
+        region: 'us-east',
         server_name: packageData.name,
         term: 'monthly',
         success_url: `${window.location.origin}/purchase-confirmed?package=${encodeURIComponent(packageData.name)}`,

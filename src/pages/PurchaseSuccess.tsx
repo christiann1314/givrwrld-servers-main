@@ -22,6 +22,7 @@ const PurchaseSuccess = () => {
   useEffect(() => {
     const fetchPurchaseData = async () => {
       if (!user) {
+        setPurchaseData(null);
         setLoading(false);
         return;
       }
@@ -66,6 +67,43 @@ const PurchaseSuccess = () => {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
+        <div
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/images/d7519b8a-ef97-4e1a-a24e-a446d044f2ac.png")' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/60 to-gray-900/90" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/20 via-transparent to-blue-900/20" />
+        </div>
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+          <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-8 max-w-md w-full text-center">
+            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check size={40} className="text-emerald-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">Thank you for your purchase</h1>
+            <p className="text-gray-300 mb-6">Sign in to view your order details and manage your server.</p>
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/login"
+                className="inline-flex justify-center items-center bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-lg font-semibold"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/dashboard"
+                className="inline-flex justify-center items-center border border-gray-500 text-gray-200 hover:bg-gray-700/50 px-6 py-3 rounded-lg font-semibold"
+              >
+                Go to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
