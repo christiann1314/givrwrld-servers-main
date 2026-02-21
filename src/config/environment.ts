@@ -6,10 +6,8 @@ export const config = {
     baseUrl: import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
   },
   
-  // Stripe Configuration
+  // Legacy/optional Stripe (current stack uses PayPal via Express API)
   stripe: {
-    // IMPORTANT: Set VITE_STRIPE_PUBLISHABLE_KEY environment variable
-    // Do NOT hardcode keys in source code
     publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
   },
   

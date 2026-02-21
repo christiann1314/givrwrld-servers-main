@@ -36,7 +36,7 @@ export class TrafficManager {
       enableRateLimiting: true,
       enableCircuitBreaker: true,
       enableRequestBatching: false,
-      endpoints: ['https://mjhvkvnshnbnxojnandf.supabase.co'],
+      endpoints: (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL ? [import.meta.env.VITE_SUPABASE_URL] : []),
       maxConcurrentRequests: 15,
       requestsPerSecond: 100,
       ...config,

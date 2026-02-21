@@ -75,7 +75,7 @@ export const useSubscription = (userEmail?: string) => {
       window.open(data.checkout_url, '_blank');
       
       toast({
-        title: "Redirecting to Stripe",
+        title: "Redirecting to checkout",
         description: "Please complete your subscription in the new tab.",
       });
       

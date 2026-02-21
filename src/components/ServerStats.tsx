@@ -44,20 +44,8 @@ const ServerStats = ({ order }: { order: Order }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/server-stats?order_id=${order.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch server stats');
-      }
-
-      const data = await response.json();
+      const api = (await import("@/lib/api")).default;
+      const data = await api.getServerStats(order.id);
       setStats(data);
     } catch (err) {
       console.error('Error fetching server stats:', err);

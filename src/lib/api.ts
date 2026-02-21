@@ -241,7 +241,18 @@ export const api = {
   async getServers() {
     return await http<any>("/api/servers", { method: "GET" });
   },
- 
+
+  async getServerStats(orderId: string) {
+    return await http<any>(`/api/servers/stats?order_id=${encodeURIComponent(orderId)}`, { method: "GET" });
+  },
+
+  async syncPanelUser() {
+    return await http<{ pterodactyl_user_id: string; panel_username: string; last_synced_at?: string }>("/api/auth/panel-sync-user", {
+      method: "POST",
+      body: {},
+    });
+  },
+
    async getPlans() {
      return await http<any>("/api/plans", { method: "GET" });
    },

@@ -482,6 +482,49 @@ router.get('/pterodactyl-credentials', authenticate, async (req, res) => {
  * POST /api/auth/pterodactyl-credentials/reset
  * Ensures linked panel user exists, resets panel password, and returns credentials.
  */
+/**
+ * POST /api/auth/panel-sync-user
+ * Ensure Pterodactyl panel user exists for the authenticated user (replaces Supabase panel-sync-user).
+ */
+router.post('/panel-sync-user', authenticate, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, email, display_name FROM users WHERE id = ? LIMIT 1`,
+      [req.userId]
+    );
+    const user = rows?.[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const { panelUrl, panelAppKey } = await resolvePanelCredentials();
+    const pterodactylUserId = await getOrCreatePterodactylUser(
+      user.id,
+      user.email,
+      user.display_name || user.email?.split('@')[0] || user.email,
+      panelUrl,
+      panelAppKey
+    );
+    let panelUsername = user.email?.split('@')[0] || `user-${user.id}`;
+    try {
+      const panelUser = await fetchPanelUserById(panelUrl, panelAppKey, pterodactylUserId);
+      if (panelUser?.username) panelUsername = panelUser.username;
+    } catch {
+      // ignore
+    }
+    return res.json({
+      pterodactyl_user_id: pterodactylUserId,
+      panel_username: panelUsername,
+      last_synced_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Panel sync user error:', error);
+    res.status(500).json({
+      error: 'Failed to create panel account',
+      message: error?.message,
+    });
+  }
+});
+
 router.post('/pterodactyl-credentials/reset', authenticate, async (req, res) => {
   try {
     const [rows] = await pool.execute(

@@ -26,7 +26,7 @@ const Billing = () => {
   const invoices = billingData?.upcomingInvoices || [];
   const payments = billingData?.recentPayments || [];
   
-  // Payment methods - TODO: Implement real payment method fetching from Stripe
+  // Payment methods - TODO: Implement real payment method fetching from payment provider
   const paymentMethods: Array<{
     id: string;
     type: string;

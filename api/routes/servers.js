@@ -292,6 +292,49 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 /**
+ * GET /api/servers/stats?order_id=
+ * Single-order server stats for dashboard (replaces Supabase server-stats when using Express).
+ */
+router.get('/stats', authenticate, async (req, res) => {
+  try {
+    const orderId = req.query.order_id;
+    if (!orderId) {
+      return res.status(400).json({ error: 'order_id required' });
+    }
+    const [rows] = await pool.execute(
+      `SELECT o.id, o.status, o.ptero_server_id, o.plan_id, p.ram_gb
+       FROM orders o
+       LEFT JOIN plans p ON p.id = o.plan_id
+       WHERE o.id = ? AND o.user_id = ? AND o.item_type = 'game'
+       LIMIT 1`,
+      [orderId, req.userId]
+    );
+    const order = rows?.[0];
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    const live = await resolvePanelStatsForOrder(order);
+    const serverIdentifier = order.ptero_server_id != null ? String(order.ptero_server_id) : String(order.id);
+    res.json({
+      state: live.state,
+      cpu_percent: live.cpu_percent ?? 0,
+      memory_bytes: live.memory_bytes ?? 0,
+      disk_bytes: live.disk_bytes ?? 0,
+      uptime_ms: (Number(live.uptime_seconds) || 0) * 1000,
+      server_identifier: String(serverIdentifier),
+      is_suspended: false,
+      fetched_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Get server stats error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch server stats',
+      message: error?.message,
+    });
+  }
+});
+
+/**
  * GET /api/servers/metrics/live
  * Lightweight live service metrics for dashboard cards.
  */

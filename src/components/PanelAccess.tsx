@@ -49,30 +49,13 @@ const PanelAccess = () => {
 
     try {
       setCreating(true);
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/panel-sync-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          email: user.email,
-          first_name: user.user_metadata?.first_name,
-          last_name: user.user_metadata?.last_name
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to create panel account');
-      }
-
-      const data = await response.json();
+      const api = (await import("@/lib/api")).default;
+      const data = await api.syncPanelUser();
       setExternalAccount({
         pterodactyl_user_id: data.pterodactyl_user_id,
         panel_username: data.panel_username,
-        last_synced_at: new Date().toISOString()
+        last_synced_at: data.last_synced_at || new Date().toISOString(),
       });
 
       toast.success('Panel account created successfully!');

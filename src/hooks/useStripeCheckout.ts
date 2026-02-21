@@ -26,7 +26,7 @@ export const useStripeCheckout = () => {
       }
       
       toast({
-        title: "Redirecting to Stripe",
+        title: "Redirecting to checkout",
         description: "Please complete your payment in the new tab.",
       });
       
