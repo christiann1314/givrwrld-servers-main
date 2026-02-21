@@ -23,22 +23,20 @@
 
 Use this order. For each game, complete the checklist before moving on.
 
-| Game | Config page | Notes |
-|------|-------------|--------|
-| **Minecraft** | `MinecraftConfig.tsx` | ✅ Baseline – variants confirmed working. |
-| **Palworld** | `PalworldConfig.tsx` | High demand; often different egg vars. |
-| **Rust** | `RustConfig.tsx` | FRAMEWORK (oxide/carbon/vanilla), LEVEL, ports. |
-| **Ark** | `ArkConfig.tsx` | SERVER_MAP, ARK_ADMIN_PASSWORD, BATTLE_EYE. |
-| **Terraria** | `TerrariaConfig.tsx` | |
-| **Factorio** | `FactorioConfig.tsx` | |
-| **Valheim** | (if offered) | Check plans + egg mapping. |
-| **Among Us** | `AmongUsConfig.tsx` | DOWNLOAD_URL in backend. |
-| **Palworld** | (duplicate check) | |
-| **Mindustry** | `MindustryConfig.tsx` | DOWNLOAD_URL (server-release.jar). |
-| **Rimworld** | `RimworldConfig.tsx` | DOWNLOAD_URL (rimworld server package). |
-| **Vintage Story** | `VintageStoryConfig.tsx` | DOWNLOAD_URL. |
-| **Veloren** | `VelorenConfig.tsx` | DOWNLOAD_URL. |
-| **Teeworlds** | `TeeworldsConfig.tsx` | |
+| Game | Config page | Backend support | Notes |
+|------|-------------|-----------------|--------|
+| **Minecraft** | `MinecraftConfig.tsx` | ✅ | Baseline – confirmed working. |
+| **Palworld** | `PalworldConfig.tsx` | ✅ | Confirmed working. |
+| **Rust** | `RustConfig.tsx` | ✅ | FRAMEWORK, LEVEL, RCON_PASS, ports in `servers.js`. |
+| **Ark** | `ArkConfig.tsx` | ✅ | BATTLE_EYE, SERVER_MAP, ARK_ADMIN_PASSWORD in `servers.js`. |
+| **Terraria** | `TerrariaConfig.tsx` | ✅ | APP_ID + static defaults; egg vars from panel. |
+| **Factorio** | `FactorioConfig.tsx` | ✅ | APP_ID + static defaults; egg vars from panel. |
+| **Among Us** | `AmongUsConfig.tsx` | ✅ | DOWNLOAD_URL (Impostor) in `inferRequiredEnvValue`. |
+| **Mindustry** | `MindustryConfig.tsx` | ✅ | DOWNLOAD_URL (server-release.jar) in backend. |
+| **Rimworld** | `RimworldConfig.tsx` | ✅ | DOWNLOAD_URL from env or placeholder. |
+| **Vintage Story** | `VintageStoryConfig.tsx` | ✅ | DOWNLOAD_URL in backend. |
+| **Veloren** | `VelorenConfig.tsx` | ✅ | DOWNLOAD_URL in backend. |
+| **Teeworlds** | `TeeworldsConfig.tsx` | ✅ | APP_ID + static defaults. |
 
 ---
 
