@@ -61,11 +61,14 @@ npm run dev
 │   ├── scripts/            # sync-pterodactyl-catalog, seed plans/eggs
 │   └── server.js
 ├── pterodactyl/            # Docker setup for Panel + Wings (optional)
-├── docs/
-│   ├── EGG-AUDIT-PER-GAME.md   # Per-game provisioning checklist
-│   └── STRIPE-SUPABASE-AUDIT.md
+├── docs/                   # Setup and reference
+│   ├── GET-STARTED-PROVISIONING.md
+│   ├── PROVISIONING-STATE.md
+│   ├── AFFILIATE-PROGRAM.md
+│   ├── DISCORD-FEATURE.md
+│   └── ...
 ├── LAUNCH-STACK.md         # Run the stack, purchase flow, architecture
-├── LAUNCH-OPERATING.md     # Go-live checklist, KPIs, rollback
+├── GO_LIVE_CHECKLIST.md    # Go-live checklist
 └── README.md               # This file
 ```
 

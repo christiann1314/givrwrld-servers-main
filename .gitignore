@@ -44,3 +44,9 @@ PASSWORDS.txt
 *KEYS*.md
 *CREDENTIALS*.md
 *PASSWORD*
+
+# Removed from repo (legacy / one-off)
+migrations-archive/
+sql-archive/
+supabase/
+*.tgz
