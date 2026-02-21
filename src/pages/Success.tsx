@@ -49,7 +49,7 @@ const Success = () => {
           try {
             const ordersResponse = await api.getOrders();
             const orders = ordersResponse?.orders || [];
-            // Find order by order_id (PayPal), subscription_id (PayPal), or stripe_session_id (Stripe)
+            // Find order by order_id (PayPal), subscription_id (PayPal), or stripe_session_id (legacy)
             const order = orders.find((o: any) => o.id === orderId)
               || orders.find((o: any) => o.paypal_subscription_id === subscriptionId)
               || orders.find((o: any) => o.stripe_session_id === sessionId)

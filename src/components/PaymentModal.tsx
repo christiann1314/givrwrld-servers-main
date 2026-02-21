@@ -56,7 +56,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit-card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'paypal' | 'credit-card' | 'crypto'>('paypal');
   const [paypalEmail, setPaypalEmail] = useState('');
   const [selectedCrypto, setSelectedCrypto] = useState('eth');
   
@@ -142,7 +142,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       
       const response = await stripeService.createCheckoutSession(checkoutData);
       
-      // Redirect to Stripe Checkout
+      // Redirect to PayPal Checkout
       window.open(response.checkout_url, '_blank');
       
       onClose();

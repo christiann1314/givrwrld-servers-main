@@ -327,6 +327,20 @@ const Dashboard = () => {
               </div>
               
               <div className="space-y-4">
+                {servers.length === 0 && (
+                  <div className="text-center py-12 px-4 bg-gray-700/20 rounded-lg border border-gray-600/30">
+                    <Server className="mx-auto mb-4 text-gray-500" size={48} />
+                    <h3 className="text-lg font-semibold text-white mb-2">No servers yet</h3>
+                    <p className="text-gray-400 mb-4 max-w-sm mx-auto">Deploy your first game server in a few clicks. Choose a game, pick a plan, and you’re ready to play.</p>
+                    <Link
+                      to="/deploy"
+                      className="inline-flex items-center bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Deploy your first server
+                    </Link>
+                  </div>
+                )}
                 {servers.map((server) => (
                   <div key={server.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-700/30 rounded-lg gap-4">
                     <div className="flex items-center space-x-4">

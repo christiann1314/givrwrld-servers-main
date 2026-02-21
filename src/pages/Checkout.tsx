@@ -108,7 +108,7 @@ const Checkout = () => {
         throw new Error('No checkout URL received');
       }
       
-      // Redirect to Stripe Checkout
+      // Redirect to PayPal Checkout
       window.location.href = checkoutData.checkout_url;
     } catch (error) {
       console.error('Checkout error:', error);

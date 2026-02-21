@@ -94,14 +94,20 @@ If any step fails, note the **exact error** (order `error_message`, API logs, or
 
 ## Suggested Order of Execution
 
+Work through in this order (see **[PROVISIONING-STATE.md](./PROVISIONING-STATE.md)** to track status):
+
 1. **Minecraft** – Already passing; use as reference.
-2. **Palworld** – High visibility; many "offline" in your dashboard.
-3. **Rust** – Similar volume; FRAMEWORK/ports already in code.
-4. **Valheim** – If in your catalog; confirm plan + egg.
-5. **Terraria, Factorio** – Often simpler eggs.
-6. **Among Us, Mindustry, Vintage Story, Veloren, Rimworld** – Rely on DOWNLOAD_URL and optional game logic.
-7. **Teeworlds** – Quick check.
-8. **Ark** – More variables; do after the above.
+2. **Rust** – FRAMEWORK, LEVEL, RCON, ports in code.
+3. **Ark** – BATTLE_EYE, SERVER_MAP, ARK_ADMIN_PASSWORD in code.
+4. **Among Us** – DOWNLOAD_URL (Impostor) in code.
+5. **Factorio** – APP_ID + defaults.
+6. **Mindustry** – DOWNLOAD_URL (server-release.jar) in code.
+7. **Rimworld** – DOWNLOAD_URL from env/placeholder.
+8. **Palworld** – Already passing; re-verify if needed.
+9. **Teeworlds** – APP_ID + defaults.
+10. **Terraria** – APP_ID + defaults.
+11. **Veloren** – DOWNLOAD_URL in code.
+12. **Vintage Story** – DOWNLOAD_URL in code.
 
 ---
 

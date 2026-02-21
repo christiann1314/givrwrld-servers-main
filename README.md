@@ -106,6 +106,7 @@ See `LAUNCH-STACK.md` and any `.env.example` files for full lists.
 - **[LAUNCH-OPERATING.md](./LAUNCH-OPERATING.md)** – Go-live checklist, KPIs, rollback.
 - **[docs/EGG-AUDIT-PER-GAME.md](./docs/EGG-AUDIT-PER-GAME.md)** – Per-game provisioning audit.
 - **[docs/STRIPE-SUPABASE-AUDIT.md](./docs/STRIPE-SUPABASE-AUDIT.md)** – Legacy Stripe/Supabase references.
+- **[docs/ROADMAP-NODE-PHASE-AND-FRONTEND.md](./docs/ROADMAP-NODE-PHASE-AND-FRONTEND.md)** – Cost model ($130/month per node), clean re-run checklist, frontend polish roadmap.
 
 ---
 

@@ -26,7 +26,7 @@ const Billing = () => {
   const invoices = billingData?.upcomingInvoices || [];
   const payments = billingData?.recentPayments || [];
   
-  // Payment methods - TODO: Implement real payment method fetching from payment provider
+  // Subscriptions are managed via PayPal; no stored payment methods in app
   const paymentMethods: Array<{
     id: string;
     type: string;
@@ -145,17 +145,20 @@ const Billing = () => {
             <div className="space-y-6">
               {/* Payment Methods */}
               <div className="glass-panel-strong rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-white">Payment Methods</h3>
-                  <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center">
-                    <Plus size={16} className="mr-1" />
-                    Add
-                  </button>
-                </div>
-                
+                <h3 className="text-lg font-bold text-white mb-4">Payment Methods</h3>
                 <div className="space-y-3">
                   {paymentMethods.length === 0 && (
-                    <div className="text-center text-gray-400 py-4">No payment methods on file</div>
+                    <div className="text-center text-gray-300 py-4">
+                      <p className="mb-2">Subscriptions are managed through PayPal.</p>
+                      <a
+                        href="https://www.paypal.com/signin?returnUri=https://www.paypal.com/myaccount/autopay/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 hover:text-emerald-300 text-sm underline"
+                      >
+                        Manage billing at PayPal →
+                      </a>
+                    </div>
                   )}
                   {paymentMethods.map((method) => (
                     <div key={method.id} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
@@ -203,9 +206,14 @@ const Billing = () => {
               <div className="glass-panel-strong rounded-xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
                 <div className="space-y-2">
-                  <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-left">
-                    Update Payment Method
-                  </button>
+                  <a
+                    href="https://www.paypal.com/signin?returnUri=https://www.paypal.com/myaccount/autopay/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-left"
+                  >
+                    Manage at PayPal
+                  </a>
                   <button className="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-left">
                     Download Tax Documents
                   </button>

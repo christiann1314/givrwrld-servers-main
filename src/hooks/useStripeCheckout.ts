@@ -12,13 +12,13 @@ export const useStripeCheckout = () => {
     try {
       console.log('Creating checkout session with data:', data);
       const response = await stripeService.createCheckoutSession(data);
-      console.log('Stripe response:', response);
+      console.log('Checkout response:', response);
       
       if (!response.checkout_url) {
         throw new Error('No checkout URL received from server');
       }
       
-      // Redirect to Stripe Checkout in a new tab
+      // Redirect to checkout (PayPal) in a new tab
       const newTab = window.open(response.checkout_url, '_blank');
       
       if (!newTab) {
