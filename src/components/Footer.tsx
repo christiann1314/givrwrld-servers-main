@@ -33,9 +33,7 @@ const Footer = () => {
       title: "Legal",
       links: [
         { name: "Terms of Service", path: "/terms" },
-        { name: "Privacy Policy", path: "/privacy" }, 
-        { name: "SLA", path: "/sla" },
-        { name: "Refund Policy", path: "/refund" }
+        { name: "Privacy Policy", path: "/privacy" }
       ]
     }
   ];

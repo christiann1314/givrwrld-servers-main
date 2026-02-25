@@ -12,7 +12,12 @@ import {
 } from '../services/paypal.js';
 import { v4 as uuidv4 } from 'uuid';
 import { provisionServer } from './servers.js';
-import { updateOrderStatus } from '../utils/mysql.js';
+import {
+  getOrder,
+  transitionToPaid,
+  canProvision,
+} from '../services/OrderService.js';
+import { verifyWebhookSignature, getVerifyOptsFromRequest } from '../lib/paypalWebhookVerify.js';
 
 const router = express.Router();
 
@@ -160,7 +165,7 @@ router.post('/create-subscription', authenticate, async (req, res) => {
       orderId,
     });
   } catch (error) {
-    console.error('PayPal create-subscription error:', error);
+    req.log?.error({ err: error }, 'PayPal create-subscription error');
     res.status(500).json({
       error: 'Failed to create subscription',
       message: error.message,
@@ -169,137 +174,154 @@ router.post('/create-subscription', authenticate, async (req, res) => {
 });
 
 /**
- * PayPal webhook handler (requires raw body - mount before express.json)
+ * PayPal webhook handler (requires raw body - mount before express.json).
+ * Idempotent: paypal_webhook_events.event_id primary key; if already processed, return 200 and do nothing.
  */
 async function handlePayPalWebhook(req, res) {
+  let body;
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body);
-    const eventType = body?.event_type;
-
-    if (!eventType) {
-      return res.status(400).json({ error: 'Missing event_type' });
-    }
-
-    const eventId = body?.id || body?.event_id;
-    if (eventId) {
-      try {
-        await pool.execute(
-          `INSERT INTO paypal_events_log (event_id, event_type, payload, received_at)
-           VALUES (?, ?, ?, NOW())
-           ON DUPLICATE KEY UPDATE payload = VALUES(payload)`,
-          [eventId, eventType, JSON.stringify(body)]
-        );
-      } catch (logErr) {
-        console.warn('Failed to log PayPal event:', logErr);
-      }
-    }
-
-    if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED') {
-      const resource = body?.resource;
-      const subscriptionId = resource?.id;
-      const customId = resource?.custom_id || resource?.plan?.custom_id;
-      const payerId = resource?.subscriber?.payer_id;
-
-      if (!subscriptionId) {
-        return res.status(400).json({ error: 'Missing subscription id' });
-      }
-
-      let orderId = customId || null;
-      if (!orderId) {
-        const [pendingRows] = await pool.execute(
-          `SELECT id FROM orders WHERE paypal_subscription_id = ? ORDER BY created_at DESC LIMIT 1`,
-          [subscriptionId]
-        );
-        orderId = pendingRows?.[0]?.id || null;
-      }
-      if (!orderId) {
-        return res.status(404).json({ error: 'Order not found for subscription' });
-      }
-
-      await pool.execute(
-        `UPDATE orders 
-         SET status = 'paid',
-             paypal_subscription_id = ?,
-             paypal_payer_id = ?
-         WHERE id = ? AND status = 'pending'`,
-        [subscriptionId, payerId || null, orderId]
-      );
-
-      await pool.execute(
-        `INSERT INTO paypal_subscriptions (order_id, paypal_sub_id, status, payer_id, current_period_end, created_at, updated_at)
-         VALUES (?, ?, 'ACTIVE', ?, NULL, NOW(), NOW())
-         ON DUPLICATE KEY UPDATE 
-           status = 'ACTIVE',
-           payer_id = VALUES(payer_id),
-           updated_at = NOW()`,
-        [orderId, subscriptionId, payerId]
-      );
-
-      const [rows] = await pool.execute(
-        `SELECT item_type FROM orders WHERE id = ?`,
-        [orderId]
-      );
-      const itemType = rows?.[0]?.item_type || 'game';
-
-      if (itemType === 'game') {
-        try {
-          await provisionServer(orderId);
-          console.log('✅ Server provisioning completed for order:', orderId);
-        } catch (provErr) {
-          console.error('Failed to provision server:', provErr);
-          await updateOrderStatus(orderId, 'error', null, null, provErr.message || 'Failed to provision server');
-        }
-      }
-
-      console.log('Order activated:', orderId);
-    }
-
-    if (eventType === 'BILLING.SUBSCRIPTION.CANCELLED' || eventType === 'BILLING.SUBSCRIPTION.EXPIRED') {
-      const resource = body?.resource;
-      const subscriptionId = resource?.id;
-
-      if (subscriptionId) {
-        await pool.execute(
-          `UPDATE orders SET status = 'canceled' WHERE paypal_subscription_id = ?`,
-          [subscriptionId]
-        );
-        await pool.execute(
-          `UPDATE paypal_subscriptions SET status = 'CANCELED', updated_at = NOW() WHERE paypal_sub_id = ?`,
-          [subscriptionId]
-        );
-      }
-    }
-
-    if (eventType === 'PAYMENT.SALE.COMPLETED') {
-      const resource = body?.resource;
-      const subscriptionId = resource?.billing_agreement_id;
-      if (subscriptionId) {
-        await pool.execute(
-          `UPDATE paypal_subscriptions 
-           SET current_period_end = COALESCE(FROM_UNIXTIME(?/1000), current_period_end), updated_at = NOW() 
-           WHERE paypal_sub_id = ?`,
-          [resource?.update_time || 0, subscriptionId]
-        );
-      }
-    }
-
-    res.status(200).send();
-  } catch (error) {
-    console.error('PayPal webhook error:', error);
-    res.status(500).json({ error: error.message });
+    const raw = req.body;
+    body = Buffer.isBuffer(raw) ? JSON.parse(raw.toString('utf8')) : (typeof raw === 'string' ? JSON.parse(raw) : raw);
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid JSON body' });
   }
+
+  const eventType = body?.event_type;
+  if (!eventType) {
+    return res.status(400).json({ error: 'Missing event_type' });
+  }
+
+  const eventId = body?.id || body?.event_id;
+  if (!eventId) {
+    return res.status(400).json({ error: 'Missing event id' });
+  }
+
+  // Idempotency: if we already processed this event_id, return 200 and skip
+  try {
+    await pool.execute(
+      `INSERT INTO paypal_webhook_events (event_id, received_at, raw_type, order_id)
+       VALUES (?, NOW(), ?, NULL)`,
+      [eventId, eventType]
+    );
+  } catch (insertErr) {
+    if (insertErr.code === 'ER_DUP_ENTRY' || insertErr.errno === 1062) {
+      return res.status(200).send();
+    }
+    throw insertErr;
+  }
+
+  // Optional: verify webhook signature when PAYPAL_WEBHOOK_ID is set
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (webhookId) {
+    const aesKey = process.env.AES_KEY;
+    const clientId = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null) || process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) || process.env.PAYPAL_CLIENT_SECRET;
+    if (clientId && clientSecret) {
+      const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
+      const opts = getVerifyOptsFromRequest(req, webhookId);
+      const valid = await verifyWebhookSignature(opts, accessToken, SANDBOX);
+      if (!valid) {
+        return res.status(401).json({ error: 'Webhook signature verification failed' });
+      }
+    }
+  }
+
+  if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED') {
+    const resource = body?.resource;
+    const subscriptionId = resource?.id;
+    const customId = resource?.custom_id || resource?.plan?.custom_id;
+    const payerId = resource?.subscriber?.payer_id;
+
+    if (!subscriptionId) {
+      return res.status(400).json({ error: 'Missing subscription id' });
+    }
+
+    let orderId = customId || null;
+    if (!orderId) {
+      const [pendingRows] = await pool.execute(
+        `SELECT id FROM orders WHERE paypal_subscription_id = ? ORDER BY created_at DESC LIMIT 1`,
+        [subscriptionId]
+      );
+      orderId = pendingRows?.[0]?.id || null;
+    }
+    if (!orderId) {
+      return res.status(404).json({ error: 'Order not found for subscription' });
+    }
+
+    await transitionToPaid(orderId, subscriptionId, payerId || null);
+
+    await pool.execute(
+      `INSERT INTO paypal_subscriptions (order_id, paypal_sub_id, status, payer_id, current_period_end, created_at, updated_at)
+       VALUES (?, ?, 'ACTIVE', ?, NULL, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE 
+         status = 'ACTIVE',
+         payer_id = VALUES(payer_id),
+         updated_at = NOW()`,
+      [orderId, subscriptionId, payerId]
+    );
+
+    const order = await getOrder(orderId);
+    const itemType = order?.item_type || 'game';
+
+    if (itemType === 'game' && canProvision(order)) {
+      try {
+        await provisionServer(orderId);
+      } catch (provErr) {
+        // provisionServer records failure and transitions to failed; log only
+        req.log?.child({ order_id: orderId }).error({ err: provErr }, 'Webhook provisioning failed');
+      }
+    }
+
+    try {
+      await pool.execute(
+        `UPDATE paypal_webhook_events SET order_id = ? WHERE event_id = ?`,
+        [orderId, eventId]
+      );
+    } catch {
+      // optional
+    }
+  }
+
+  if (eventType === 'BILLING.SUBSCRIPTION.CANCELLED' || eventType === 'BILLING.SUBSCRIPTION.EXPIRED') {
+    const resource = body?.resource;
+    const subscriptionId = resource?.id;
+    if (subscriptionId) {
+      await pool.execute(
+        `UPDATE orders SET status = 'canceled' WHERE paypal_subscription_id = ?`,
+        [subscriptionId]
+      );
+      await pool.execute(
+        `UPDATE paypal_subscriptions SET status = 'CANCELED', updated_at = NOW() WHERE paypal_sub_id = ?`,
+        [subscriptionId]
+      );
+    }
+  }
+
+  if (eventType === 'PAYMENT.SALE.COMPLETED') {
+    const resource = body?.resource;
+    const subscriptionId = resource?.billing_agreement_id;
+    if (subscriptionId) {
+      await pool.execute(
+        `UPDATE paypal_subscriptions 
+         SET current_period_end = COALESCE(FROM_UNIXTIME(?/1000), current_period_end), updated_at = NOW() 
+         WHERE paypal_sub_id = ?`,
+        [resource?.update_time || 0, subscriptionId]
+      );
+    }
+  }
+
+  res.status(200).send();
 }
 
 // Webhook router: mount at /api/paypal/webhook BEFORE body parser (matches path '')
 const paypalWebhookRouter = express.Router();
 paypalWebhookRouter.post('/', express.raw({ type: 'application/json' }), handlePayPalWebhook);
-
-router.post('/webhook', express.raw({ type: 'application/json' }), handlePayPalWebhook);
+// Note: Do not add router.post('/webhook') here — webhook is mounted in server.js so raw body is preserved.
 
 /**
  * POST /api/paypal/finalize-order
  * Local/dev fallback when webhook delivery is unavailable.
- * Confirms subscription status with PayPal API and triggers provisioning.
+ * Retry-safe: calling multiple times never duplicates provisioning.
  */
 router.post('/finalize-order', authenticate, async (req, res) => {
   try {
@@ -308,21 +330,13 @@ router.post('/finalize-order', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'order_id is required' });
     }
 
-    const [rows] = await pool.execute(
-      `SELECT id, user_id, item_type, status, paypal_subscription_id
-       FROM orders
-       WHERE id = ? AND user_id = ?
-       LIMIT 1`,
-      [order_id, req.userId]
-    );
-
-    const order = rows?.[0];
-    if (!order) {
+    const order = await getOrder(order_id);
+    if (!order || order.user_id !== req.userId) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (order.status === 'provisioned') {
-      return res.json({ success: true, status: 'provisioned', message: 'Order already provisioned' });
+    if (order.status === 'provisioned' && order.ptero_server_id != null) {
+      return res.json({ success: true, status: 'provisioned', message: 'Order already provisioned', ptero_server_id: order.ptero_server_id, ptero_identifier: order.ptero_identifier });
     }
 
     if (!order.paypal_subscription_id) {
@@ -352,16 +366,7 @@ router.post('/finalize-order', authenticate, async (req, res) => {
       });
     }
 
-    await pool.execute(
-      `UPDATE orders
-       SET status = CASE
-             WHEN status IN ('pending', 'error', 'canceled') THEN 'paid'
-             ELSE status
-           END,
-           paypal_payer_id = COALESCE(?, paypal_payer_id)
-       WHERE id = ?`,
-      [payerId, order.id]
-    );
+    await transitionToPaid(order_id, order.paypal_subscription_id, payerId);
 
     await pool.execute(
       `INSERT INTO paypal_subscriptions (order_id, paypal_sub_id, status, payer_id, current_period_end, created_at, updated_at)
@@ -373,31 +378,27 @@ router.post('/finalize-order', authenticate, async (req, res) => {
       [order.id, order.paypal_subscription_id, payerId]
     );
 
-    if (order.item_type === 'game') {
+    const refreshed = await getOrder(order_id);
+    if (refreshed?.item_type === 'game' && canProvision(refreshed)) {
       try {
         await provisionServer(order.id);
       } catch (provErr) {
-        await updateOrderStatus(order.id, 'error', null, null, provErr.message || 'Failed to provision server');
-        throw provErr;
+        return res.status(500).json({ error: provErr.message || 'Failed to provision server' });
       }
     }
 
-    const [updatedRows] = await pool.execute(
-      `SELECT status, ptero_server_id, ptero_identifier, error_message
-       FROM orders
-       WHERE id = ?
-       LIMIT 1`,
-      [order.id]
-    );
-
+    const updated = await getOrder(order_id);
     return res.json({
       success: true,
       order_id: order.id,
       subscription_status: subStatus,
-      ...(updatedRows?.[0] || {}),
+      status: updated?.status,
+      ptero_server_id: updated?.ptero_server_id ?? null,
+      ptero_identifier: updated?.ptero_identifier ?? null,
+      error_message: updated?.error_message ?? null,
     });
   } catch (error) {
-    console.error('Finalize order error:', error);
+    req.log?.error({ err: error, order_id: req.body?.order_id }, 'Finalize order error');
     return res.status(500).json({ error: error.message || 'Failed to finalize order' });
   }
 });

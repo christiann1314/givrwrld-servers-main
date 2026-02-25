@@ -12,7 +12,7 @@ const HeroSection = () => {
         <div className="space-y-8">
           <div className="space-y-6">
             <div className="inline-block">
-              <span className="bg-gray-800/60 backdrop-blur-sm text-emerald-400 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30">
+              <span className="bg-gray-900/95 text-emerald-400 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30">
                 Game Server Hosting
               </span>
             </div>
@@ -30,7 +30,7 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/about" className="bg-gray-800/60 backdrop-blur-sm hover:bg-gray-700/60 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 border border-gray-600/50 hover:border-emerald-500/50 text-center">
+            <Link to="/about" className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 border border-gray-600/50 hover:border-emerald-500/50 text-center">
               Learn More
             </Link>
           </div>

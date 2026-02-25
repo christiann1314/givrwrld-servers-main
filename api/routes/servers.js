@@ -3,14 +3,24 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { 
   getUserServers, 
-  updateOrderStatus, 
   getDecryptedSecret,
   getNodeForRegion,
   getOrCreatePterodactylUser
 } from '../utils/mysql.js';
+import {
+  getOrder,
+  canProvision,
+  transitionToProvisioning,
+  transitionToProvisioned,
+  transitionToFailed,
+  startProvisionAttempt,
+  recordProvisionError,
+} from '../services/OrderService.js';
 import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
+import { getLogger } from '../lib/logger.js';
 
+const logger = getLogger();
 const router = express.Router();
 
 function hasRequiredRule(rules) {
@@ -452,7 +462,8 @@ router.get('/metrics/summary', authenticate, async (req, res) => {
 });
 
 /**
- * Provision server function (can be called directly or via HTTP)
+ * Provision server function (can be called directly or via HTTP).
+ * Idempotent: does not create a second server if ptero_server_id exists or status is provisioned.
  */
 export async function provisionServer(orderId) {
   try {
@@ -460,27 +471,24 @@ export async function provisionServer(orderId) {
       throw new Error('order_id is required');
     }
 
-    // Get order details
-    const [orders] = await pool.execute(
-      `SELECT o.*, p.game, p.ptero_egg_id, p.ram_gb, p.vcores, p.ssd_gb
-       FROM orders o
-       LEFT JOIN plans p ON p.id = o.plan_id
-       WHERE o.id = ?`,
-      [orderId]
-    );
-
-    if (orders.length === 0) {
+    const order = await getOrder(orderId, true);
+    if (!order) {
       throw new Error('Order not found');
     }
 
-    const order = orders[0];
-
-    if (order.status !== 'paid') {
-      throw new Error('Order is not in paid status');
+    // Idempotency guard: do not provision twice
+    if (!canProvision(order)) {
+      return {
+        success: true,
+        order_id: orderId,
+        server_id: order.ptero_server_id,
+        server_identifier: order.ptero_identifier,
+        message: 'Order already provisioned or ineligible',
+      };
     }
 
-    // Update status to provisioning
-    await updateOrderStatus(orderId, 'provisioning');
+    await transitionToProvisioning(orderId);
+    await startProvisionAttempt(orderId);
 
     // Get Pterodactyl API credentials.
     // Use encrypted secrets when AES_KEY is available; otherwise fall back to env vars.
@@ -494,14 +502,16 @@ export async function provisionServer(orderId) {
 
     // Validate plan has egg ID
     if (!order.ptero_egg_id) {
-      await updateOrderStatus(orderId, 'error', null, null, 'Plan does not have ptero_egg_id configured');
+      await recordProvisionError(orderId, 'Plan does not have ptero_egg_id configured');
+      await transitionToFailed(orderId, 'Plan does not have ptero_egg_id configured');
       throw new Error('Plan does not have ptero_egg_id configured');
     }
 
     // Get node for region
     const node = await getNodeForRegion(order.region);
     if (!node) {
-      await updateOrderStatus(orderId, 'error', null, null, `No node found for region: ${order.region}`);
+      await recordProvisionError(orderId, `No node found for region: ${order.region}`);
+      await transitionToFailed(orderId, `No node found for region: ${order.region}`);
       throw new Error(`No node found for region: ${order.region}`);
     }
 
@@ -512,7 +522,8 @@ export async function provisionServer(orderId) {
     );
 
     if (users.length === 0) {
-      await updateOrderStatus(orderId, 'error', null, null, 'User not found');
+      await recordProvisionError(orderId, 'User not found');
+      await transitionToFailed(orderId, 'User not found');
       throw new Error('User not found');
     }
 
@@ -536,7 +547,8 @@ export async function provisionServer(orderId) {
     );
 
     if (eggs.length === 0) {
-      await updateOrderStatus(orderId, 'error', null, null, `Egg not found: ${order.ptero_egg_id}`);
+      await recordProvisionError(orderId, `Egg not found: ${order.ptero_egg_id}`);
+      await transitionToFailed(orderId, `Egg not found: ${order.ptero_egg_id}`);
       throw new Error(`Egg not found: ${order.ptero_egg_id}`);
     }
 
@@ -837,16 +849,9 @@ export async function provisionServer(orderId) {
       const pteroServerId = serverData.attributes?.id;
       const pteroIdentifier = serverData.attributes?.identifier;
 
-      // Update order with server details
-      await updateOrderStatus(
-        orderId,
-        'provisioned',
-        pteroServerId,
-        pteroIdentifier,
-        ''
-      );
+      await transitionToProvisioned(orderId, pteroServerId, pteroIdentifier);
 
-      console.log(`✅ Server provisioned: ${pteroIdentifier} (ID: ${pteroServerId}) for order ${orderId}`);
+      logger.info({ order_id: orderId, ptero_server_id: pteroServerId, ptero_identifier: pteroIdentifier }, 'Server provisioned');
 
       return {
         success: true,
@@ -857,12 +862,13 @@ export async function provisionServer(orderId) {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await updateOrderStatus(orderId, 'error', null, null, errorMessage);
-      console.error('Provisioning error:', error);
+      await recordProvisionError(orderId, errorMessage);
+      await transitionToFailed(orderId, errorMessage);
+      logger.error({ order_id: orderId, err: error, message: errorMessage }, 'Provisioning error');
       throw error;
     }
   } catch (error) {
-    console.error('Provision error:', error);
+    logger.error({ order_id: orderId, err: error }, 'Provision error');
     throw error;
   }
 }
@@ -884,7 +890,7 @@ router.post('/provision', async (req, res) => {
     const result = await provisionServer(order_id);
     res.json(result);
   } catch (error) {
-    console.error('Provision API error:', error);
+    req.log?.error({ err: error, order_id: req.body?.order_id }, 'Provision API error');
     res.status(500).json({
       error: 'Failed to provision server',
       message: error.message

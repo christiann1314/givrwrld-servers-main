@@ -17,8 +17,6 @@ import Blog from "./pages/Blog";
 import Status from "./pages/Status";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-import SLA from "./pages/SLA";
-import Refund from "./pages/Refund";
 import GivrwrldEssentials from "./pages/GivrwrldEssentials";
 import GameExpansionPack from "./pages/GameExpansionPack";
 import CommunityPack from "./pages/CommunityPack";
@@ -56,8 +54,6 @@ export function AppRoutes() {
       <Route path="/status" element={<Status />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
-      <Route path="/sla" element={<SLA />} />
-      <Route path="/refund" element={<Refund />} />
       <Route path="/upgrade/givrwrld-essentials" element={<GivrwrldEssentials />} />
       <Route path="/upgrade/game-expansion-pack" element={<GameExpansionPack />} />
       <Route path="/upgrade/community-pack" element={<CommunityPack />} />

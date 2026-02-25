@@ -29,7 +29,7 @@ const ServerCard: React.FC<ServerCardProps> = ({
   };
 
   return (
-    <div className="bg-gray-800/40 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
+    <div className="bg-gray-800/95 border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
       <div className="h-48 relative overflow-hidden">
         <img
           src={image}

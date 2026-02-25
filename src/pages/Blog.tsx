@@ -5,35 +5,7 @@ import Footer from '../components/Footer';
 import { Calendar, User, ArrowRight } from 'lucide-react';
 
 const Blog = () => {
-  const blogPosts = [
-    {
-      id: 1,
-      title: "The Future of Game Server Hosting",
-      excerpt: "Exploring the latest trends and technologies shaping the game server hosting industry in 2024.",
-      author: "GIVRwrld Team",
-      date: "2024-01-15",
-      readTime: "5 min read",
-      category: "Industry News"
-    },
-    {
-      id: 2,
-      title: "How to Optimize Your Minecraft Server Performance",
-      excerpt: "Tips and tricks to ensure your Minecraft server runs smoothly with maximum performance.",
-      author: "Tech Team",
-      date: "2024-01-10",
-      readTime: "8 min read",
-      category: "Tutorial"
-    },
-    {
-      id: 3,
-      title: "Rust Server Setup Guide",
-      excerpt: "A comprehensive guide to setting up and configuring your Rust server for optimal gameplay.",
-      author: "Community Manager",
-      date: "2024-01-05",
-      readTime: "12 min read",
-      category: "Guide"
-    }
-  ];
+  const blogPosts: any[] = [];
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -63,40 +35,53 @@ const Blog = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogPosts.map((post) => (
-              <article key={post.id} className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm font-medium">
-                      {post.category}
-                    </span>
-                    <span className="text-gray-400 text-sm">{post.readTime}</span>
-                  </div>
-                  
-                  <h2 className="text-xl font-bold text-white mb-3 group-hover:text-emerald-400 transition-colors">
-                    {post.title}
-                  </h2>
-                  
-                  <p className="text-gray-300 mb-4 line-clamp-3">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm text-gray-400">
-                      <User size={16} className="mr-2" />
-                      <span>{post.author}</span>
-                      <Calendar size={16} className="ml-4 mr-2" />
-                      <span>{post.date}</span>
+          {blogPosts.length === 0 ? (
+            <div className="max-w-3xl mx-auto bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 text-center">
+              <h2 className="text-2xl font-bold text-white mb-3">No posts yet</h2>
+              <p className="text-gray-300 mb-4">
+                We&apos;re focused on hardening the platform and getting your first servers live. 
+                Our launch notes, game guides, and behind‑the‑scenes posts will appear here once we start publishing.
+              </p>
+              <p className="text-sm text-gray-400">
+                For now, follow updates in Discord and on the status page.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {blogPosts.map((post) => (
+                <article key={post.id} className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm font-medium">
+                        {post.category}
+                      </span>
+                      <span className="text-gray-400 text-sm">{post.readTime}</span>
                     </div>
-                    <button className="text-emerald-400 hover:text-emerald-300 transition-colors">
-                      <ArrowRight size={20} />
-                    </button>
+                    
+                    <h2 className="text-xl font-bold text-white mb-3 group-hover:text-emerald-400 transition-colors">
+                      {post.title}
+                    </h2>
+                    
+                    <p className="text-gray-300 mb-4 line-clamp-3">
+                      {post.excerpt}
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-sm text-gray-400">
+                        <User size={16} className="mr-2" />
+                        <span>{post.author}</span>
+                        <Calendar size={16} className="ml-4 mr-2" />
+                        <span>{post.date}</span>
+                      </div>
+                      <button className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <ArrowRight size={20} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
         
         

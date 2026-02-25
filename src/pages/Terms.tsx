@@ -71,12 +71,12 @@ const Terms = () => {
               <div className="text-gray-300 leading-relaxed space-y-3">
                 <p>Payment terms and conditions:</p>
                 <ul className="list-disc list-inside ml-4 space-y-2">
-                  <li>All services are billed in advance on a monthly or annual basis</li>
-                  <li>Payment is due at the time of service activation</li>
-                  <li>We accept major credit cards, PayPal, and other approved payment methods</li>
-                  <li>Prices are subject to change with 30 days notice</li>
-                  <li>Refunds are handled according to our Refund Policy</li>
-                  <li>Failure to pay may result in service suspension or termination</li>
+                  <li>All services are billed in advance via PayPal subscriptions.</li>
+                  <li>Payment is due at the time of service activation and on each renewal date.</li>
+                  <li>PayPal may charge your stored funding sources (such as credit or debit cards) according to your PayPal settings; GIVRwrld does not store your full card details.</li>
+                  <li>Prices are subject to change with at least 30 days notice for active subscriptions.</li>
+                  <li>Refunds are handled according to our Refund Policy, including our 48‑hour satisfaction guarantee for new customers.</li>
+                  <li>Failure to pay may result in service suspension or termination and eventual data deletion.</li>
                 </ul>
               </div>
             </section>
@@ -127,7 +127,7 @@ const Terms = () => {
             <section>
               <h2 className="text-2xl font-bold text-emerald-400 mb-4">10. Contact Information</h2>
               <p className="text-gray-300 leading-relaxed">
-                For questions about these Terms, contact us at legal@givrwrld.com or through our support system.
+                For questions about these Terms, contact us at givrwlrdservers.com@outlook.com or through our support center.
               </p>
             </section>
           </div>

@@ -50,7 +50,7 @@ const FAQ = () => {
         {
           id: 'control-panel',
           question: 'What control panel do you use for server management?',
-          answer: 'We use a custom-built control panel designed specifically for gaming servers. It includes features like one-click mod installation, automatic backups, real-time monitoring, and easy file management.'
+          answer: 'We use a modern dashboard built on top of the open‑source Pterodactyl panel. You get an easy web interface for starting and stopping servers, viewing logs and console output, managing files/SFTP, and changing basic settings without needing your own VPS or custom setup.'
         },
         {
           id: 'server-backups',
@@ -60,7 +60,7 @@ const FAQ = () => {
         {
           id: 'server-hardware',
           question: 'What hardware do your servers run on?',
-          answer: 'Our servers run on premium hardware including high-frequency Intel CPUs, NVMe SSD storage, and DDR4 RAM. All servers are housed in Tier 1 data centers with redundant power and network connections.'
+          answer: 'Our servers run on Ryzen 7 9800X3D nodes with NVMe storage. All servers are housed in Tier 1 data centers with redundant power and network connections.'
         },
         {
           id: 'custom-plugins',
@@ -75,17 +75,17 @@ const FAQ = () => {
         {
           id: 'payment-methods',
           question: 'What payment methods do you accept?',
-          answer: 'We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and select cryptocurrencies. All payments are processed securely with SSL encryption.'
+          answer: 'We accept payments securely through PayPal. You can pay using any funding source you have added to your PayPal account (such as credit or debit cards), but all subscriptions and renewals are managed via PayPal.'
         },
         {
           id: 'billing-cycle',
           question: 'How does billing work?',
-          answer: 'Billing is monthly by default, but we also offer quarterly and annual plans with discounts. You can change your billing cycle at any time, and we prorate charges accordingly.'
+          answer: 'Billing is monthly by default, but we also offer 3‑month, 6‑month, and yearly terms. All plans are handled as PayPal subscriptions, and you can change or cancel your term from your account dashboard.'
         },
         {
           id: 'refund-policy',
           question: 'What is your refund policy?',
-          answer: 'We offer a 7-day money-back guarantee for all new customers. If you\'re not satisfied with our service, contact support within 7 days of your first payment for a full refund.'
+          answer: 'We offer a 48‑hour satisfaction guarantee for all new customers. If you\'re not satisfied with your server within the first 48 hours after activation, contact support and we\'ll provide a full refund. See our Terms of Service or Support Center for full details.'
         },
         {
           id: 'server-suspension',

@@ -139,7 +139,7 @@ const Privacy = () => {
             <section>
               <h2 className="text-2xl font-bold text-emerald-400 mb-4">9. Third-Party Services</h2>
               <p className="text-gray-300 leading-relaxed">
-                Our services may integrate with third-party platforms (Discord, Steam, payment processors). These third parties have their own privacy policies. We are not responsible for their privacy practices.
+                Our services may integrate with third-party platforms such as Discord, Steam, payment processors (e.g. PayPal), and email providers. These third parties have their own privacy policies. We encourage you to review those policies; we are not responsible for their privacy practices.
               </p>
             </section>
 
@@ -160,7 +160,7 @@ const Privacy = () => {
             <section>
               <h2 className="text-2xl font-bold text-emerald-400 mb-4">12. Contact Us</h2>
               <p className="text-gray-300 leading-relaxed">
-                For questions about this Privacy Policy or to exercise your rights, contact us at privacy@givrwrld.com or through our support system.
+                For questions about this Privacy Policy or to exercise your rights, contact us at givrwlrdservers.com@outlook.com or through our support center.
               </p>
             </section>
           </div>

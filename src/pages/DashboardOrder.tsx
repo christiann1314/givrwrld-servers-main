@@ -363,7 +363,7 @@ const DashboardOrder = () => {
                       <div className="p-4">
                         <div className="space-y-1 mb-4 text-sm">
                           <div className="text-emerald-300">Starts at ${server.price.toFixed(2)}/mo</div>
-                          <div className="text-gray-400">{server.ram}GB RAM • {server.cpu} vCPU • {server.disk}GB SSD</div>
+                          <div className="text-gray-400">{server.ram}GB RAM • {server.cpu} vCPU • {server.disk}GB NVMe</div>
                         </div>
                         <Link
                           to={server.configPath}

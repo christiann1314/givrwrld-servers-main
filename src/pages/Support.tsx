@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
+import { ENV } from '@/config/env';
 
 const Support = () => {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -27,7 +28,7 @@ const Support = () => {
     {
       id: 'provisioning',
       question: 'How long does server provisioning take?',
-      answer: 'Server provisioning is automatic and typically completes within 3-5 minutes after payment. You can monitor the status in your dashboard. If your server takes longer than 10 minutes, please contact support.'
+      answer: 'Server provisioning is automatic and typically completes within 3–5 minutes after PayPal confirms your payment. You can monitor the status in your dashboard. If your server takes longer than 10 minutes, please contact support.'
     },
     {
       id: 'panel-access',
@@ -37,22 +38,22 @@ const Support = () => {
     {
       id: 'connect',
       question: 'How do I connect to my server?',
-      answer: 'You can connect to your server using the IP address and port provided in your control panel. Make sure your server is running and check your firewall settings.'
+      answer: 'You can connect to your server using the IP address and port provided in your control panel. Make sure your server is running, that you are using the correct game version, and that any local firewall or router rules allow the connection.'
     },
     {
       id: 'upgrade',
       question: 'Can I upgrade my server later?',
-      answer: 'Yes, you can upgrade your server plan at any time through your control panel. Upgrades are applied instantly with no downtime.'
+      answer: 'Yes. You can upgrade your server plan at any time through your dashboard. In most cases upgrades are applied within a few minutes with no downtime.'
     },
     {
       id: 'payment',
       question: 'What payment methods do you accept?',
-      answer: 'We accept all major credit cards, PayPal, and cryptocurrency payments. All transactions are secured with SSL encryption.'
+      answer: 'We accept payments securely through PayPal. You can pay using any funding source you have attached to your PayPal account (such as credit or debit cards), but all subscriptions and renewals are managed via PayPal.'
     },
     {
       id: 'refunds',
       question: 'Do you offer refunds?',
-      answer: 'Yes, we offer a 7-day money-back guarantee for all new customers. Contact support to process your refund request.'
+      answer: 'Yes. We offer a 48‑hour satisfaction guarantee for all new customers. If you are not happy with your server within the first 48 hours after activation, contact support to request a full refund.'
     },
     {
       id: 'players',
@@ -70,7 +71,7 @@ const Support = () => {
     {
       icon: MessageCircle,
       title: 'Contact Support',
-      description: 'Our support team is available 24/7 to assist you with any questions or issues.',
+      description: 'Our support team is available 24/7 to assist you with technical issues, billing questions, and account changes.',
       content: 'form'
     },
     {
@@ -105,10 +106,33 @@ const Support = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Support form submitted:', formData);
-    // Handle form submission
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`${ENV.API_BASE.replace(/\/+$/, '')}/api/support/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Unable to send your message. Please try again.');
+      }
+      setSubmitSuccess(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Unable to send your message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -132,13 +156,12 @@ const Support = () => {
           <h1 className="text-5xl lg:text-6xl font-bold mb-6">
             <span className="text-white">Support</span>{' '}
             <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-              Center
+              &amp; Help Center
             </span>
           </h1>
           
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            Find answers to common asked questions, or contact our 24/7 
-            support team.
+            Start here for help with provisioning, billing, or account questions. Browse quick answers below or reach our 24/7 team any time.
           </p>
         </section>
 
@@ -185,7 +208,7 @@ const Support = () => {
                 <h3 className="text-2xl font-bold text-white">Contact Support</h3>
               </div>
               <p className="text-gray-300 mb-6">
-                Our support team is available 24/7 to assist you with any questions or issues.
+                Our support team is available 24/7 to assist you with technical issues, billing questions, and account changes.
               </p>
               
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -243,11 +266,31 @@ const Support = () => {
                 
                 <button
                   type="submit"
-                  className="w-full btn-primary text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center"
+                  disabled={submitting}
+                  className="w-full btn-primary text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center disabled:opacity-60"
                 >
-                  <Send size={18} className="mr-2" />
-                  Send Message
+                  {submitting ? (
+                    <>
+                      <span className="mr-2 animate-spin border-2 border-white/40 border-t-transparent rounded-full w-4 h-4" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} className="mr-2" />
+                      Send Message
+                    </>
+                  )}
                 </button>
+                {submitSuccess && (
+                  <p className="text-xs text-emerald-300 mt-3 text-center">
+                    Thanks! Your message has been sent to our support team. We’ll reply to the email you provided.
+                  </p>
+                )}
+                {submitError && (
+                  <p className="text-xs text-red-400 mt-3 text-center">
+                    {submitError}
+                  </p>
+                )}
               </form>
             </div>
 

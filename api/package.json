@@ -27,20 +27,29 @@
     "plans:minecraft:variants": "node scripts/seed-minecraft-variant-plans.js",
     "plans:games:variants:dry-run": "node scripts/seed-game-variant-plans.js --dry-run",
     "plans:games:variants": "node scripts/seed-game-variant-plans.js",
+    "agents:build": "tsc -p .",
+    "agents:dev": "tsx watch agents/index.ts",
+    "agents:start": "node dist/agents/index.js",
     "catalog:variants:all": "npm run ptero:bootstrap-eggs && npm run ptero:upgrade-eggs && npm run ptero:variants && npm run ptero:sync && npm run plans:minecraft:variants && npm run plans:games:variants"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "envalid": "^8.0.0",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.6.5",
+    "node-cron": "^3.0.3",
     "nodemailer": "^8.0.1",
-    "stripe": "^14.9.0",
+    "pino": "^8.16.2",
+    "pino-http": "^8.5.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
   }
 }

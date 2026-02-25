@@ -279,11 +279,11 @@ export class TrafficManager {
 }
 
 // Global traffic manager instance
+// Supabase / external edge functions are no longer used in this stack,
+// so the traffic manager is effectively idle. Endpoints array is left
+// empty to avoid any accidental external calls.
 export const trafficManager = new TrafficManager({
-  endpoints: [
-    'https://mjhvkvnshnbnxojnandf.supabase.co',
-    // Add additional endpoints here for load balancing
-  ],
+  endpoints: [],
   maxConcurrentRequests: 10,
   requestsPerSecond: 50,
 });

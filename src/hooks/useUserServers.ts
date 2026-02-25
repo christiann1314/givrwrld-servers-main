@@ -83,7 +83,7 @@ export const useUserServers = (userEmail?: string) => {
         status: order.status,
         ram: order.ram_gb ? `${order.ram_gb}GB` : 'Unknown',
         cpu: order.vcores ? `${order.vcores} vCPU` : 'Unknown',
-        disk: order.ssd_gb ? `${order.ssd_gb}GB SSD` : 'Unknown',
+        disk: order.ssd_gb ? `${order.ssd_gb}GB NVMe` : 'Unknown',
         location: order.region,
         ip: order.ptero_identifier ? `server-${order.ptero_identifier}.givrwrldservers.com` : '',
         port: order.ptero_identifier ? '25565' : '',

@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 let cachedTransporter = null;
 let cachedFrom = null;
 
-async function buildTransporter() {
+export async function buildTransporter() {
   if (cachedTransporter) {
     return { transporter: cachedTransporter, from: cachedFrom };
   }

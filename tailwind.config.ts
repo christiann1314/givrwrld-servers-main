@@ -13,9 +13,9 @@ export default {
 	theme: {
 		container: {
 			center: true,
-			padding: '2rem',
+			padding: '1.5rem',
 			screens: {
-				'2xl': '1400px'
+				'2xl': '1280px'
 			}
 		},
 		extend: {
@@ -77,6 +77,15 @@ export default {
 					900: '#006b32',
 					950: '#003d1a'
 				}
+			},
+			boxShadow: {
+				'glass-soft': '0 18px 45px rgba(15,23,42,0.55)',
+				'glass-strong': '0 24px 80px rgba(16,185,129,0.35)',
+			},
+			fontSize: {
+				'h1-display': ['var(--font-h1)', { lineHeight: '1.1', letterSpacing: '-0.04em' }],
+				'h2-display': ['var(--font-h2)', { lineHeight: '1.15', letterSpacing: '-0.03em' }],
+				'h3-display': ['var(--font-h3)', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
 			},
 			fontFamily: {
 				'cinzel': ['Cinzel', 'serif'],

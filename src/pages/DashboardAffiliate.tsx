@@ -9,6 +9,8 @@ import {
   affiliateMinPayout,
   affiliateCookieDays,
   AFFILIATE,
+  AFFILIATE_TIERS,
+  affiliatePercentFromRate,
 } from '@/config/affiliate';
 import {
   ArrowLeft,
@@ -158,26 +160,38 @@ const DashboardAffiliate = () => {
               {/* Commission Info */}
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Commission Structure</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Commission rate:</span>
-                    <span className="text-emerald-400 font-semibold">{affiliateCommissionPercent()}</span>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {AFFILIATE_TIERS.map((tier) => (
+                      <div key={tier.id} className="flex justify-between text-sm">
+                        <div className="text-gray-400">
+                          {tier.name}
+                          <span className="text-gray-500"> · {tier.minReferrals}+ referrals</span>
+                        </div>
+                        <div className="text-emerald-400 font-semibold">
+                          {affiliatePercentFromRate(tier.commissionRate)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Cap per referral:</span>
-                    <span className="text-white">First {affiliateCommissionMonthsCap()} months</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Cookie duration:</span>
-                    <span className="text-white">{affiliateCookieDays()} days</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Minimum payout:</span>
-                    <span className="text-white">{affiliateMinPayout()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Payment schedule:</span>
-                    <span className="text-white">{AFFILIATE.paymentSchedule}</span>
+                  <div className="h-px bg-gray-700/60" />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Cap per referral:</span>
+                      <span className="text-white">First {affiliateCommissionMonthsCap()} months</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Cookie duration:</span>
+                      <span className="text-white">{affiliateCookieDays()} days</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Minimum payout:</span>
+                      <span className="text-white">{affiliateMinPayout()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Payment schedule:</span>
+                      <span className="text-white">{AFFILIATE.paymentSchedule}</span>
+                    </div>
                   </div>
                 </div>
               </div>

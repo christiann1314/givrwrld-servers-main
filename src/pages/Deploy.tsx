@@ -20,7 +20,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Minecraft',
     subtitle: 'Build, explore, survive',
     image: 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg',
-    features: ['Plugin & mod support', 'Instant setup', 'Ryzen 9 5950X CPU'],
+    features: ['Plugin & mod support', 'Instant setup', 'Ryzen 7 9800X3D'],
     buttonColor: 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500',
     configPath: '/configure/minecraft',
   },
@@ -28,7 +28,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Rust',
     subtitle: 'Survival multiplayer game',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: ['Small to large servers', 'Plugin & mod support', 'Ryzen 9 5950X CPU'],
+    features: ['Small to large servers', 'Plugin & mod support', 'Ryzen 7 9800X3D'],
     buttonColor: 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500',
     configPath: '/configure/rust',
   },
@@ -36,7 +36,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Palworld',
     subtitle: 'Creature collection survival',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg',
-    features: ['4-6 players', 'Ryzen 9 5950X CPU', 'Fast deployment'],
+    features: ['4-6 players', 'Ryzen 7 9800X3D', 'Fast deployment'],
     buttonColor: 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
     configPath: '/configure/palworld',
   },
@@ -143,7 +143,7 @@ const Deploy = () => {
             name: title,
             subtitle: meta.subtitle || 'Premium game server hosting',
             image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-            features: meta.features || [`Starts with ${starter.ram_gb}GB RAM`, `${starter.vcores} vCPU`, `${starter.ssd_gb}GB NVMe SSD`],
+            features: meta.features || [`Starts with ${starter.ram_gb}GB RAM`, `${starter.vcores} vCPU`, `${starter.ssd_gb}GB NVMe`],
             price: `$${Number(starter.price_monthly || 0).toFixed(2)}`,
             buttonText: `Deploy ${title} Server`,
             buttonColor: meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
@@ -247,7 +247,7 @@ const Deploy = () => {
                       <span className="text-sm font-normal text-gray-400 ml-1">/month</span>
                     </div>
                     <div className="text-xs text-gray-400">
-                      2GB RAM • 75 GB SSD • Ryzen 9 5950X
+                      NVMe • Ryzen 7 9800X3D
                     </div>
                   </div>
 

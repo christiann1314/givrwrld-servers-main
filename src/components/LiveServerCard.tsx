@@ -47,9 +47,9 @@ const LiveServerCard: React.FC<LiveServerCardProps> = ({ server, onServerAction 
   const GameIcon = ({ game }: { game: string }) => {
     const getGameIcon = (game: string) => {
       const gameIcons: { [key: string]: string } = {
-        'minecraft': '/lovable-uploads/be7a6e57-bd8a-4d13-9a0e-55f7ae367b09.png',
-        'palworld': '/lovable-uploads/a7264f37-06a0-45bc-8cd0-62289aa4eff8.png',
-        'rust': '/lovable-uploads/fb115f3f-774a-4094-a15a-b21b90860c1c.png',
+        minecraft: '/images/efe9d97d-94d9-4596-b1d7-99f242301c96.png',
+        palworld: '/images/a7264f37-06a0-45bc-8cd0-62289aa4eff8.png',
+        rust: '/images/fb115f3f-774a-4094-a15a-b21b90860c1c.png',
       };
       return gameIcons[game.toLowerCase()];
     };

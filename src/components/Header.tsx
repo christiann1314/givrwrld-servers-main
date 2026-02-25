@@ -1,8 +1,8 @@
 
- import * as React from 'react';
+import * as React from 'react';
 import { Link, useLocation } from 'react-router-dom';
- import { Home, Users, HelpCircle, MessageCircle, User, LogIn, UserPlus, ChevronDown, Settings, LogOut } from 'lucide-react';
- import { useAuth } from '../hooks/useAuth';
+import { Home, Users, HelpCircle, MessageCircle, User, LogIn, UserPlus, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Header = () => {
   const [isAccountOpen, setIsAccountOpen] = React.useState(false);
@@ -36,17 +36,12 @@ const Header = () => {
     <header className="sticky top-0 z-50 backdrop-blur-md bg-gray-900/70 border-b border-emerald-500/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-md bg-emerald-500/10 border border-emerald-500/30 overflow-hidden flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.25)]">
-              <img 
-                src="/images/9dd7d65a-1866-4205-bcbb-df3788eea144.png"
-                alt="GIVRwrld"
-                className="w-14 h-14 object-cover object-[50%_38%] mix-blend-screen saturate-150 brightness-125 contrast-125"
-              />
-            </div>
-            <span className="text-2xl font-bold text-white whitespace-nowrap">GIVRwrld</span>
-            <span className="bg-emerald-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
+          {/* Brand name only (logo removed) */}
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-white whitespace-nowrap tracking-tight">
+              GIVRwrld
+            </span>
+            <span className="hidden sm:inline bg-emerald-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
               Servers
             </span>
           </Link>

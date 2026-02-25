@@ -82,20 +82,47 @@ export async function createOrder(orderData) {
 }
 
 /**
- * Update order status
+ * Update order status (optionally set provision attempt fields).
  */
-export async function updateOrderStatus(orderId, status, pteroServerId = null, pteroIdentifier = null, errorMessage = null) {
+export async function updateOrderStatus(orderId, status, pteroServerId = null, pteroIdentifier = null, errorMessage = null, opts = {}) {
   try {
-    await pool.execute(
-      `UPDATE orders 
-       SET status = ?, 
-           ptero_server_id = COALESCE(?, ptero_server_id),
-           ptero_identifier = COALESCE(?, ptero_identifier),
-           error_message = COALESCE(?, error_message),
-           updated_at = NOW()
-       WHERE id = ?`,
-      [status, pteroServerId, pteroIdentifier, errorMessage, orderId]
-    );
+    const { provisionAttemptCount, lastProvisionAttemptAt, lastProvisionError } = opts;
+    const hasProvisionOpts = provisionAttemptCount !== undefined || lastProvisionAttemptAt !== undefined || lastProvisionError !== undefined;
+    if (!hasProvisionOpts) {
+      await pool.execute(
+        `UPDATE orders 
+         SET status = ?, 
+             ptero_server_id = COALESCE(?, ptero_server_id),
+             ptero_identifier = COALESCE(?, ptero_identifier),
+             error_message = COALESCE(?, error_message),
+             updated_at = NOW()
+         WHERE id = ?`,
+        [status, pteroServerId, pteroIdentifier, errorMessage, orderId]
+      );
+    } else {
+      const sets = [
+        'status = ?',
+        'ptero_server_id = COALESCE(?, ptero_server_id)',
+        'ptero_identifier = COALESCE(?, ptero_identifier)',
+        'error_message = COALESCE(?, error_message)',
+        'updated_at = NOW()',
+      ];
+      const args = [status, pteroServerId, pteroIdentifier, errorMessage];
+      if (provisionAttemptCount !== undefined) {
+        sets.push('provision_attempt_count = ?');
+        args.push(provisionAttemptCount);
+      }
+      if (lastProvisionAttemptAt !== undefined) {
+        sets.push('last_provision_attempt_at = ?');
+        args.push(lastProvisionAttemptAt);
+      }
+      if (lastProvisionError !== undefined) {
+        sets.push('last_provision_error = ?');
+        args.push(lastProvisionError);
+      }
+      args.push(orderId);
+      await pool.execute(`UPDATE orders SET ${sets.join(', ')} WHERE id = ?`, args);
+    }
     return { success: true };
   } catch (error) {
     console.error('Error updating order:', error);

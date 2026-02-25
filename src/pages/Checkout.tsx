@@ -66,7 +66,7 @@ const Checkout = () => {
           game_type: matchingPlan.game,
           ram: `${matchingPlan.ram_gb}GB`,
           cpu: `${matchingPlan.vcores} vCPU`,
-          disk: `${matchingPlan.ssd_gb}GB SSD`,
+          disk: `${matchingPlan.ssd_gb}GB NVMe`,
           location: 'us-east',
           stripe_price_id: matchingPlan.paypal_plan_id || matchingPlan.stripe_price_id || '',
           price: parseFloat(matchingPlan.price_monthly)

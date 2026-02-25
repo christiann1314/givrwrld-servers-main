@@ -13,7 +13,7 @@ const VintageStoryConfig = () => {
   const [region] = useState('us-east');
   const [planId, setPlanId] = useState('vintage-story-4gb');
   const [gameType, setGameType] = useState('vintage-story');
-  const [billingTerm, setBillingTerm] = useState('monthly');
+  const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
     if (!serverName.trim()) throw new Error('Server name is required');
@@ -33,9 +33,9 @@ const VintageStoryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'vintage-story-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB SSD', price: 5.99, players: '2-4', description: 'Small survival servers, 2-4 players' },
-    { id: 'vintage-story-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB SSD', price: 7.99, players: '4-8', description: 'Medium survival servers, 4-8 players', recommended: true },
-    { id: 'vintage-story-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB SSD', price: 12.99, players: '8-16', description: 'Large survival servers, 8-16 players' }
+    { id: 'vintage-story-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 5.99, players: '2-4', description: 'Small survival servers, 2-4 players' },
+    { id: 'vintage-story-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 7.99, players: '4-8', description: 'Medium survival servers, 4-8 players', recommended: true },
+    { id: 'vintage-story-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 12.99, players: '8-16', description: 'Large survival servers, 8-16 players' }
   ];
 
   const fallbackGameTypes = [
@@ -191,7 +191,12 @@ const VintageStoryConfig = () => {
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                          {(plan.recommended || plan.ram === '8GB') && (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-white">${plan.price}</div>
                           <div className="text-gray-400 text-sm">per month</div>
@@ -199,8 +204,11 @@ const VintageStoryConfig = () => {
                       </div>
                       <p className="text-gray-300 text-sm mb-2">{plan.description}</p>
                       <div className="text-yellow-400 text-sm font-semibold">
-                        {plan.ram} RAM • {plan.cpu} • {plan.disk} SSD
+                        {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
+                      {((plan as { ram_gb?: number }).ram_gb ?? 0) >= 8 || plan.ram === '8GB' ? (
+                        <div className="mt-2 text-xs text-gray-400">Auto backups included</div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -222,9 +230,11 @@ const VintageStoryConfig = () => {
                       }`}
                     >
                       <div className="font-semibold">{term.name}</div>
-                      {term.discount > 0 && (
+                      {term.id === 'semiannual' ? (
+                        <div className="text-xs text-amber-300 font-medium">Best value · Save {term.discount}%</div>
+                      ) : term.discount > 0 ? (
                         <div className="text-xs text-yellow-300">Save {term.discount}%</div>
-                      )}
+                      ) : null}
                     </button>
                   ))}
                 </div>
@@ -271,9 +281,10 @@ const VintageStoryConfig = () => {
                     {[
                       '99.9% uptime SLA',
                       'Anti-DDoS Game protection',
-                      'Instant setup & SSD',
-                      'Ryzen 9 5950X CPU',
-                      '24/7 support and Discord community access'
+                      'Instant setup & NVMe',
+                      'Ryzen 7 9800X3D',
+                      '24/7 support and Discord community access',
+                      ...(selectedPlan && (((selectedPlan as { ram_gb?: number }).ram_gb ?? 0) >= 8 || (selectedPlan as { ram?: string }).ram === '8GB') ? ['Daily auto backups'] : [])
                     ].map((feature, index) => (
                       <div key={index} className="flex items-center">
                         <div className="w-4 h-4 bg-yellow-500 rounded-full mr-3 flex items-center justify-center">

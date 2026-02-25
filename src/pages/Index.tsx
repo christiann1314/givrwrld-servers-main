@@ -7,7 +7,7 @@ import FeaturesSection from '../components/FeaturesSection';
 const Index = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-      {/* Fantasy Forest Background */}
+      {/* Fantasy Forest Background - use a high-res image (e.g. 1920×1080+) for a sharp look */}
       <div 
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{

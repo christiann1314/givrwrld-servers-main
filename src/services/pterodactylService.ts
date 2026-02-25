@@ -116,7 +116,7 @@ export class PterodactylService {
       const diskGb = Number(order?.ssd_gb || 0);
       const ramText = ramGb > 0 ? `${ramGb}GB RAM` : 'Unknown RAM';
       const cpuText = vcores > 0 ? `${vcores} CPU Cores` : 'Unknown CPU';
-      const diskText = diskGb > 0 ? `${diskGb}GB SSD` : 'Unknown Disk';
+      const diskText = diskGb > 0 ? `${diskGb}GB NVMe` : 'Unknown Disk';
       return `${ramText} • ${cpuText} • ${diskText}`;
     };
 

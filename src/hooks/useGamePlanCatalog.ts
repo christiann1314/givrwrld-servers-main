@@ -5,6 +5,7 @@ export interface CatalogPlanOption {
   id: string;
   name: string;
   ram: string;
+  ram_gb?: number;
   cpu: string;
   disk: string;
   price: number;
@@ -56,25 +57,29 @@ export function useGamePlanCatalog(
         const rows = (response?.plans || []).filter((p: any) => normalizeGameSlug(p.game) === targetGame && p.item_type === 'game' && Number(p.is_active) === 1);
         if (rows.length === 0) return;
 
-        const mappedPlans: CatalogPlanOption[] = rows.map((p: any) => ({
-          id: p.id,
-          name: `${p.ram_gb}GB`,
-          ram: `${p.ram_gb}GB`,
-          cpu: `${p.vcores} vCPU`,
-          disk: `${p.ssd_gb}GB SSD`,
-          price: Number(p.price_monthly || 0),
-          players: '2-32',
-          description: p.display_name || `${p.ram_gb}GB ${game} plan`,
-          recommended: String(p.id || '').includes('8gb'),
-          pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
-          pteroEggName: p.ptero_egg_name || null,
-          pricing: {
-            monthly: Number(p.price_monthly || 0),
-            quarterly: Number(p.price_quarterly || p.price_monthly || 0),
-            semiannual: Number(p.price_semiannual || p.price_monthly || 0),
-            yearly: Number(p.price_yearly || p.price_monthly || 0),
-          },
-        }));
+        const mappedPlans: CatalogPlanOption[] = rows.map((p: any) => {
+          const ramGb = Number(p.ram_gb || 0);
+          return {
+            id: p.id,
+            name: `${ramGb}GB`,
+            ram: `${ramGb}GB`,
+            ram_gb: ramGb,
+            cpu: `${p.vcores} vCPU`,
+            disk: `${p.ssd_gb}GB NVMe`,
+            price: Number(p.price_monthly || 0),
+            players: '2-32',
+            description: p.display_name || `${ramGb}GB ${game} plan`,
+            recommended: ramGb === 8,
+            pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
+            pteroEggName: p.ptero_egg_name || null,
+            pricing: {
+              monthly: Number(p.price_monthly || 0),
+              quarterly: Number(p.price_quarterly || p.price_monthly || 0),
+              semiannual: Number(p.price_semiannual || p.price_monthly || 0),
+              yearly: Number(p.price_yearly || p.price_monthly || 0),
+            },
+          };
+        });
 
         const eggMap = new Map<string, CatalogGameTypeOption>();
         for (const p of mappedPlans) {
