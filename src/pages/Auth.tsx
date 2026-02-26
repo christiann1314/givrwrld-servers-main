@@ -22,7 +22,7 @@ const Auth = () => {
   
   const { signUp, signIn, isAuthenticated } = useAuth();
   // toast is now imported directly from sonner
-  const { checkRateLimit, recordAttempt, isBlocked, attempts, maxAttempts } = useRateLimit();
+  const { checkRateLimit, recordAttempt, isBlocked, attempts, maxAttempts, reset } = useRateLimit();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -36,6 +36,14 @@ const Auth = () => {
       navigate(`/verify-email?verify_token=${encodeURIComponent(verifyToken)}`, { replace: true });
     }
   }, [location.search, navigate]);
+
+  // In local development, never hold on to a long-lived lockout.
+  React.useEffect(() => {
+    const mode = (import.meta as any)?.env?.MODE || (import.meta as any)?.env?.DEV ? 'development' : 'production';
+    if (mode === 'development') {
+      reset();
+    }
+  }, [reset]);
 
   // Redirect if already authenticated
   React.useEffect(() => {

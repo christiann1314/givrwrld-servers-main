@@ -12,9 +12,11 @@ services:
       MYSQL_USER: app_rw
       MYSQL_PASSWORD: devpass
     ports:
-      - "3306:3306"
+      # Host 3307 → container 3306 so we don't conflict with pterodactyl-mariadb-1 on 3306
+      - "3307:3306"
     volumes:
       - givrwrld_mysql_data:/var/lib/mysql
+      - ./sql/init/00-grant-app-rw.sql:/docker-entrypoint-initdb.d/00-grant-app-rw.sql
       - ./sql/app_core.sql:/docker-entrypoint-initdb.d/01-app_core.sql
       - ./migrations/20260222000000_add_semiannual_to_orders_term.sql:/docker-entrypoint-initdb.d/02-semiannual.sql
     healthcheck:

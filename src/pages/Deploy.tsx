@@ -114,6 +114,21 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   },
 };
 
+/** Fallback cards from GAME_DISPLAY when API returns no plans (all 12 games always show). */
+function getFallbackCards(): DeployCard[] {
+  return Object.entries(GAME_DISPLAY).map(([game, meta]) => ({
+    id: game,
+    name: meta.name || game.charAt(0).toUpperCase() + game.slice(1),
+    subtitle: meta.subtitle || 'Premium game server hosting',
+    image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
+    features: meta.features || ['Instant setup', '24/7 support', 'Premium hardware'],
+    price: 'See plans',
+    buttonText: `Deploy ${meta.name || game} Server`,
+    buttonColor: meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
+    configPath: meta.configPath || `/configure/${game}`,
+  }));
+}
+
 const Deploy = () => {
   const [gameServers, setGameServers] = React.useState<DeployCard[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -151,10 +166,10 @@ const Deploy = () => {
           };
         });
 
-        if (active) setGameServers(cards);
+        if (active) setGameServers(cards.length > 0 ? cards : getFallbackCards());
       } catch (error) {
         console.error('Failed to load deploy cards from backend plans:', error);
-        if (active) setGameServers([]);
+        if (active) setGameServers(getFallbackCards());
       } finally {
         if (active) setLoading(false);
       }

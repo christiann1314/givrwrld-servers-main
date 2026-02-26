@@ -214,9 +214,14 @@ function resolveReturnBase(req) {
 async function ensurePayPalPlan(plan, term = 'monthly') {
   const termPrice = getPlanPriceForTerm(plan, term);
 
+  // In local/dev, prefer .env PayPal credentials over encrypted DB secrets.
   const aesKey = process.env.AES_KEY;
-  const clientId = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null) || process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) || process.env.PAYPAL_CLIENT_SECRET;
+  const clientId =
+    process.env.PAYPAL_CLIENT_ID ||
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null);
+  const clientSecret =
+    process.env.PAYPAL_CLIENT_SECRET ||
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null);
 
   if (!clientId || !clientSecret) {
     throw new Error('PayPal credentials not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.');
@@ -329,8 +334,13 @@ router.post('/create-session', authenticate, async (req, res) => {
     );
 
     const aesKey = process.env.AES_KEY;
-    const clientId = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null) || process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) || process.env.PAYPAL_CLIENT_SECRET;
+    const clientId =
+      process.env.PAYPAL_CLIENT_ID ||
+      (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null);
+    const clientSecret =
+      process.env.PAYPAL_CLIENT_SECRET ||
+      (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) ||
+      null;
 
     if (!clientId || !clientSecret) {
       throw new Error('PayPal credentials not configured');
