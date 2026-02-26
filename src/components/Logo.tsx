@@ -21,43 +21,24 @@ const Logo: React.FC<LogoProps> = ({
   linkToHome = variant === 'header' || variant === 'footer',
   className = '',
 }) => {
+  const emblemSize =
+    variant === 'footer'
+      ? 40
+      : variant === 'header'
+        ? 32
+        : 56;
+
   const content = (
     <>
-      {/* Circular emblem: flame + rings */}
+      {/* Image emblem – served from public/images so it can be swapped without code changes */}
       <span className="flex-shrink-0 inline-flex items-center justify-center">
-        <svg
-          width={variant === 'footer' ? 40 : variant === 'header' ? 32 : 56}
-          height={variant === 'footer' ? 40 : variant === 'header' ? 32 : 56}
-          viewBox="0 0 64 64"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
-        >
-          <defs>
-            <linearGradient id="logo-flame" x1="32" y1="48" x2="32" y2="16" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#f97316" />
-              <stop offset="0.5" stopColor="#fbbf24" />
-              <stop offset="1" stopColor="#fde047" />
-            </linearGradient>
-            <linearGradient id="logo-ring" x1="0" y1="32" x2="64" y2="32" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#fde047" />
-              <stop offset="0.35" stopColor="#a3e635" />
-              <stop offset="0.65" stopColor="#00e676" />
-              <stop offset="1" stopColor="#0d9488" />
-            </linearGradient>
-          </defs>
-          {/* Outer white ring */}
-          <circle cx="32" cy="32" r="30" fill="none" stroke="white" strokeWidth="1.5" />
-          {/* Gradient ring */}
-          <circle cx="32" cy="32" r="26" fill="none" stroke="url(#logo-ring)" strokeWidth="6" />
-          {/* Inner white ring */}
-          <circle cx="32" cy="32" r="18" fill="none" stroke="white" strokeWidth="1" />
-          {/* Flame */}
-          <path
-            d="M32 44c-6-4-10-10-10-16c0-6 4-10 8-10c2 0 4 1 4 4c0 2-2 4-2 6c0 2 2 4 4 4c2 0 4-2 4-4c0-2-2-4-2-6c0-3 2-4 4-4c4 0 8 4 8 10c0 6-4 12-10 16z"
-            fill="url(#logo-flame)"
-          />
-        </svg>
+        <img
+          src="/images/givrwrld-logo-512.png"
+          alt="GIVRwrld logo"
+          width={emblemSize}
+          height={emblemSize}
+          className="rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+        />
       </span>
       {(variant === 'full' || variant === 'header' || variant === 'footer') && (
         <span className={`flex flex-col ${variant === 'footer' ? 'items-center' : 'items-start'} justify-center`}>
