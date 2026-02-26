@@ -1,0 +1,27 @@
+# Local MariaDB for GIVRwrld API (app_core).
+# Run from repo root: docker compose -f docker-compose.mysql.yml up -d
+# Then set in api/.env: MYSQL_HOST=127.0.0.1 MYSQL_USER=app_rw MYSQL_PASSWORD=devpass MYSQL_DATABASE=app_core
+
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: givrwrld-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: app_core
+      MYSQL_USER: app_rw
+      MYSQL_PASSWORD: devpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - givrwrld_mysql_data:/var/lib/mysql
+      - ./sql/app_core.sql:/docker-entrypoint-initdb.d/01-app_core.sql
+      - ./migrations/20260222000000_add_semiannual_to_orders_term.sql:/docker-entrypoint-initdb.d/02-semiannual.sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  givrwrld_mysql_data:
