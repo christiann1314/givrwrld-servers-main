@@ -51,3 +51,10 @@ docker compose -f docker-compose.mysql.yml down
 ```
 
 Data is kept in the `givrwrld_mysql_data` volume. Use `down -v` to remove it.
+
+## Port 3306 already in use
+
+If you see `Bind for 0.0.0.0:3306 failed: port is already allocated`, either:
+
+- Stop the other service using 3306 (e.g. a local MySQL/MariaDB), or
+- In `docker-compose.mysql.yml`, change the host port, e.g. `"3307:3306"`, and set `MYSQL_PORT=3307` in `api/.env`.
