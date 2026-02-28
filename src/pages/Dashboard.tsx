@@ -24,7 +24,8 @@ import {
   Users,
   HeadphonesIcon,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 
 // Secure server icon component to prevent XSS
@@ -166,6 +167,7 @@ const Dashboard = () => {
     { title: "View Affiliate Program", icon: UserPlus, color: "purple", link: "/dashboard/affiliate" }
   ];
 
+  const isAdmin = Boolean(user?.roles?.includes('admin'));
   const sidebarItems = [
     { name: "Overview", icon: BarChart3, link: "/dashboard", active: true },
     { name: "My Services", icon: Server, link: "/dashboard/services" },
@@ -173,7 +175,8 @@ const Dashboard = () => {
     { name: "Support", icon: HeadphonesIcon, link: "/dashboard/support" },
     { name: "Affiliate", icon: Users, link: "/dashboard/affiliate" },
     { name: "Order Services", icon: ShoppingCart, link: "/dashboard/order" },
-    { name: "Settings", icon: Settings, link: "/dashboard/settings" }
+    { name: "Settings", icon: Settings, link: "/dashboard/settings" },
+    ...(isAdmin ? [{ name: "Admin", icon: Shield, link: "/dashboard/admin" }] : [])
   ];
 
   return (

@@ -47,6 +47,12 @@ import GivrwrldEssentials from "@/pages/GivrwrldEssentials";
 import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import PurchaseConfirmed from "@/pages/PurchaseConfirmed";
 import VerifyEmail from "@/pages/VerifyEmail";
+import AdminGuard from "@/components/AdminGuard";
+import DashboardAdmin from "@/pages/DashboardAdmin";
+import DashboardAdminOverview from "@/pages/DashboardAdminOverview";
+import DashboardAdminTickets from "@/pages/DashboardAdminTickets";
+import DashboardAdminTicketDetail from "@/pages/DashboardAdminTicketDetail";
+import DashboardAdminMetrics from "@/pages/DashboardAdminMetrics";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +90,12 @@ const App = () => (
                 <Route path="/dashboard/settings" element={<DashboardSettings />} />
                 <Route path="/dashboard/support" element={<DashboardSupport />} />
                 <Route path="/dashboard/affiliate" element={<DashboardAffiliate />} />
+                <Route path="/dashboard/admin" element={<AdminGuard><DashboardAdmin /></AdminGuard>}>
+                  <Route index element={<DashboardAdminOverview />} />
+                  <Route path="tickets" element={<DashboardAdminTickets />} />
+                  <Route path="tickets/:id" element={<DashboardAdminTicketDetail />} />
+                  <Route path="metrics" element={<DashboardAdminMetrics />} />
+                </Route>
                 <Route path="/configure/minecraft" element={<MinecraftConfig />} />
                 <Route path="/configure/rust" element={<RustConfig />} />
                 <Route path="/configure/palworld" element={<PalworldConfig />} />

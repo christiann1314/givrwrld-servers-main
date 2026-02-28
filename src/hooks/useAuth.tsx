@@ -8,6 +8,7 @@ interface User {
   email: string;
   display_name?: string;
   is_email_verified?: boolean;
+  roles?: string[];
   // Legacy compatibility fields
   user_metadata?: {
      full_name?: string;

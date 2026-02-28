@@ -108,6 +108,14 @@ router.post('/signup', async (req, res) => {
          VALUES (?, ?, ?, ?, 0, NOW())`,
         [userId, normalizedEmail, passwordHash, displayName]
       );
+      // Assign default 'user' role
+      const [roleRows] = await pool.execute(`SELECT id FROM roles WHERE code = 'user' LIMIT 1`);
+      if (roleRows.length > 0) {
+        await pool.execute(
+          `INSERT IGNORE INTO user_roles (id, user_id, role_id) VALUES (?, ?, ?)`,
+          [uuidv4(), userId, roleRows[0].id]
+        );
+      }
     }
 
     const rawToken = crypto.randomBytes(32).toString('hex');
@@ -250,9 +258,17 @@ router.get('/me', authenticate, async (req, res) => {
       });
     }
 
+    const [roleRows] = await pool.execute(
+      `SELECT r.code FROM roles r
+       INNER JOIN user_roles ur ON ur.role_id = r.id
+       WHERE ur.user_id = ?`,
+      [req.userId]
+    );
+    const roles = roleRows.map((r) => r.code);
+
     res.json({
       success: true,
-      user: users[0]
+      user: { ...users[0], roles }
     });
   } catch (error) {
     console.error('Get user error:', error);

@@ -18,6 +18,8 @@ import serversRoutes from './routes/servers.js';
 import opsRoutes from './routes/ops.js';
 import supportRoutes from './routes/support.js';
 import marketingRoutes from './routes/marketing.js';
+import ticketsRoutes from './routes/tickets.js';
+import adminRoutes from './routes/admin.js';
 import { validateEnv } from './lib/env.js';
 import { createLogger } from './lib/logger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
@@ -159,6 +161,8 @@ app.use('/api/orders', publicLimiter, ordersRoutes);
 app.use('/api/servers', publicLimiter, serversRoutes);
 app.use('/api/support', publicLimiter, supportRoutes);
 app.use('/api/marketing', publicLimiter, marketingRoutes);
+app.use('/api/tickets', publicLimiter, ticketsRoutes);
+app.use('/api/admin', publicLimiter, adminRoutes);
 app.use('/ops', publicLimiter, opsRoutes);
 
 // 404 handler

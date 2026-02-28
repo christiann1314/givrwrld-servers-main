@@ -2,6 +2,8 @@
 
 The marketing agent turns **marketing events** (stored in the DB) into **channel-specific drafts** (Discord, Reddit, TikTok) and **automatically posts Discord drafts** to a webhook. Reddit and TikTok drafts are saved for manual copy-paste or future automation.
 
+**Role:** This service is owned by the **Marketing Engineer (Growth Systems)** role. Scope, ownership, security, and boundaries (no provisioning, no billing, no schema changes) are defined in [ROLE.md](./ROLE.md).
+
 ---
 
 ## How it works

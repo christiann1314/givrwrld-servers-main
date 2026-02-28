@@ -267,6 +267,29 @@ export const api = {
        body: data
      });
    },
+
+  // Admin (requires admin role)
+  async getAdminTickets() {
+    return await http<{ success: boolean; tickets: any[] }>("/api/admin/tickets", { method: "GET" });
+  },
+  async getAdminTicket(id: string) {
+    return await http<{ success: boolean; ticket: any; messages: any[] }>(`/api/admin/tickets/${id}`, { method: "GET" });
+  },
+  async postAdminTicketReply(id: string, message: string) {
+    return await http<{ success: boolean }>(`/api/admin/tickets/${id}/messages`, {
+      method: "POST",
+      body: { message },
+    });
+  },
+  async patchAdminTicket(id: string, status: string) {
+    return await http<{ success: boolean; status: string }>(`/api/admin/tickets/${id}`, {
+      method: "PATCH",
+      body: { status },
+    });
+  },
+  async getAdminMetrics() {
+    return await http<{ success: boolean; metrics: any }>("/api/admin/metrics", { method: "GET" });
+  },
 };
 
 export default api;
