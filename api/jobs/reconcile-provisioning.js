@@ -4,8 +4,8 @@
  * Run every 2 minutes via node-cron (no Redis in Phase 1).
  */
 import pool from '../config/database.js';
-import { provisionServer } from '../routes/servers.js';
 import { getOrder, shouldRetryProvision } from '../services/OrderService.js';
+import { enqueueProvisionJob } from '../queues/provisionQueue.js';
 
 const STUCK_AGE_MINUTES = 10;
 
@@ -54,10 +54,10 @@ export async function runReconcilePass(log = console) {
   const orders = await findOrdersToReconcile();
   for (const order of orders) {
     try {
-      await provisionServer(order.id);
-      log.info?.({ order_id: order.id }, 'Reconcile provision attempted');
+      await enqueueProvisionJob(order.id, 'reconcile');
+      log.info?.({ order_id: order.id }, 'Reconcile provision job enqueued');
     } catch (err) {
-      log.error?.({ order_id: order.id, err: err?.message }, 'Reconcile provision failed');
+      log.error?.({ order_id: order.id, err: err?.message }, 'Reconcile provision enqueue failed');
     }
   }
   return orders.length;

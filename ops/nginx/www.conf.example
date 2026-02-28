@@ -1,0 +1,30 @@
+# Nginx: Frontend (www.<your-domain>)
+# Use when the Vite-built frontend is served from this box (e.g. static files or a separate Node process).
+# Replace <your-domain> and ensure DNS points www.<your-domain> to this host.
+# TLS: use certbot (certbot --nginx -d www.<your-domain>) or manual certs.
+
+# Option A: static files (after npm run build; serve dist/ or similar)
+# root /path/to/givrwrld-severs/dist;
+# index index.html;
+# location / {
+#     try_files $uri $uri/ /index.html;
+# }
+
+# Option B: proxy to a frontend dev server or Vite preview (not for production)
+# upstream frontend { server 127.0.0.1:5173; }
+# location / { proxy_pass http://frontend; proxy_http_version 1.1; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
+
+server {
+    listen 80;
+    server_name www.<your-domain>;
+    root /path/to/givrwrld-severs/dist;
+    index index.html;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    location /api {
+        return 404;
+    }
+}
+
+# After TLS: add listen 443 ssl block (certbot does this automatically) or see api.conf.example for ssl_certificate lines.

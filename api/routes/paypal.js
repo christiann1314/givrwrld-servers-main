@@ -1,20 +1,21 @@
 // PayPal Checkout & Webhook Routes
 import express from 'express';
 import pool from '../config/database.js';
-import { getPlan, getDecryptedSecret } from '../utils/mysql.js';
+import { getPlan, getDecryptedSecret, releaseNodeCapacityForOrder } from '../utils/mysql.js';
 import { authenticate } from '../middleware/auth.js';
 import {
   getPayPalAccessToken,
-  createProduct,
-  createPlan,
   createSubscription,
   getSubscription,
 } from '../services/paypal.js';
+import { ensurePayPalPlan } from '../services/paypalPlans.js';
+import { recordOrderCreated } from '../lib/metrics.js';
 import { v4 as uuidv4 } from 'uuid';
-import { provisionServer } from './servers.js';
+import { enqueueProvisionJob } from '../queues/provisionQueue.js';
 import {
   getOrder,
   transitionToPaid,
+  transitionToCanceled,
   canProvision,
 } from '../services/OrderService.js';
 import { verifyWebhookSignature, getVerifyOptsFromRequest } from '../lib/paypalWebhookVerify.js';
@@ -35,52 +36,6 @@ function resolveReturnBase(req) {
   const publicSiteUrl = process.env.PUBLIC_SITE_URL || process.env.PAYPAL_RETURN_BASE_URL || '';
   return [requestedOrigin, publicSiteUrl, frontendUrl, 'https://givrwrldservers.com']
     .find((u) => isAllowedReturnBase(u));
-}
-
-/**
- * Ensure plan has a PayPal plan ID (create product + plan if missing)
- */
-async function ensurePayPalPlan(plan) {
-  if (plan.paypal_plan_id) {
-    return plan.paypal_plan_id;
-  }
-
-  const aesKey = process.env.AES_KEY;
-  const clientId = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null)
-    || process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null)
-    || process.env.PAYPAL_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('PayPal credentials not configured');
-  }
-
-  const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
-
-  const productId = await createProduct(accessToken, {
-    name: `${plan.display_name || plan.id} - Game Server`,
-    description: plan.description || `Subscription for ${plan.game} server`,
-  }, SANDBOX);
-
-  const intervalCount = 1;
-  const interval = 'MONTH';
-  const price = parseFloat(plan.price_monthly);
-
-  const paypalPlanId = await createPlan(accessToken, {
-    productId,
-    name: `${plan.display_name || plan.id} (Monthly)`,
-    price,
-    currency: 'USD',
-    interval,
-    intervalCount,
-  }, SANDBOX);
-
-  await pool.execute(
-    `UPDATE plans SET paypal_plan_id = ? WHERE id = ?`,
-    [paypalPlanId, plan.id]
-  );
-
-  return paypalPlanId;
 }
 
 /**
@@ -115,17 +70,21 @@ router.post('/create-subscription', authenticate, async (req, res) => {
       });
     }
 
-    const paypalPlanId = await ensurePayPalPlan(plan);
-
     const orderId = uuidv4();
     const serverName = server_name || `${plan_id.split('-')[0]}-${Date.now()}`;
     const regionCode = region || 'us-east';
     const billingTerm = term || 'monthly';
+    const paypalPlanId = await ensurePayPalPlan(plan, billingTerm);
 
     await pool.execute(
       `INSERT INTO orders (id, user_id, item_type, plan_id, term, region, server_name, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
       [orderId, req.userId, item_type, plan_id, billingTerm, regionCode, serverName]
+    );
+    recordOrderCreated();
+    req.log?.info?.(
+      { order_id: orderId, plan_id, term: billingTerm },
+      'paypal_order_created',
     );
 
     const aesKey = process.env.AES_KEY;
@@ -249,6 +208,10 @@ async function handlePayPalWebhook(req, res) {
     }
 
     await transitionToPaid(orderId, subscriptionId, payerId || null);
+    req.log?.info?.(
+      { order_id: orderId, paypal_event_id: eventId, paypal_subscription_id: subscriptionId },
+      'paypal_subscription_activated',
+    );
 
     await pool.execute(
       `INSERT INTO paypal_subscriptions (order_id, paypal_sub_id, status, payer_id, current_period_end, created_at, updated_at)
@@ -265,10 +228,11 @@ async function handlePayPalWebhook(req, res) {
 
     if (itemType === 'game' && canProvision(order)) {
       try {
-        await provisionServer(orderId);
+        await enqueueProvisionJob(orderId, 'paypal-webhook');
       } catch (provErr) {
-        // provisionServer records failure and transitions to failed; log only
-        req.log?.child({ order_id: orderId }).error({ err: provErr }, 'Webhook provisioning failed');
+        req.log
+          ?.child?.({ order_id: orderId })
+          .error({ err: provErr }, 'Failed to enqueue provisioning job from PayPal webhook');
       }
     }
 
@@ -286,10 +250,22 @@ async function handlePayPalWebhook(req, res) {
     const resource = body?.resource;
     const subscriptionId = resource?.id;
     if (subscriptionId) {
-      await pool.execute(
-        `UPDATE orders SET status = 'canceled' WHERE paypal_subscription_id = ?`,
-        [subscriptionId]
-      );
+      try {
+        const [rows] = await pool.execute(
+          `SELECT id, status FROM orders WHERE paypal_subscription_id = ? ORDER BY created_at DESC LIMIT 1`,
+          [subscriptionId]
+        );
+        const orderId = rows?.[0]?.id || null;
+        if (orderId) {
+          await transitionToCanceled(orderId);
+          await releaseNodeCapacityForOrder(orderId);
+        }
+      } catch (err) {
+        req.log?.error?.(
+          { err, paypal_subscription_id: subscriptionId },
+          'Failed to transition order to canceled for subscription',
+        );
+      }
       await pool.execute(
         `UPDATE paypal_subscriptions SET status = 'CANCELED', updated_at = NOW() WHERE paypal_sub_id = ?`,
         [subscriptionId]
@@ -381,9 +357,10 @@ router.post('/finalize-order', authenticate, async (req, res) => {
     const refreshed = await getOrder(order_id);
     if (refreshed?.item_type === 'game' && canProvision(refreshed)) {
       try {
-        await provisionServer(order.id);
+        await enqueueProvisionJob(order.id, 'finalize-order');
       } catch (provErr) {
-        return res.status(500).json({ error: provErr.message || 'Failed to provision server' });
+        req.log?.error?.({ err: provErr, order_id: order.id }, 'Enqueue provisioning job failed in finalize-order');
+        // fall through; frontend can still poll for status while reconcile/agents pick it up later
       }
     }
 

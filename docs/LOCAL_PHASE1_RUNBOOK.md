@@ -138,7 +138,7 @@ If you use Windows and want the stack to come back after reboot:
 - `GET /ready`: requires DB and required env vars; fix DB connection and `.env` if 503.
 
 **Stuck orders not retrying**
-- ProvisioningAuditor runs every 15 minutes; in-API reconcile runs every 2 minutes. Check `api/logs/agents.log` and API logs for “Reconcile” or “ProvisioningAuditor”.
+- ProvisioningAuditor runs every 15 minutes; in-API reconcile runs every 2 minutes; ReconcileSubscriptions/ReconcileOrders run every 15 minutes via agents. Check `api/logs/agents.log` and API logs for “Reconcile”, “ProvisioningAuditor”, “ReconcileSubscriptions”, or “ReconcileOrders”.
 - Ensure order is in `paid`/`provisioning`/`error`/`failed` with no `ptero_server_id` and past the stuck threshold (default 10 min).
 
 ---

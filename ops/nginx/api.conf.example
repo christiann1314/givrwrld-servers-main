@@ -1,0 +1,49 @@
+# Nginx: API (api.<your-domain>)
+# Copy to /etc/nginx/sites-available/ and symlink from sites-enabled.
+# Replace <your-domain> and ensure DNS points api.<your-domain> to this host.
+# TLS: use certbot (recommended) or manual certs; certbot will add listen 443 ssl and certificate paths.
+
+upstream givrwrld_api {
+    server 127.0.0.1:3001;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name api.<your-domain>;
+    # Redirect HTTP to HTTPS once TLS is configured:
+    # return 301 https://$host$request_uri;
+
+    location / {
+        proxy_pass http://givrwrld_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+
+# After obtaining TLS cert (e.g. certbot --nginx -d api.<your-domain>), certbot adds a server { listen 443 ssl; ... } block.
+# Or add manually:
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name api.<your-domain>;
+#     ssl_certificate     /etc/letsencrypt/live/api.<your-domain>/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/api.<your-domain>/privkey.pem;
+#     location / {
+#         proxy_pass http://givrwrld_api;
+#         proxy_http_version 1.1;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_connect_timeout 60s;
+#         proxy_send_timeout 60s;
+#         proxy_read_timeout 60s;
+#     }
+# }

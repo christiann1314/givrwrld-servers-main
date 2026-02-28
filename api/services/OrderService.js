@@ -3,8 +3,66 @@
  * Statuses: pending | paid | provisioning | provisioned | failed (and legacy error, canceled).
  */
 import pool from '../config/database.js';
+import { getLogger } from '../lib/logger.js';
 
-const VALID_STATUSES = ['pending', 'paid', 'provisioning', 'provisioned', 'error', 'failed', 'canceled'];
+const log = getLogger();
+
+export const ORDER_STATUS = Object.freeze({
+  PENDING: 'pending',
+  PAID: 'paid',
+  PROVISIONING: 'provisioning',
+  PROVISIONED: 'provisioned',
+  ERROR: 'error',
+  FAILED: 'failed',
+  CANCELED: 'canceled',
+});
+
+const VALID_STATUSES = Object.values(ORDER_STATUS);
+
+const ORDER_TRANSITION_GRAPH = Object.freeze({
+  [ORDER_STATUS.PENDING]: new Set([ORDER_STATUS.PAID, ORDER_STATUS.CANCELED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.PAID]: new Set([ORDER_STATUS.PROVISIONING, ORDER_STATUS.CANCELED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.PROVISIONING]: new Set([ORDER_STATUS.PROVISIONED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.PROVISIONED]: new Set([]),
+  [ORDER_STATUS.ERROR]: new Set([ORDER_STATUS.PROVISIONING, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.FAILED]: new Set([ORDER_STATUS.PROVISIONING]),
+  [ORDER_STATUS.CANCELED]: new Set([]),
+});
+
+function normalizeStatus(value) {
+  return String(value || '').toLowerCase();
+}
+
+export function isAllowedStatusTransition(fromStatus, toStatus) {
+  const from = normalizeStatus(fromStatus);
+  const to = normalizeStatus(toStatus);
+  if (!VALID_STATUSES.includes(from) || !VALID_STATUSES.includes(to)) return false;
+  if (from === to) return true; // idempotent
+  const allowed = ORDER_TRANSITION_GRAPH[from];
+  return Boolean(allowed && allowed.has(to));
+}
+
+function logTransition(orderId, fromStatus, toStatus) {
+  log.info(
+    {
+      order_id: orderId,
+      from_status: normalizeStatus(fromStatus),
+      to_status: normalizeStatus(toStatus),
+    },
+    'order_status_transition',
+  );
+}
+
+function logIllegalTransition(orderId, fromStatus, toStatus) {
+  log.warn(
+    {
+      order_id: orderId,
+      from_status: normalizeStatus(fromStatus),
+      to_status: normalizeStatus(toStatus),
+    },
+    'order_status_transition_illegal',
+  );
+}
 
 /**
  * Get order by id (with plan join for provisioning).
@@ -24,64 +82,158 @@ export async function getOrder(orderId, withPlan = false) {
  * Transition order to paid (idempotent: only if pending).
  */
 export async function transitionToPaid(orderId, paypalSubscriptionId = null, paypalPayerId = null) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.PAID)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PAID);
+    return false;
+  }
+
   const [result] = await pool.execute(
     `UPDATE orders
      SET status = 'paid',
          paypal_subscription_id = COALESCE(?, paypal_subscription_id),
          paypal_payer_id = COALESCE(?, paypal_payer_id),
          updated_at = NOW()
-     WHERE id = ? AND status = 'pending'`,
-    [paypalSubscriptionId, paypalPayerId, orderId]
+     WHERE id = ? AND status = ?`,
+    [paypalSubscriptionId, paypalPayerId, orderId, currentStatus]
   );
-  return result.affectedRows > 0;
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.PAID);
+    return true;
+  }
+  return false;
 }
 
 /**
  * Transition order to provisioning (idempotent: only if paid or already provisioning).
  */
 export async function transitionToProvisioning(orderId) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.PROVISIONING)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONING);
+    return false;
+  }
+
   const [result] = await pool.execute(
     `UPDATE orders
      SET status = 'provisioning',
          updated_at = NOW()
-     WHERE id = ? AND status IN ('paid', 'provisioning')`,
-    [orderId]
+     WHERE id = ? AND status = ?`,
+    [orderId, currentStatus]
   );
-  return result.affectedRows > 0;
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONING);
+    return true;
+  }
+  return false;
 }
 
 /**
  * Transition to provisioned and set ptero ids.
  */
 export async function transitionToProvisioned(orderId, pteroServerId, pteroIdentifier) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.PROVISIONED)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
+    return false;
+  }
+
+  // Do not overwrite an existing, non-null panel server binding with a different value.
+  if (order.ptero_server_id != null && order.ptero_server_id !== pteroServerId) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
+    return false;
+  }
+  if (order.ptero_identifier != null && order.ptero_identifier !== pteroIdentifier) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
+    return false;
+  }
+
   const [result] = await pool.execute(
     `UPDATE orders
      SET status = 'provisioned',
-         ptero_server_id = ?,
-         ptero_identifier = ?,
+         ptero_server_id = COALESCE(?, ptero_server_id),
+         ptero_identifier = COALESCE(?, ptero_identifier),
          error_message = NULL,
          last_provision_error = NULL,
          updated_at = NOW()
-     WHERE id = ?`,
-    [pteroServerId, pteroIdentifier, orderId]
+     WHERE id = ? AND status = ?`,
+    [pteroServerId, pteroIdentifier, orderId, currentStatus]
   );
-  return result.affectedRows > 0;
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
+    return true;
+  }
+  return false;
 }
 
 /**
  * Transition to failed (or error for backward compat).
  */
 export async function transitionToFailed(orderId, errorMessage = null) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.FAILED)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.FAILED);
+    return false;
+  }
+
   const [result] = await pool.execute(
     `UPDATE orders
      SET status = 'failed',
          error_message = COALESCE(?, error_message),
          last_provision_error = COALESCE(?, last_provision_error),
          updated_at = NOW()
-     WHERE id = ?`,
-    [errorMessage, errorMessage, orderId]
+     WHERE id = ? AND status = ?`,
+    [errorMessage, errorMessage, orderId, currentStatus]
   );
-  return result.affectedRows > 0;
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.FAILED);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Transition to canceled (e.g. subscription canceled at billing provider).
+ */
+export async function transitionToCanceled(orderId) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.CANCELED)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.CANCELED);
+    return false;
+  }
+
+  const [result] = await pool.execute(
+    `UPDATE orders
+     SET status = 'canceled',
+         updated_at = NOW()
+     WHERE id = ? AND status = ?`,
+    [orderId, currentStatus]
+  );
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.CANCELED);
+    return true;
+  }
+  return false;
 }
 
 /**

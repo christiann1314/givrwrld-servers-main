@@ -209,23 +209,92 @@ export async function getAllPlans() {
 }
 
 /**
- * Get node for region
+ * Get node for region.
+ * When requiredRamGb/requiredDiskGb are provided, only returns a node with enough headroom
+ * based on ptero_nodes max_* fields and ptero_node_capacity_ledger sums.
+ *
+ * When a connection is provided, all queries are executed on that connection (for transactions).
  */
-export async function getNodeForRegion(regionCode) {
+export async function getNodeForRegion(regionCode, requiredRamGb = null, requiredDiskGb = null, connection = null) {
+  const db = connection || pool;
   try {
-    const [rows] = await pool.execute(
-      `SELECT n.* 
+    const needsCapacityCheck =
+      requiredRamGb !== null &&
+      requiredRamGb !== undefined &&
+      requiredDiskGb !== null &&
+      requiredDiskGb !== undefined;
+
+    if (!needsCapacityCheck) {
+      const [rows] = await db.execute(
+        `SELECT n.* 
+         FROM ptero_nodes n
+         INNER JOIN region_node_map rnm ON n.ptero_node_id = rnm.ptero_node_id
+         WHERE rnm.region_code = ? AND n.enabled = 1
+         ORDER BY rnm.weight DESC, n.ptero_node_id ASC
+         LIMIT 1`,
+        [regionCode],
+      );
+      return rows[0] || null;
+    }
+
+    // Capacity-aware selection: lock candidate nodes and their ledger rows in a transaction context.
+    const [nodes] = await db.execute(
+      `SELECT n.*
        FROM ptero_nodes n
        INNER JOIN region_node_map rnm ON n.ptero_node_id = rnm.ptero_node_id
-       WHERE rnm.region_code = ?
+       WHERE rnm.region_code = ? AND n.enabled = 1
        ORDER BY rnm.weight DESC, n.ptero_node_id ASC
-       LIMIT 1`,
-      [regionCode]
+       FOR UPDATE`,
+      [regionCode],
     );
-    return rows[0] || null;
+
+    for (const node of nodes) {
+      const [caps] = await db.execute(
+        `SELECT 
+           COALESCE(SUM(ram_gb), 0)  AS reserved_ram_gb,
+           COALESCE(SUM(disk_gb), 0) AS reserved_disk_gb
+         FROM ptero_node_capacity_ledger
+         WHERE ptero_node_id = ?
+         FOR UPDATE`,
+        [node.ptero_node_id],
+      );
+      const reserved = caps?.[0] || {};
+      const reservedRam = Number(reserved.reserved_ram_gb || 0);
+      const reservedDisk = Number(reserved.reserved_disk_gb || 0);
+
+      const maxRam = Number(node.max_ram_gb || 0);
+      const headroom = Number(node.reserved_headroom || 0);
+      const maxDisk = Number(node.max_disk_gb || 0);
+
+      const remainingRam = maxRam - headroom - reservedRam;
+      const remainingDisk = maxDisk - reservedDisk;
+
+      if (remainingRam >= requiredRamGb && remainingDisk >= requiredDiskGb) {
+        return node;
+      }
+    }
+
+    return null;
   } catch (error) {
     console.error(`Error fetching node for region ${regionCode}:`, error);
     return null;
+  }
+}
+
+/**
+ * Release node capacity reservation for an order (if any).
+ * Used when orders are canceled or permanently failed.
+ */
+export async function releaseNodeCapacityForOrder(orderId) {
+  if (!orderId) return;
+  try {
+    await pool.execute(
+      `DELETE FROM ptero_node_capacity_ledger
+       WHERE order_id = ?`,
+      [orderId],
+    );
+  } catch (error) {
+    console.error(`Error releasing node capacity for order ${orderId}:`, error);
   }
 }
 

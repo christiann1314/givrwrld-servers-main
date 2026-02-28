@@ -1,8 +1,13 @@
 // MySQL Database Configuration
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
-dotenv.config();
+// Always load api/.env regardless of cwd so scripts and the API agree on DB config.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Create connection pool
 const pool = mysql.createPool({

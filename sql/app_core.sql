@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email),
   INDEX idx_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Roles & Permissions ============
 
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS roles (
   display_name VARCHAR(64) NOT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO roles(code, display_name) VALUES 
   ('admin','Administrator'),
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
   UNIQUE KEY uniq_user_role (user_id, role_id),
   INDEX idx_user (user_id),
   INDEX idx_role (role_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Plans & Catalog ============
 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS plans (
   INDEX idx_game (game),
   INDEX idx_active (is_active),
   INDEX idx_stripe_price (stripe_price_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Orders & Subscriptions ============
 
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS orders (
   INDEX idx_orders_status (status),
   INDEX idx_orders_created (created_at),
   INDEX idx_stripe_sub (stripe_sub_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Support Tickets ============
 
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_ticket_user (user_id),
   INDEX idx_ticket_status (status),
   INDEX idx_ticket_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ticket_messages (
   id           CHAR(36) PRIMARY KEY,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
   FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_ticket_messages_ticket (ticket_id),
   INDEX idx_ticket_messages_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Audit & Logging ============
 
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
   INDEX idx_audit_user_time (user_id, created_at),
   INDEX idx_audit_event (event),
   INDEX idx_audit_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Server Stats Cache ============
 
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS server_stats_cache (
   updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_stats_updated (updated_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Secrets & Configuration ============
 
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS secrets (
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_scope_key (scope, key_name),
   INDEX idx_scope (scope)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS config (
   id          BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS config (
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_cfg (scope, key_name),
   INDEX idx_scope (scope)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Pterodactyl Catalog ============
 
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS regions (
   display_name  VARCHAR(64) NOT NULL,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ptero_nodes (
   id                INT AUTO_INCREMENT PRIMARY KEY,
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS ptero_nodes (
   FOREIGN KEY (region_code) REFERENCES regions(code) ON DELETE RESTRICT,
   INDEX idx_region (region_code),
   INDEX idx_enabled (enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ptero_nests (
   id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS ptero_nests (
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_nest_id (ptero_nest_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ptero_eggs (
   id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS ptero_eggs (
   FOREIGN KEY (ptero_nest_id) REFERENCES ptero_nests(ptero_nest_id) ON DELETE RESTRICT,
   INDEX idx_nest (ptero_nest_id),
   UNIQUE KEY uniq_egg_id (ptero_egg_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS region_node_map (
   region_code   VARCHAR(32) NOT NULL,
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS region_node_map (
   PRIMARY KEY (region_code, ptero_node_id),
   FOREIGN KEY (region_code) REFERENCES regions(code) ON DELETE CASCADE,
   FOREIGN KEY (ptero_node_id) REFERENCES ptero_nodes(ptero_node_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Stripe Integration ============
 
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS stripe_customers (
   UNIQUE KEY uniq_cust (stripe_customer),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_stripe_customer (stripe_customer)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS stripe_subscriptions (
   id                BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS stripe_subscriptions (
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_status (status),
   INDEX idx_stripe_sub (stripe_sub_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS stripe_events_log (
   id           BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -285,7 +285,7 @@ CREATE TABLE IF NOT EXISTS stripe_events_log (
   INDEX idx_type (type),
   INDEX idx_processed (processed),
   INDEX idx_received (received_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ External Accounts (Pterodactyl User Linking) ============
 
@@ -299,7 +299,7 @@ CREATE TABLE IF NOT EXISTS external_accounts (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   UNIQUE KEY uniq_ptero_user (pterodactyl_user_id),
   INDEX idx_panel_username (panel_username)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ Affiliates (Optional) ============
 
@@ -313,7 +313,7 @@ CREATE TABLE IF NOT EXISTS affiliates (
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 

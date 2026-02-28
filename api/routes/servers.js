@@ -1,11 +1,12 @@
 // Servers Route
 import express from 'express';
 import crypto from 'node:crypto';
-import { 
-  getUserServers, 
+import {
+  getUserServers,
   getDecryptedSecret,
   getNodeForRegion,
-  getOrCreatePterodactylUser
+  getOrCreatePterodactylUser,
+  releaseNodeCapacityForOrder,
 } from '../utils/mysql.js';
 import {
   getOrder,
@@ -19,6 +20,7 @@ import {
 import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
+import { recordProvisionSuccess, recordProvisionFailure } from '../lib/metrics.js';
 
 const logger = getLogger();
 const router = express.Router();
@@ -467,6 +469,7 @@ router.get('/metrics/summary', authenticate, async (req, res) => {
  */
 export async function provisionServer(orderId) {
   try {
+    const startedAt = Date.now();
     if (!orderId) {
       throw new Error('order_id is required');
     }
@@ -490,6 +493,80 @@ export async function provisionServer(orderId) {
     await transitionToProvisioning(orderId);
     await startProvisionAttempt(orderId);
 
+    // Capacity reservation: choose a node with available headroom and reserve RAM/disk for this order.
+    const requiredRamGb = Number(order.ram_gb || 0);
+    const requiredDiskGb = Number(order.ssd_gb || 0);
+
+    if (!Number.isFinite(requiredRamGb) || !Number.isFinite(requiredDiskGb) || requiredRamGb <= 0 || requiredDiskGb <= 0) {
+      await recordProvisionError(orderId, 'Invalid plan capacity (ram_gb/ssd_gb)');
+      await transitionToFailed(orderId, 'Invalid plan capacity (ram_gb/ssd_gb)');
+      throw new Error('Invalid plan capacity (ram_gb/ssd_gb)');
+    }
+
+    const conn = await pool.getConnection();
+    let node;
+    try {
+      await conn.beginTransaction();
+
+      // If capacity was already reserved for this order, reuse that node and do not double-reserve.
+      const [existingCap] = await conn.execute(
+        `SELECT ptero_node_id, ram_gb, disk_gb
+         FROM ptero_node_capacity_ledger
+         WHERE order_id = ?
+         FOR UPDATE`,
+        [orderId],
+      );
+
+      if (existingCap.length > 0) {
+        const boundNodeId = existingCap[0].ptero_node_id;
+        const [rows] = await conn.execute(
+          `SELECT *
+           FROM ptero_nodes
+           WHERE ptero_node_id = ? AND enabled = 1
+           FOR UPDATE`,
+          [boundNodeId],
+        );
+        node = rows[0] || null;
+        if (!node) {
+          throw new Error(`Previously reserved node ${boundNodeId} is no longer available`);
+        }
+      } else {
+        node = await getNodeForRegion(order.region, requiredRamGb, requiredDiskGb, conn);
+        if (!node) {
+          throw new Error(`No node capacity available for region: ${order.region}`);
+        }
+
+        await conn.execute(
+          `INSERT INTO ptero_node_capacity_ledger (ptero_node_id, order_id, ram_gb, disk_gb)
+           VALUES (?, ?, ?, ?)`,
+          [node.ptero_node_id, orderId, requiredRamGb, requiredDiskGb],
+        );
+
+        // Remember which node this order is bound to.
+        await conn.execute(
+          `UPDATE orders
+           SET ptero_node_id = COALESCE(ptero_node_id, ?)
+           WHERE id = ?`,
+          [node.ptero_node_id, orderId],
+        );
+      }
+
+      await conn.commit();
+    } catch (err) {
+      try {
+        await conn.rollback();
+      } catch {
+        // ignore rollback error
+      }
+      await conn.release();
+
+      const message = err instanceof Error ? err.message : 'Node capacity reservation failed';
+      await recordProvisionError(orderId, message);
+      await transitionToFailed(orderId, message);
+      throw err;
+    }
+    await conn.release();
+
     // Get Pterodactyl API credentials.
     // Use encrypted secrets when AES_KEY is available; otherwise fall back to env vars.
     const aesKey = process.env.AES_KEY;
@@ -505,14 +582,6 @@ export async function provisionServer(orderId) {
       await recordProvisionError(orderId, 'Plan does not have ptero_egg_id configured');
       await transitionToFailed(orderId, 'Plan does not have ptero_egg_id configured');
       throw new Error('Plan does not have ptero_egg_id configured');
-    }
-
-    // Get node for region
-    const node = await getNodeForRegion(order.region);
-    if (!node) {
-      await recordProvisionError(orderId, `No node found for region: ${order.region}`);
-      await transitionToFailed(orderId, `No node found for region: ${order.region}`);
-      throw new Error(`No node found for region: ${order.region}`);
     }
 
     // Get user details
@@ -851,7 +920,17 @@ export async function provisionServer(orderId) {
 
       await transitionToProvisioned(orderId, pteroServerId, pteroIdentifier);
 
-      logger.info({ order_id: orderId, ptero_server_id: pteroServerId, ptero_identifier: pteroIdentifier }, 'Server provisioned');
+      const durationMs = Date.now() - startedAt;
+      recordProvisionSuccess(durationMs);
+      logger.info(
+        {
+          order_id: orderId,
+          ptero_server_id: pteroServerId,
+          ptero_identifier: pteroIdentifier,
+          provisioning_duration_ms: durationMs,
+        },
+        'Server provisioned',
+      );
 
       return {
         success: true,
@@ -864,11 +943,14 @@ export async function provisionServer(orderId) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await recordProvisionError(orderId, errorMessage);
       await transitionToFailed(orderId, errorMessage);
+      await releaseNodeCapacityForOrder(orderId);
       logger.error({ order_id: orderId, err: error, message: errorMessage }, 'Provisioning error');
       throw error;
     }
   } catch (error) {
-    logger.error({ order_id: orderId, err: error }, 'Provision error');
+    const durationMs = Date.now() - startedAt;
+    recordProvisionFailure(durationMs);
+    logger.error({ order_id: orderId, err: error, provisioning_duration_ms: durationMs }, 'Provision error');
     throw error;
   }
 }

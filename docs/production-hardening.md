@@ -44,14 +44,20 @@ All status changes go through `OrderService` (e.g. `transitionToPaid`, `transiti
 
 ## Retry / reconcile logic
 
-- A **reconcile job** runs every **2 minutes** (node-cron; no Redis in Phase 1).
-- It finds orders where:
-  - `status` IN (`paid`, `provisioning`, `error`, `failed`),
-  - `ptero_server_id` IS NULL,
-  - `item_type` = `game`,
-  - Order is “stuck”: either older than **10 minutes** since creation or last attempt, and **exponential backoff** has elapsed (`last_provision_attempt_at` + backoff window).
-- Backoff: `min(30, 5 * 2^min(attempt, 4))` minutes.
-- For each such order it calls `provisionServer(order_id)`. Provisioning is **idempotent**: if the order already has `ptero_server_id` or status `provisioned`, `provisionServer` returns success without creating a second server.
+- A **reconcile job** runs every **2 minutes** in the API process:
+  - Finds orders where:
+    - `status` IN (`paid`, `provisioning`, `error`, `failed`),
+    - `ptero_server_id` IS NULL,
+    - `item_type` = `game`,
+    - Order is “stuck”: either older than **10 minutes** since creation or last attempt, and **exponential backoff** has elapsed (`last_provision_attempt_at` + backoff window).
+  - Backoff: `min(30, 5 * 2^min(attempt, 4))` minutes.
+  - For each such order it enqueues a job onto the **BullMQ provisioning queue**; the dedicated worker calls `provisionServer(order_id)` so there is a single provisioning pathway.
+- Agents add heavier reconciliation:
+  - **ProvisioningAuditor** (every 15 minutes): wraps the same reconcile pass and logs “orders_attempted”.
+  - **ReconcileSubscriptions** (every 15 minutes): asks PayPal for the current subscription status, ensures `paypal_subscriptions` rows are ACTIVE for active subs, re‑transitions orders to `paid` if needed, and enqueues provisioning jobs when `canProvision(order)` and backoff allow.
+  - **ReconcileOrders** (every 15 minutes): marks obviously inconsistent orders (e.g. `status='provisioned'` but no `ptero_server_id`) as `failed` with a clear error message so they can be inspected.
+
+All of these jobs are **idempotent**: they obey the FSM in `OrderService`, only enqueue provisioning when allowed, and use guarded updates so repeat runs do not double‑provision or double‑cancel.
 
 **finalize-order** is retry-safe: calling it multiple times never duplicates provisioning, because `canProvision(order)` is false once the order is provisioned or has `ptero_server_id`.
 
@@ -96,10 +102,38 @@ curl -s http://localhost:3001/ops/summary
 # Expect: {"ordersByStatus":{...},"lastWebhookReceivedAt":...|null,"stuckOrdersCount":N,"timestamp":"..."}
 ```
 
-**3. DB after migration**
+**3. Metrics**
+```bash
+curl -s http://localhost:3001/ops/metrics
+# Expect: {
+#   "orders_created_count": N,
+#   "provision_success_count": N,
+#   "provision_fail_count": N,
+#   "provision_attempt_count": N,
+#   "provisioning_duration_ms_avg": N,
+#   "provisioning_duration_samples": N,
+#   "process_uptime_seconds": N,
+#   "timestamp": "..."
+# }
+```
+
+When debugging a single order, search logs by:
+- `order_id` (present in order transitions, provisioning logs, queue worker logs)
+- `paypal_event_id` (for webhook traces)
+- `paypal_subscription_id` (for billing lifecycle)
+- `job_id` (BullMQ provisioning jobs)
+- `ptero_server_id` / `ptero_identifier` (panel resources)
+
+Suggested alerts:
+- API down / `/ready` failing.
+- `provision_fail_count` increasing faster than `provision_success_count`.
+- `stuckOrdersCount` in `/ops/summary` above a small threshold for sustained periods.
+- `provisioning_duration_ms_avg` rising significantly from baseline.
+
+**4. DB after migration**
 - `paypal_webhook_events`: columns `event_id` (PK), `received_at`, `raw_type`, `order_id`.
 - `orders`: columns `provision_attempt_count`, `last_provision_attempt_at`, `last_provision_error`; status enum includes `failed`; unique index `uniq_ptero_server_id` on `ptero_server_id`.
 
-**4. Idempotency**
+**5. Idempotency**
 - Send same PayPal webhook event twice (same `event_id`): second response 200, no new row in `paypal_webhook_events` (insert fails duplicate), no duplicate order update.
 - Call `POST /api/paypal/finalize-order` twice with same `order_id` (auth header): second response success with `status: 'provisioned'` and no second server created (check `orders.ptero_server_id` and Panel server list).

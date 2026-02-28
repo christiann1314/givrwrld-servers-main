@@ -9,6 +9,8 @@ import { createServiceLogger } from '../lib/sharedLogger.js';
 import { run as runOpsWatchdog } from './OpsWatchdog.js';
 import { run as runProvisioningAuditor } from './ProvisioningAuditor.js';
 import { run as runDailyKPIDigest } from './DailyKPIDigest.js';
+import { runReconcileSubscriptionsPass } from '../jobs/reconcile-subscriptions.js';
+import { runReconcileOrdersPass } from '../jobs/reconcile-orders.js';
 
 const log = createServiceLogger('agents');
 
@@ -45,6 +47,30 @@ function start(): void {
   setInterval(wrap('ProvisioningAuditor', runProvisioningAuditor), 5 * 60 * 1000);
   void wrap('ProvisioningAuditor', runProvisioningAuditor)();
 
+  // Subscription reconciliation: every 15 minutes
+  setInterval(async () => {
+    const id = runId();
+    const runLog = createServiceLogger('agents', { run_id: id });
+    try {
+      const processed = await runReconcileSubscriptionsPass(runLog);
+      runLog.info('ReconcileSubscriptions_done', { processed });
+    } catch (e: unknown) {
+      runLog.error('ReconcileSubscriptions_error', { error: e instanceof Error ? e.message : String(e) });
+    }
+  }, 15 * 60 * 1000);
+
+  // Order reconciliation: every 15 minutes
+  setInterval(async () => {
+    const id = runId();
+    const runLog = createServiceLogger('agents', { run_id: id });
+    try {
+      const processed = await runReconcileOrdersPass(runLog);
+      runLog.info('ReconcileOrders_done', { processed });
+    } catch (e: unknown) {
+      runLog.error('ReconcileOrders_error', { error: e instanceof Error ? e.message : String(e) });
+    }
+  }, 15 * 60 * 1000);
+
   // DailyKPIDigest: 9:00 AM local every day (cron 0 9 * * *)
   function schedule9AM(): void {
     const now = new Date();
@@ -59,7 +85,14 @@ function start(): void {
   }
   schedule9AM();
 
-  log.info('agents_scheduled', { event: 'scheduled', OpsWatchdog: '60s', ProvisioningAuditor: '5m', DailyKPIDigest: '9:00 AM daily' });
+  log.info('agents_scheduled', {
+    event: 'scheduled',
+    OpsWatchdog: '60s',
+    ProvisioningAuditor: '5m',
+    DailyKPIDigest: '9:00 AM daily',
+    ReconcileSubscriptions: '15m',
+    ReconcileOrders: '15m',
+  });
 }
 
 start();

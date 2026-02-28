@@ -27,6 +27,7 @@
     "plans:minecraft:variants": "node scripts/seed-minecraft-variant-plans.js",
     "plans:games:variants:dry-run": "node scripts/seed-game-variant-plans.js --dry-run",
     "plans:games:variants": "node scripts/seed-game-variant-plans.js",
+    "paypal:prewarm": "node scripts/paypal-prewarm.mjs",
     "agents:build": "tsc -p .",
     "agents:dev": "tsx watch agents/index.ts",
     "agents:start": "node dist/agents/index.js",
@@ -34,6 +35,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "bullmq": "^5.70.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "envalid": "^8.0.0",

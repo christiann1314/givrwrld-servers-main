@@ -1,6 +1,7 @@
-// PM2 ecosystem: API + Agents (for local or VPS)
+// PM2 ecosystem: API + Agents + Marketing Agent (for local or VPS)
 // Run from repo root: pm2 start ecosystem.config.cjs
 // On VPS: run agents here too so OpsWatchdog, ProvisioningAuditor, GrowthAdsGenerator run 24/7.
+// Marketing agent runs hourly; weekly schedule inserts educational + authority scheduled_content events (growth-driven).
 
 module.exports = {
   apps: [
@@ -32,6 +33,49 @@ module.exports = {
       merge_logs: true,
       autorestart: true,
       max_memory_restart: '500M',
+      watch: false,
+    },
+    {
+      name: 'givrwrld-provisioner',
+      cwd: './api',
+      script: 'workers/provisionerWorker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      error_file: './logs/provisioner-err.log',
+      out_file: './logs/provisioner-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      max_memory_restart: '500M',
+      watch: false,
+    },
+    {
+      name: 'givrwrld-marketing-agent',
+      cwd: process.cwd(),
+      script: 'services/marketing-agent/src/index.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: false,
+      cron_restart: '0 * * * *',
+      error_file: './api/logs/marketing-agent-err.log',
+      out_file: './api/logs/marketing-agent-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      watch: false,
+    },
+    {
+      name: 'givrwrld-marketing-schedule',
+      cwd: process.cwd(),
+      script: 'services/marketing-agent/src/scheduleWeekly.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: false,
+      cron_restart: '0 0 * * 1',
+      error_file: './api/logs/marketing-schedule-err.log',
+      out_file: './api/logs/marketing-schedule-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
       watch: false,
     },
   ],
