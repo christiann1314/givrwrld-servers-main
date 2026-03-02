@@ -112,4 +112,26 @@ router.get('/metrics', async (req, res) => {
   }
 });
 
+/** GET /api/admin/affiliates/report - referrals by partner, revenue by partner. Admin-only; not public. */
+router.get('/affiliates/report', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT a.user_id AS affiliate_user_id, a.code, u.email AS affiliate_email,
+              COUNT(oaa.order_id) AS referral_count,
+              COALESCE(SUM(p.price_monthly), 0) AS revenue_estimate_monthly
+       FROM affiliates a
+       LEFT JOIN order_affiliate_attribution oaa ON oaa.affiliate_user_id = a.user_id
+       LEFT JOIN orders o ON o.id = oaa.order_id AND o.status IN ('paid', 'provisioning', 'provisioned')
+       LEFT JOIN plans p ON p.id = o.plan_id
+       LEFT JOIN users u ON u.id = a.user_id
+       GROUP BY a.user_id, a.code, u.email
+       ORDER BY referral_count DESC, revenue_estimate_monthly DESC`
+    );
+    res.json({ success: true, report: rows });
+  } catch (err) {
+    console.error('Admin affiliates report error:', err);
+    res.status(500).json({ error: 'Failed to load affiliate report' });
+  }
+});
+
 export default router;

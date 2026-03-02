@@ -37,17 +37,20 @@ const Affiliate = () => {
                 Make Money With GIVRwrld
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-              Earn recurring commissions by referring creators and communities to GIVRwrld Servers. 
+            <p className="text-lg md:text-xl text-gray-100 max-w-3xl mx-auto mb-4">
+              Earn recurring commissions by referring creators and communities to GIVRwrld Servers.
               Our three‑tier structure, welcome bonus, and clear payout rules are designed to reward long‑term partners.
             </p>
+            <p className="text-amber-400/90 text-base max-w-2xl mx-auto mb-8">
+              Partner program coming soon — join the waitlist or email support@givrwrld.com for early access.
+            </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 text-base md:text-lg">
-                Join the Affiliate Program
-              </button>
-              <button className="bg-amber-500 hover:bg-amber-400 text-gray-900 font-semibold py-3 px-8 rounded-lg transition-all duration-300 text-base md:text-lg">
-                Apply for Special Partner
-              </button>
+              <a
+                href="mailto:support@givrwrld.com?subject=Affiliate%20waitlist"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 text-base md:text-lg inline-block text-center"
+              >
+                Join the waitlist
+              </a>
             </div>
           </div>
 
@@ -61,24 +64,24 @@ const Affiliate = () => {
             <div className="grid md:grid-cols-3 gap-6 mb-4">
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-2">${AFFILIATE.welcomeBonusUsd} welcome bonus</h3>
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-100 text-base">
                   Start with a one‑time ${AFFILIATE.welcomeBonusUsd} bonus credit when your first referred customer activates a paid server.
                 </p>
               </div>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-2">Valuable rewards</h3>
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-100 text-base">
                   Earn recurring commissions for the first {affiliateCommissionMonthsCap()} months of each qualifying subscription, plus opportunities for store credit.
                 </p>
               </div>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-2">Exclusive roles & perks</h3>
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-100 text-base">
                   Unlock priority affiliate support and Discord roles as you grow, with access to upcoming promos and beta features.
                 </p>
               </div>
             </div>
-            <p className="text-center text-gray-400 text-sm">
+            <p className="text-center text-gray-200 text-base">
               Cookie duration: {affiliateCookieDays()} days · Minimum payout: {affiliateMinPayout()} · Payouts: {AFFILIATE.paymentSchedule}
             </p>
           </div>
@@ -100,14 +103,14 @@ const Affiliate = () => {
                       : 'border-gray-600/30'
                   }`}
                 >
-                  <div className="text-sm uppercase tracking-wide text-gray-400 mb-2">
+                  <div className="text-sm uppercase tracking-wide text-gray-200 mb-2 text-base">
                     {tier.minReferrals}+ referrals
                   </div>
                   <div className="text-3xl font-bold text-emerald-400 mb-2">
                     {affiliatePercentFromRate(tier.commissionRate)}
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-3">{tier.name}</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">{tier.description}</p>
+                  <p className="text-gray-100 text-base leading-relaxed">{tier.description}</p>
                 </div>
               ))}
             </div>
@@ -124,28 +127,28 @@ const Affiliate = () => {
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 text-center hover:border-emerald-500/50 transition-all duration-300">
                 <DollarSign className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-3">Recurring revenue</h3>
-                <p className="text-gray-300">
+                <p className="text-gray-100 text-base">
                   Earn commission on recurring subscription payments for the first {affiliateCommissionMonthsCap()} months.
                 </p>
               </div>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 text-center hover:border-emerald-500/50 transition-all duration-300">
                 <Users className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-3">Creator‑friendly</h3>
-                <p className="text-gray-300">
+                <p className="text-gray-100 text-base">
                   Perfect for streamers, community owners, and content creators who want a simple, reliable host to recommend.
                 </p>
               </div>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 text-center hover:border-emerald-500/50 transition-all duration-300">
                 <TrendingUp className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-3">Performance rewards</h3>
-                <p className="text-gray-300">
+                <p className="text-gray-100 text-base">
                   Hit {affiliateCookieDays()}‑day milestones and unlock higher tiers and potential custom deals.
                 </p>
               </div>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 text-center hover:border-emerald-500/50 transition-all duration-300">
                 <Gift className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-3">Clear payouts</h3>
-                <p className="text-gray-300">
+                <p className="text-gray-100 text-base">
                   Minimum payout {affiliateMinPayout()}, paid {AFFILIATE.paymentSchedule.toLowerCase()}. No hidden caps per sale.
                 </p>
               </div>
@@ -165,21 +168,21 @@ const Affiliate = () => {
                   <span className="text-2xl font-bold text-emerald-400">1</span>
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">Sign Up</h3>
-                <p className="text-gray-300">Join our affiliate program and get your unique referral link</p>
+                <p className="text-gray-100 text-base">Join our affiliate program and get your unique referral link</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-blue-400">2</span>
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">Promote</h3>
-                <p className="text-gray-300">Share your link with your audience and network</p>
+                <p className="text-gray-100 text-base">Share your link with your audience and network</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-purple-400">3</span>
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-3">Earn</h3>
-                <p className="text-gray-300">Receive {affiliateCommissionPercent()} commission on every qualifying referral payment (first {affiliateCommissionMonthsCap()} months)</p>
+                <p className="text-gray-100 text-base">Receive {affiliateCommissionPercent()} commission on every qualifying referral payment (first {affiliateCommissionMonthsCap()} months)</p>
               </div>
             </div>
           </div>

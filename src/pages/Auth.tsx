@@ -163,7 +163,7 @@ const Auth = () => {
       </div>
 
       {/* Back Button */}
-      <Link to="/" className="absolute top-6 left-6 z-20 flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+      <Link to="/" className="absolute top-6 left-6 z-20 flex items-center space-x-2 text-gray-100 hover:text-white transition-colors">
         <ArrowLeft size={20} />
         <span>Back to Home</span>
       </Link>
@@ -178,7 +178,7 @@ const Auth = () => {
             <h1 className="text-3xl font-bold mb-2">
               {isLogin ? 'Welcome Back' : 'Join the Movement'}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-200">
               {isLogin ? 'Sign in to your gaming account' : 'Create your gaming account today'}
             </p>
             
@@ -213,7 +213,7 @@ const Auth = () => {
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                 isLogin 
                   ? 'bg-emerald-500 text-white shadow-md' 
-                  : 'text-gray-300 hover:text-white'
+                  : 'text-gray-100 hover:text-white'
               }`}
             >
               Sign In
@@ -224,7 +224,7 @@ const Auth = () => {
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                 !isLogin 
                   ? 'bg-emerald-500 text-white shadow-md' 
-                  : 'text-gray-300 hover:text-white'
+                  : 'text-gray-100 hover:text-white'
               }`}
             >
               Sign Up
@@ -233,11 +233,11 @@ const Auth = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-100 mb-2 text-base">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-200" size={20} />
                 <input
                   type="email"
                   id="email"
@@ -255,7 +255,7 @@ const Auth = () => {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-100 mb-2 text-base">
                       First Name
                     </label>
                     <input
@@ -269,7 +269,7 @@ const Auth = () => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-100 mb-2 text-base">
                       Last Name
                     </label>
                     <input
@@ -287,11 +287,11 @@ const Auth = () => {
             )}
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-100 mb-2 text-base">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-200" size={20} />
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
@@ -304,7 +304,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-200 hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -321,11 +321,11 @@ const Auth = () => {
 
             {!isLogin && (
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-100 mb-2 text-base">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-200" size={20} />
                   <input
                     type={showPassword ? "text" : "password"}
                     id="confirmPassword"

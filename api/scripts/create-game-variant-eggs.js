@@ -107,6 +107,14 @@ const variantCatalog = [
       { slug: 'rp-realm', eggName: 'Veloren RP Realm', description: 'Veloren runtime profile for roleplay-focused communities.' },
     ],
   },
+  {
+    game: 'enshrouded',
+    sourceEggName: 'Enshrouded',
+    variants: [
+      { slug: 'vanilla', eggName: 'Enshrouded Vanilla', description: 'Official Enshrouded dedicated server. Up to 16 players.' },
+      { slug: 'modded', eggName: 'Enshrouded Modded', description: 'Enshrouded server with mod support.' },
+    ],
+  },
 ];
 
 function shellOrThrow(command, args, label) {

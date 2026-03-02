@@ -89,7 +89,7 @@ const Success = () => {
         </div>
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
           <Loader2 className="h-12 w-12 animate-spin text-emerald-400 mb-4" />
-          <p className="text-gray-300 text-lg">Loading your order...</p>
+          <p className="text-gray-100 text-lg">Loading your order...</p>
         </div>
       </div>
     );
@@ -111,7 +111,7 @@ const Success = () => {
               <AlertCircle className="h-8 w-8 flex-shrink-0" />
               <h1 className="text-xl font-bold text-white">Something went wrong</h1>
             </div>
-            <p className="text-gray-300 mb-6">{error}</p>
+            <p className="text-gray-100 mb-6">{error}</p>
             <Button
               onClick={() => navigate('/dashboard')}
               className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
@@ -152,25 +152,25 @@ const Success = () => {
                 Payment successful
               </span>
             </h1>
-            <p className="text-gray-300">
+            <p className="text-gray-100">
               {order
-                ? 'Your server is being provisioned and will be ready shortly.'
+                ? 'Your server will be ready in a few minutes. Check your dashboard for status.'
                 : orderId
-                  ? 'Your order is being processed.'
+                  ? 'Your order is being processed. Check your dashboard for status.'
                   : 'View order details below or manage servers from your dashboard.'}
             </p>
           </div>
 
           {!order && !orderId && (
             <div className="glass-panel-strong rounded-xl p-6 border border-gray-600/50">
-              <p className="text-gray-300">You don’t have any orders yet. Deploy a server from your dashboard to get started.</p>
+              <p className="text-gray-100">You don’t have any orders yet. Deploy a server from your dashboard to get started.</p>
             </div>
           )}
 
           {orderId && !order && (
             <div className="glass-panel-strong rounded-xl p-6 border border-gray-600/50">
-              <p className="text-gray-300 mb-2">Your order is being processed. You can check status in your dashboard shortly.</p>
-              <p className="text-sm text-gray-400 font-mono">Order ID: {orderId}</p>
+              <p className="text-gray-100 mb-2">Your order is being processed. You can check status in your dashboard shortly.</p>
+              <p className="text-base text-gray-200 font-mono">Order ID: {orderId}</p>
             </div>
           )}
 
@@ -185,37 +185,37 @@ const Success = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {order.plan_name && (
                     <div>
-                      <span className="text-gray-400">Plan</span>
+                      <span className="text-gray-200">Plan</span>
                       <p className="text-white font-medium">{order.plan_name}</p>
                     </div>
                   )}
                   {order.game && (
                     <div>
-                      <span className="text-gray-400">Game</span>
+                      <span className="text-gray-200">Game</span>
                       <p className="text-white font-medium capitalize">{order.game.replace(/-/g, ' ')}</p>
                     </div>
                   )}
                   {ram && (
                     <div>
-                      <span className="text-gray-400">RAM</span>
+                      <span className="text-gray-200">RAM</span>
                       <p className="text-white font-medium">{ram}</p>
                     </div>
                   )}
                   {cpu && (
                     <div>
-                      <span className="text-gray-400">CPU</span>
+                      <span className="text-gray-200">CPU</span>
                       <p className="text-white font-medium">{cpu}</p>
                     </div>
                   )}
                   {disk && (
                     <div>
-                      <span className="text-gray-400">Storage</span>
+                      <span className="text-gray-200">Storage</span>
                       <p className="text-white font-medium">{disk}</p>
                     </div>
                   )}
                   {order.region && (
                     <div>
-                      <span className="text-gray-400">Region</span>
+                      <span className="text-gray-200">Region</span>
                       <p className="text-white font-medium">
                         {order.region === 'us-central' || order.region === 'us-east' ? 'US East' : order.region}
                       </p>
@@ -223,7 +223,7 @@ const Success = () => {
                   )}
                   {order.server_name && (
                     <div className="col-span-2">
-                      <span className="text-gray-400">Server name</span>
+                      <span className="text-gray-200">Server name</span>
                       <p className="text-white font-medium">{order.server_name}</p>
                     </div>
                   )}
@@ -238,15 +238,15 @@ const Success = () => {
                 </h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Order ID</span>
+                    <span className="text-gray-200">Order ID</span>
                     <span className="text-white font-mono">{order.id}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Status</span>
+                    <span className="text-gray-200">Status</span>
                     <span className="text-emerald-400 font-medium capitalize">{order.status}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Date</span>
+                    <span className="text-gray-200">Date</span>
                     <span className="text-white">
                       {new Date(order.created_at).toLocaleString(undefined, {
                         dateStyle: 'medium',
@@ -256,7 +256,7 @@ const Success = () => {
                   </div>
                   {Number(amount) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Amount</span>
+                      <span className="text-gray-200">Amount</span>
                       <span className="text-white font-semibold">${Number(amount).toFixed(2)}</span>
                     </div>
                   )}
@@ -268,7 +268,7 @@ const Success = () => {
           {/* What's next */}
           <div className="glass-panel-strong rounded-xl p-6 border border-emerald-500/20 bg-emerald-500/5">
             <h3 className="text-emerald-300 font-semibold mb-2">What&apos;s next?</h3>
-            <ul className="text-sm text-gray-300 space-y-1">
+            <ul className="text-base text-gray-100 space-y-1">
               <li>• Your server is being automatically provisioned</li>
               <li>• You can track it from your dashboard</li>
               <li>• Open the Game Panel to manage your server once it&apos;s ready</li>

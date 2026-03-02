@@ -160,7 +160,7 @@ const Support = () => {
             </span>
           </h1>
           
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-gray-100 max-w-3xl mx-auto mb-8">
             Start here for help with provisioning, billing, or account questions. Browse quick answers below or reach our 24/7 team any time.
           </p>
         </section>
@@ -184,12 +184,12 @@ const Support = () => {
                     {openFaq === faq.id ? (
                       <ChevronDown className="text-emerald-400" size={20} />
                     ) : (
-                      <ChevronRight className="text-gray-400" size={20} />
+                      <ChevronRight className="text-gray-200" size={20} />
                     )}
                   </button>
                   {openFaq === faq.id && (
                     <div className="p-4 bg-gray-700/20 border-t border-gray-600/30">
-                      <p className="text-gray-300">{faq.answer}</p>
+                      <p className="text-gray-100 text-base leading-relaxed">{faq.answer}</p>
                     </div>
                   )}
                 </div>
@@ -207,13 +207,13 @@ const Support = () => {
                 <MessageCircle className="text-emerald-400 mr-3" size={28} />
                 <h3 className="text-2xl font-bold text-white">Contact Support</h3>
               </div>
-              <p className="text-gray-300 mb-6">
+              <p className="text-gray-100 text-base mb-6">
                 Our support team is available 24/7 to assist you with technical issues, billing questions, and account changes.
               </p>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2">Name</label>
+                  <label className="block text-gray-100 mb-2 text-base">Name</label>
                   <input
                     type="text"
                     name="name"
@@ -226,7 +226,7 @@ const Support = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-300 mb-2">Email</label>
+                  <label className="block text-gray-100 mb-2 text-base">Email</label>
                   <input
                     type="email"
                     name="email"
@@ -239,7 +239,7 @@ const Support = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-300 mb-2">Subject</label>
+                  <label className="block text-gray-100 mb-2 text-base">Subject</label>
                   <input
                     type="text"
                     name="subject"
@@ -252,7 +252,7 @@ const Support = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-300 mb-2">Message</label>
+                  <label className="block text-gray-100 mb-2 text-base">Message</label>
                   <textarea
                     name="message"
                     value={formData.message}
@@ -302,7 +302,7 @@ const Support = () => {
                   <Clock className="text-emerald-400 mr-3" size={28} />
                   <h3 className="text-2xl font-bold text-white">Response Times</h3>
                 </div>
-                <p className="text-gray-300 mb-6">
+                <p className="text-gray-100 text-base mb-6">
                   We pride ourselves on fast, effective support. Here are our current response times:
                 </p>
                 
@@ -311,7 +311,7 @@ const Support = () => {
                     <div key={index} className="flex justify-between items-center p-4 bg-gray-700/30 rounded-lg">
                       <div>
                         <div className="text-white font-medium">{item.type}</div>
-                        <div className="text-sm text-gray-400">{item.status}</div>
+                        <div className="text-base text-gray-200">{item.status}</div>
                       </div>
                       <div className="text-emerald-400 font-bold">{item.time}</div>
                     </div>
@@ -325,7 +325,7 @@ const Support = () => {
                   <Shield className="text-emerald-400 mr-3" size={28} />
                   <h3 className="text-2xl font-bold text-white">Security Information</h3>
                 </div>
-                <p className="text-gray-300 mb-6">
+                <p className="text-gray-100 text-base mb-6">
                   We take security seriously. Here's how we protect your servers:
                 </p>
                 
@@ -333,7 +333,7 @@ const Support = () => {
                   {securityInfo.map((item, index) => (
                     <div key={index} className="p-4 bg-gray-700/30 rounded-lg">
                       <div className="text-white font-medium mb-2">{item.title}</div>
-                      <div className="text-sm text-gray-400">{item.description}</div>
+                      <div className="text-base text-gray-200">{item.description}</div>
                     </div>
                   ))}
                 </div>

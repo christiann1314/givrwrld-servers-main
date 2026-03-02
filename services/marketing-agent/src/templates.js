@@ -25,9 +25,24 @@ export function createDraftsForEvent(event) {
       return createCampaignAdDrafts(payload);
     case 'scheduled_content':
       return createScheduledContentDrafts(payload);
+    case 'discord_announcement':
+      return createDiscordAnnouncementDrafts(payload);
     default:
       return [];
   }
+}
+
+function createDiscordAnnouncementDrafts(payload) {
+  const title = payload.title || 'Announcement';
+  const contentLines = Array.isArray(payload.contentLines) ? payload.contentLines : [];
+  return [
+    {
+      channel: 'discord',
+      type: 'announcement',
+      title,
+      contentLines,
+    },
+  ];
 }
 
 function createNodeOnlineDrafts(payload) {

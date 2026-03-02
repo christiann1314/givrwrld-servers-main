@@ -1,0 +1,34 @@
+{
+  "_comment": "Pelican egg - https://github.com/pelican-eggs/eggs/tree/master/game_eggs/steamcmd_servers/enshrouded",
+  "meta": { "version": "PTDL_v2", "update_url": null },
+  "name": "Enshrouded",
+  "author": "vapokrocks@gmail.com",
+  "description": "Enshrouded dedicated server. Survival, crafting, and Action RPG for up to 16 players.",
+  "features": ["steam_disk_space"],
+  "docker_images": {
+    "ghcr.io/parkervcp/steamcmd:proton": "ghcr.io/parkervcp/steamcmd:proton"
+  },
+  "file_denylist": [],
+  "startup": "rm ./logs/enshrouded_server.log; proton run ./enshrouded_server.exe & ENS_PID=$! ; tail -c0 -F ./logs/enshrouded_server.log --pid=$ENS_PID",
+  "config": {
+    "files": "{\n \"enshrouded_server.json\": {\n \"parser\": \"json\",\n \"find\": {\n \"name\": \"{{server.build.env.SRV_NAME}}\",\n \"password\": \"{{server.build.env.SRV_PW}}\",\n \"slotCount\": \"{{server.build.env.MAX_PLAYERS}}\",\n \"gamePort\": \"{{server.build.default.port}}\",\n \"queryPort\": \"{{server.build.env.QUERY_PORT}}\"\n }\n }\n}",
+    "startup": "{\n \"done\": \"[Session] 'HostOnline' (up)!\"\n}",
+    "logs": "{}",
+    "stop": "^C"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\n# Enshrouded - SteamCMD + Proton\nset -e\ncd /tmp\nmkdir -p /mnt/server/steamcmd\ncurl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz\ntar -xzf steamcmd.tar.gz -C /mnt/server/steamcmd\nmkdir -p /mnt/server/steamapps\ncd /mnt/server/steamcmd\nexport HOME=/mnt/server\n[[ -z \"$STEAM_USER\" ]] && STEAM_USER=anonymous\n[[ -z \"$STEAM_PASS\" ]] && STEAM_PASS=\"\"\n./steamcmd.sh +force_install_dir /mnt/server +login $STEAM_USER $STEAM_PASS +@sSteamCmdForcePlatformType windows +app_update ${SRCDS_APPID:-2278520} validate +quit\nmkdir -p /mnt/server/.steam/sdk32 /mnt/server/.steam/sdk64\ncp -v linux32/steamclient.so ../.steam/sdk32/ 2>/dev/null || true\ncp -v linux64/steamclient.so ../.steam/sdk64/ 2>/dev/null || true\ncd /mnt/server\nif [[ ! -f enshrouded_server.json ]]; then\n  echo '{\"name\":\"Enshrouded Server\",\"password\":\"\",\"saveDirectory\":\"./savegame\",\"logDirectory\":\"./logs\",\"ip\":\"0.0.0.0\",\"gamePort\":15636,\"queryPort\":15637,\"slotCount\":16}' > enshrouded_server.json\nfi\necho Installation completed.",
+      "container": "ghcr.io/parkervcp/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    { "name": "[SERVER] Steam Query Port", "description": "Steam Query Port", "env_variable": "QUERY_PORT", "default_value": "15637", "user_viewable": true, "user_editable": true, "rules": "required|numeric", "field_type": "text" },
+    { "name": "WINDOWS_INSTALL", "description": "", "env_variable": "WINDOWS_INSTALL", "default_value": "1", "user_viewable": false, "user_editable": false, "rules": "required|boolean", "field_type": "text" },
+    { "name": "[STEAM] Steam App ID", "description": "Steam App ID", "env_variable": "SRCDS_APPID", "default_value": "2278520", "user_viewable": false, "user_editable": false, "rules": "required|string", "field_type": "text" },
+    { "name": "[SERVER] Server Name", "description": "Name of the server", "env_variable": "SRV_NAME", "default_value": "My Server", "user_viewable": true, "user_editable": true, "rules": "required|string", "field_type": "text" },
+    { "name": "[SERVER] Server Password", "description": "Server password", "env_variable": "SRV_PW", "default_value": "", "user_viewable": true, "user_editable": true, "rules": "nullable|string", "field_type": "text" },
+    { "name": "[SERVER] Max Players", "description": "Maximum number of players (1-16)", "env_variable": "MAX_PLAYERS", "default_value": "16", "user_viewable": true, "user_editable": true, "rules": "required|numeric", "field_type": "text" }
+  ]
+}

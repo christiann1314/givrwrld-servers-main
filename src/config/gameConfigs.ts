@@ -161,6 +161,26 @@ export const gameConfigs: Record<string, GameConfig> = {
       cpu: 400,
     },
   },
+  enshrouded: {
+    eggId: 57, // From ptero_eggs after sync. Provisioning uses plan.ptero_egg_id from DB.
+    dockerImage: 'ghcr.io/parkervcp/steamcmd:proton',
+    startup: 'rm ./logs/enshrouded_server.log; proton run ./enshrouded_server.exe & ENS_PID=$! ; tail -c0 -F ./logs/enshrouded_server.log --pid=$ENS_PID',
+    environment: {
+      SRCDS_APPID: '2278520',
+      SRV_NAME: 'GIVRwrld Enshrouded Server',
+      SRV_PW: '',
+      MAX_PLAYERS: '16',
+      QUERY_PORT: '15637',
+      WINDOWS_INSTALL: '1',
+    },
+    limits: {
+      memory: 6144,
+      swap: 0,
+      disk: 30720,
+      io: 500,
+      cpu: 300,
+    },
+  },
 };
 
 export function getGameConfig(game: string, plan: { ram_gb: number; vcores: number; ssd_gb: number }): GameConfig {

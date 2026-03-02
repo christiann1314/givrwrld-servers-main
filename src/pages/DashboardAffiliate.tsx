@@ -62,6 +62,13 @@ const DashboardAffiliate = () => {
             </Link>
           </div>
 
+          {/* Coming soon notice */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-8">
+            <p className="text-amber-200 text-sm">
+              Partner program coming soon. This dashboard will show your referral link and earnings when the program launches. Email support@givrwrld.com for early access.
+            </p>
+          </div>
+
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -70,7 +77,7 @@ const DashboardAffiliate = () => {
                   Affiliate Program
                 </span>
               </h1>
-              <p className="text-gray-300">Track your referrals and earnings</p>
+              <p className="text-gray-300">Track your referrals and earnings (when launched)</p>
             </div>
             <div className="flex items-center space-x-2">
               <select

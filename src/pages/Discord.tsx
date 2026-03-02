@@ -46,7 +46,7 @@ const Discord = () => {
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <Link to="/" className="inline-flex text-emerald-400 hover:text-emerald-300 text-sm font-medium mb-8">
+        <Link to="/" className="inline-flex text-emerald-400 hover:text-emerald-300 text-base font-medium mb-8">
           ← Back to Home
         </Link>
 
@@ -58,8 +58,11 @@ const Discord = () => {
             </span>{' '}
             <span className="text-white">on Discord</span>
           </h1>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
+          <p className="text-lg text-gray-100 max-w-2xl mx-auto mb-4">
             Support, announcements, status updates, and community—all in one place. Join to get help, stay updated, and connect with other server owners.
+          </p>
+          <p className="text-base text-gray-200 max-w-2xl mx-auto mb-8">
+            Common questions (what plan do I need? how do I migrate? where’s my server?) are in our <Link to="/faq" className="text-emerald-400 hover:text-emerald-300">FAQ</Link> and in the pinned message in the support channel.
           </p>
 
           {DISCORD_INVITE_URL ? (
@@ -74,7 +77,7 @@ const Discord = () => {
               <ExternalLink size={16} />
             </a>
           ) : (
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-200 text-base">
               Invite link not configured. Set <code className="bg-gray-800 px-1 rounded">VITE_DISCORD_INVITE_URL</code> to enable the join button.
             </p>
           )}
@@ -97,7 +100,7 @@ const Discord = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-white mb-1">{item.title}</h3>
-                      <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                      <p className="text-gray-200 text-base leading-relaxed">{item.description}</p>
                     </div>
                   </div>
                 </div>
@@ -116,10 +119,10 @@ const Discord = () => {
               <Activity className="text-emerald-400 shrink-0" size={24} />
               <div>
                 <div className="font-semibold text-white">Service status</div>
-                <div className="text-gray-400 text-sm">Uptime, incidents, and latency</div>
+                <div className="text-gray-200 text-base">Uptime, incidents, and latency</div>
               </div>
             </div>
-            <ExternalLink className="text-gray-400 shrink-0" size={18} />
+            <ExternalLink className="text-gray-200 shrink-0" size={18} />
           </Link>
         </section>
 
@@ -129,7 +132,7 @@ const Discord = () => {
             <Shield size={20} className="text-emerald-400" />
             Server rules
           </h2>
-          <ul className="space-y-2 text-gray-300 text-sm">
+          <ul className="space-y-2 text-gray-100 text-base">
             {rules.map((rule, i) => (
               <li key={i} className="flex items-start gap-2">
                 <span className="text-emerald-400 mt-0.5">•</span>

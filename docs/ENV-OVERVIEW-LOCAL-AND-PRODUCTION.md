@@ -54,7 +54,7 @@ npx localtunnel --port 3001
 
 ## 2. Production (dedicated server migration)
 
-**Purpose:** One dedicated server (e.g. Ubuntu on OVH/Hetzner) runs the **single global control plane**: API, workers, agents, and (optionally) MySQL/Redis on the same box. Pterodactyl can be on the same server or a separate node; game servers run via Pterodactyl Wings.
+**Purpose:** One dedicated server (e.g. Ubuntu on OVH/Hetzner) runs the **entire tech stack**: API, workers, agents, MySQL/Redis, frontend, **Pterodactyl Panel**, and **Pterodactyl Wings** (game servers) on the same machine. Control plane and game node are co-located; one server to deploy, secure, and back up. Scale later by adding separate Wings nodes if needed.
 
 ### What runs on the server
 
@@ -69,7 +69,7 @@ npx localtunnel --port 3001
 | **Marketing schedule** | PM2: `givrwrld-marketing-schedule` (cron weekly) | Scheduled content events |
 | **Frontend** | Static build served by **nginx** (or same nginx as API) | Built with `npm run build`; `dist/` |
 | **nginx** | System service | Reverse proxy, TLS (certbot), rate limiting |
-| **Pterodactyl** | Same server or separate; Panel + Wings | Panel URL and app key in `api/.env` |
+| **Pterodactyl** | **Same server:** Panel + Wings on the dedicated server | Panel URL and app key in `api/.env`; Wings registered as the (first) node in Panel |
 
 ### Single control plane
 
@@ -104,4 +104,4 @@ npx localtunnel --port 3001
 ## One-line summary for chat/partner
 
 - **Local:** Everything runs on your machine (Docker for DB/Redis/Pterodactyl, Node for API + worker + frontend). A tunnel exposes the API so PayPal sandbox can send webhooks. Used to test “pay → auto-provision” before go-live.
-- **Production:** One dedicated server runs API, provisioner worker, agents, and (optionally) MySQL/Redis behind nginx with TLS. Same app and DB design; no per-region split. Migration = deploy that stack to the server, point DNS and PayPal webhook at it, and run the same smoke tests.
+- **Production:** One dedicated server runs the full stack (API, MySQL, Redis, Panel, Wings, frontend, agents) behind nginx with TLS. Same app and DB design; no per-region split. Migration = deploy that stack to the server, point DNS and PayPal webhook at it, and run the same smoke tests.

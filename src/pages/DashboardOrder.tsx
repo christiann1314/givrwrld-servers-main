@@ -45,6 +45,7 @@ const DashboardOrder = () => {
     teeworlds: { name: 'Teeworlds', subtitle: 'Fast-paced 2D arena servers', image: 'https://cdn.akamai.steamstatic.com/steam/apps/380840/library_hero.jpg', configPath: '/configure/teeworlds' },
     'among-us': { name: 'Among Us', subtitle: 'Social deduction game hosting', image: 'https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg', configPath: '/configure/among-us' },
     veloren: { name: 'Veloren', subtitle: 'Open-world voxel RPG', image: 'https://gitlab.com/veloren/book/-/raw/master/src/contributors/journalists/data/screenshots/Savannah%20Exploration.jpg', configPath: '/configure/veloren' },
+    enshrouded: { name: 'Enshrouded', subtitle: 'Survival, crafting & action RPG', image: 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg', configPath: '/configure/enshrouded' },
   };
 
   React.useEffect(() => {

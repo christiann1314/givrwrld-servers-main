@@ -21,6 +21,14 @@ type OpsSummary = {
   lastWebhookReceivedAt: string | null;
 };
 
+type ProvisioningStats = {
+  loading: boolean;
+  error: string | null;
+  median_provisioning_seconds: number | null;
+  provision_success_rate_24h: number | null;
+  provision_count_24h: number | null;
+};
+
 const Status = () => {
   const [health, setHealth] = useState<HealthState>({
     loading: true,
@@ -37,9 +45,13 @@ const Status = () => {
     lastWebhookReceivedAt: null,
   });
 
-  const serverStatus = [
-    { region: "US East", status: "Operational", latency: "12ms", uptime: "99.9%" }
-  ];
+  const [provisioningStats, setProvisioningStats] = useState<ProvisioningStats>({
+    loading: true,
+    error: null,
+    median_provisioning_seconds: null,
+    provision_success_rate_24h: null,
+    provision_count_24h: null,
+  });
 
   useEffect(() => {
     const fetchHealth = async () => {
@@ -91,6 +103,34 @@ const Status = () => {
     fetchOps();
   }, []);
 
+  useEffect(() => {
+    const fetchProvisioningStats = async () => {
+      try {
+        const res = await fetch(`${ENV.API_BASE.replace(/\/+$/, '')}/api/public/provisioning-stats`);
+        const data = await res.json().catch(() => ({}));
+        setProvisioningStats({
+          loading: false,
+          error: null,
+          median_provisioning_seconds: data.median_provisioning_seconds ?? null,
+          provision_success_rate_24h: data.provision_success_rate_24h ?? null,
+          provision_count_24h: data.provision_count_24h ?? null,
+        });
+      } catch (e: any) {
+        setProvisioningStats((prev) => ({
+          ...prev,
+          loading: false,
+          error: e?.message || 'Unable to load provisioning stats',
+        }));
+      }
+    };
+    fetchProvisioningStats();
+  }, []);
+
+  const typicalMinutes =
+    provisioningStats.median_provisioning_seconds != null && provisioningStats.median_provisioning_seconds >= 0
+      ? Math.max(1, Math.round(provisioningStats.median_provisioning_seconds / 60))
+      : null;
+
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       {/* Fantasy Forest Background */}
@@ -115,7 +155,7 @@ const Status = () => {
                 GIVRwrld Service Status
               </span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+            <p className="text-xl text-gray-100 max-w-3xl mx-auto mb-8">
               Check GIVRwrld server status, view GIVRwrld outages and infrastructure reports.
             </p>
             
@@ -127,10 +167,10 @@ const Status = () => {
                   <h2 className="text-2xl font-bold text-emerald-400">
                     {health.error ? 'Status Unknown' : '🟢 All Systems Operational'}
                   </h2>
-                  <p className="text-gray-300">
+                  <p className="text-gray-100">
                     Last updated: {new Date().toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-300 mt-1">
+                  <p className="text-base text-gray-100 mt-1">
                     API/DB:{" "}
                     {health.loading
                       ? 'Checking...'
@@ -148,6 +188,16 @@ const Status = () => {
                           ? 'OK'
                           : 'Issue detected'}
                   </p>
+                  <p className="text-base text-gray-100 mt-2">
+                    Typical time to server ready:{" "}
+                    {provisioningStats.loading
+                      ? '…'
+                      : typicalMinutes != null
+                        ? `~${typicalMinutes} minute${typicalMinutes !== 1 ? 's' : ''}`
+                        : '—'}
+                    {" · "}
+                    DDoS mitigation: included for all game servers.
+                  </p>
                 </div>
               </div>
             </div>
@@ -162,26 +212,41 @@ const Status = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-600/30">
-                      <TableHead className="text-gray-300 font-semibold">Region</TableHead>
-                      <TableHead className="text-gray-300 font-semibold">Status</TableHead>
-                      <TableHead className="text-gray-300 font-semibold">Latency</TableHead>
-                      <TableHead className="text-gray-300 font-semibold">Uptime</TableHead>
+                      <TableHead className="text-gray-100 font-semibold">Component</TableHead>
+                      <TableHead className="text-gray-100 font-semibold">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {serverStatus.map((server, index) => (
-                      <TableRow key={index} className="border-gray-600/30">
-                        <TableCell className="text-white font-medium">{server.region}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
+                    <TableRow className="border-gray-600/30">
+                      <TableCell className="text-white font-medium">Infrastructure (API &amp; panel)</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {health.loading ? (
+                            <Clock className="w-4 h-4 text-amber-400 mr-2" />
+                          ) : health.error || health.db === false ? (
+                            <AlertCircle className="w-4 h-4 text-red-400 mr-2" />
+                          ) : (
                             <CheckCircle className="w-4 h-4 text-emerald-400 mr-2" />
-                            <span className="text-emerald-400">{server.status}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gray-300">{server.latency}</TableCell>
-                        <TableCell className="text-gray-300">{server.uptime}</TableCell>
-                      </TableRow>
-                    ))}
+                          )}
+                          <span className={
+                            health.loading ? 'text-amber-400' : health.db ? 'text-emerald-400' : 'text-red-400'
+                          }>
+                            {health.loading
+                              ? 'Checking…'
+                              : health.error
+                                ? 'Unavailable'
+                                : health.db
+                                  ? 'Operational'
+                                  : 'Issue detected'}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="border-gray-600/30">
+                      <TableCell className="text-gray-100 text-sm pt-1 pb-2" colSpan={2}>
+                        Region and uptime metrics will be updated as we add regions.
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
@@ -191,7 +256,7 @@ const Status = () => {
               <h2 className="text-3xl font-bold text-center mb-8">Ops Overview</h2>
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 space-y-4">
                 {ops.loading ? (
-                  <p className="text-gray-300 text-center">Loading ops summary…</p>
+                  <p className="text-gray-100 text-center">Loading ops summary…</p>
                 ) : ops.error ? (
                   <p className="text-red-400 text-sm text-center">{ops.error}</p>
                 ) : (
@@ -199,12 +264,12 @@ const Status = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       {Object.entries(ops.ordersByStatus).map(([status, count]) => (
                         <div key={status} className="flex justify-between">
-                          <span className="text-gray-300 capitalize">{status}</span>
+                          <span className="text-gray-100 capitalize">{status}</span>
                           <span className="text-emerald-400 font-semibold">{count}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="border-t border-gray-700/50 pt-4 text-sm text-gray-300 space-y-1">
+                    <div className="border-t border-gray-700/50 pt-4 text-base text-gray-100 space-y-1">
                       <p>
                         <span className="font-semibold">Stuck orders:</span>{' '}
                         <span className={ops.stuckOrdersCount > 0 ? 'text-orange-300' : 'text-emerald-400'}>
@@ -222,13 +287,21 @@ const Status = () => {
             </div>
           </div>
 
-          {/* Recent Incidents */}
+          {/* Incident log */}
           <div>
-            <h2 className="text-3xl font-bold text-center mb-8">Recent Incidents</h2>
-            <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 text-center">
-              <p className="text-gray-300">
-                No major incidents have been recorded yet. When we have real incident history, we’ll summarize it here.
-              </p>
+            <h2 className="text-3xl font-bold text-center mb-8">Incident log</h2>
+            <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden">
+              <div className="p-6 space-y-6">
+                <div className="border-l-4 border-emerald-500/50 pl-4">
+                  <p className="text-sm text-gray-200 font-medium">No major incidents recorded</p>
+                  <p className="text-gray-100 mt-1">
+                    We haven’t had any major outages since launch. When we do, we’ll post short updates here: what you might have seen, what we did, and how we’re reducing the chance of it happening again.
+                  </p>
+                </div>
+                <p className="text-sm text-gray-300 italic">
+                  Example of a future entry: “Brief API latency spike — we saw slow responses for about 10 minutes due to a DB backup. We’ve moved backups to a low-traffic window. No data loss.”
+                </p>
+              </div>
             </div>
           </div>
         </div>

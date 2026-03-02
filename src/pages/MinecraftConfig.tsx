@@ -5,6 +5,7 @@ import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, type CatalogPlanOption } from '@/hooks/useGamePlanCatalog';
 import { useNavigate } from 'react-router-dom';
+import { GameTransparencySection } from '@/components/GameTransparencySection';
 const minecraftWallpaper = 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg';
 
 type PlanOption = {
@@ -124,13 +125,13 @@ const MinecraftConfig = () => {
           </div>
           
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-            <span className="text-gray-300">Configure Your</span>{' '}
+            <span className="text-gray-100">Configure Your</span>{' '}
             <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent">
               Minecraft Server
             </span>
           </h1>
           
-          <p className="text-lg text-gray-300 max-w-3xl mb-8">
+          <p className="text-lg text-gray-100 max-w-3xl mb-8">
             Customize your server settings to match your gaming needs
           </p>
 
@@ -192,7 +193,7 @@ const MinecraftConfig = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-lg font-bold text-white">{type.name}</h3>
-                          <p className="text-gray-300 text-sm">{type.description}</p>
+                          <p className="text-gray-100 text-base">{type.description}</p>
                         </div>
                         <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center">
                           {gameType === type.id && (
@@ -229,15 +230,15 @@ const MinecraftConfig = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-white">${plan.price}</div>
-                          <div className="text-gray-400 text-sm">per month</div>
+                          <div className="text-gray-200 text-base">per month</div>
                         </div>
                       </div>
-                      <p className="text-gray-300 text-sm mb-2">{plan.description}</p>
+                      <p className="text-gray-100 text-base mb-2">{plan.description}</p>
                       <div className="text-emerald-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
                       {((plan.ram_gb ?? 0) >= 8 || plan.ram === '8GB') && (
-                        <div className="mt-2 text-xs text-gray-400">Auto backups included</div>
+                        <div className="mt-2 text-sm text-gray-200">Auto backups included</div>
                       )}
                     </div>
                   ))}
@@ -279,17 +280,17 @@ const MinecraftConfig = () => {
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Server Plan ({selectedPlan?.name})</span>
+                    <span className="text-gray-100">Server Plan ({selectedPlan?.name})</span>
                     <span className="text-white">${selectedPlan?.price}/mo</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Game Type</span>
+                    <span className="text-gray-100">Game Type</span>
                     <span className="text-white">{gameTypes.find(t => t.id === gameType)?.name}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Billing</span>
+                    <span className="text-gray-100">Billing</span>
                     <span className="text-white">{selectedTerm?.name}</span>
                   </div>
                 </div>
@@ -323,7 +324,7 @@ const MinecraftConfig = () => {
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
-                        <span className="text-white text-sm">{feature}</span>
+                        <span className="text-white text-base">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -345,6 +346,7 @@ const MinecraftConfig = () => {
               </div>
             </div>
           </div>
+          <GameTransparencySection gameSlug="minecraft" accentColor="emerald" />
         </div>
       </div>
     </div>

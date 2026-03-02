@@ -12,7 +12,7 @@ const HeroSection = () => {
         <div className="space-y-8">
           <div className="space-y-6">
             <div className="inline-block">
-              <span className="bg-gray-900/95 text-emerald-400 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30">
+              <span className="bg-gray-900/95 text-emerald-400 px-4 py-2 rounded-full text-base font-medium border border-emerald-500/30">
                 Game Server Hosting
               </span>
             </div>
@@ -23,7 +23,7 @@ const HeroSection = () => {
               </span>
             </h1>
             
-            <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
+            <p className="text-xl text-gray-100 leading-relaxed max-w-lg">
               Deploy your custom game server in seconds. Premium hardware, instant setup, and 24/7 support for the ultimate gaming experience.
             </p>
           </div>
@@ -61,7 +61,7 @@ const HeroSection = () => {
               </div>
               <span className="text-white font-medium">+2,000 active servers</span>
             </div>
-            <span className="text-gray-400">—</span>
+            <span className="text-gray-200 text-base">—</span>
             <span className="text-white font-medium">Excellent</span>
           </div>
         </div>

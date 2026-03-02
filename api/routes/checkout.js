@@ -16,6 +16,7 @@ import {
   ensurePayPalPlan,
 } from '../services/paypalPlans.js';
 import { recordOrderCreated } from '../lib/metrics.js';
+import { createOrderWithAttribution } from '../lib/orderAffiliate.js';
 
 const router = express.Router();
 const SANDBOX = process.env.PAYPAL_SANDBOX !== 'false';
@@ -180,7 +181,7 @@ function resolveReturnBase(req) {
  */
 router.post('/create-session', authenticate, async (req, res) => {
   try {
-    const { plan_id, item_type, term, region, server_name } = req.body;
+    const { plan_id, item_type, term, region, server_name, referral_code } = req.body;
 
     if (!plan_id || !item_type) {
       return res.status(400).json({
@@ -220,10 +221,17 @@ router.post('/create-session', authenticate, async (req, res) => {
     const billingTerm = term || 'monthly';
     const paypalPlanId = await ensurePayPalPlan(plan, billingTerm);
 
-    await pool.execute(
-      `INSERT INTO orders (id, user_id, item_type, plan_id, term, region, server_name, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
-      [orderId, req.userId, item_type, plan_id, billingTerm, regionCode, serverName]
+    await createOrderWithAttribution(
+      {
+        orderId,
+        userId: req.userId,
+        item_type,
+        plan_id,
+        term: billingTerm,
+        region: regionCode,
+        server_name: serverName,
+      },
+      referral_code
     );
     recordOrderCreated();
 

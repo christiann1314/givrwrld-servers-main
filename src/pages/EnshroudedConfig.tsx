@@ -1,0 +1,286 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { useAction } from '../hooks/useAction';
+import { stripeService } from '../services/stripeService';
+import { useGamePlanCatalog } from '@/hooks/useGamePlanCatalog';
+import { GameTransparencySection } from '@/components/GameTransparencySection';
+
+const enshroudedWallpaper = 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg';
+
+const EnshroudedConfig = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [serverName, setServerName] = useState('');
+  const [region] = useState('us-east');
+  const [planId, setPlanId] = useState('enshrouded-vanilla-6gb');
+  const [gameType, setGameType] = useState('enshrouded');
+  const [billingTerm, setBillingTerm] = useState('semiannual');
+
+  const { run: createCheckout, loading } = useAction(async () => {
+    if (!serverName.trim()) throw new Error('Server name is required');
+
+    const response = await stripeService.createCheckoutSession({
+      item_type: 'game',
+      plan_id: planId,
+      region,
+      server_name: serverName.trim(),
+      modpack_id: gameType,
+      term: billingTerm as 'monthly' | 'quarterly' | 'semiannual' | 'yearly',
+      success_url: `${window.location.origin}/purchase-success`,
+      cancel_url: `${window.location.origin}/configure/enshrouded`
+    });
+
+    window.location.href = response.checkout_url;
+  });
+
+  const fallbackPlans = [
+    { id: 'enshrouded-vanilla-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '30GB NVMe', price: 9.99, players: '4–8', description: 'Small co-op, 4–8 players' },
+    { id: 'enshrouded-vanilla-6gb', name: '6GB', ram: '6GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 14.99, players: '8–12', description: 'Recommended for 8–12 players', recommended: true },
+    { id: 'enshrouded-vanilla-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '50GB NVMe', price: 19.99, players: '12–16', description: 'Full 16 slots, mod-friendly' }
+  ];
+
+  const fallbackGameTypes = [
+    { id: 'enshrouded', name: 'Vanilla', description: 'Official Enshrouded dedicated server. Survival, crafting, and action RPG for up to 16 players.' },
+    { id: 'enshrouded-modded', name: 'Modded', description: 'Enshrouded server with mod support. Add quality-of-life and content mods via the panel.' }
+  ];
+
+  const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('enshrouded', fallbackPlans, fallbackGameTypes);
+
+  React.useEffect(() => {
+    if (plans.length > 0 && !plans.some((p) => p.id === planId)) setPlanId(plans[0].id);
+  }, [plans, planId]);
+
+  React.useEffect(() => {
+    if (gameTypes.length > 0 && !gameTypes.some((g) => g.id === gameType)) setGameType(gameTypes[0].id);
+  }, [gameTypes, gameType]);
+
+  const billingTerms = [
+    { id: 'monthly', name: 'Monthly', discount: 0 },
+    { id: 'quarterly', name: '3 Months', discount: 5 },
+    { id: 'semiannual', name: '6 Months', discount: 10 },
+    { id: 'yearly', name: 'Yearly', discount: 20 }
+  ];
+
+  const selectedEggId = gameType.startsWith('egg-') ? Number(gameType.replace('egg-', '')) : null;
+  const visiblePlans = selectedEggId ? plans.filter((p: any) => Number(p.pteroEggId || 0) === selectedEggId) : plans;
+  React.useEffect(() => {
+    if (visiblePlans.length > 0 && !visiblePlans.some((p) => p.id === planId)) setPlanId(visiblePlans[0].id);
+  }, [visiblePlans, planId]);
+
+  const selectedPlan = visiblePlans.find(p => p.id === planId) || visiblePlans[0];
+  const selectedTerm = billingTerms.find(t => t.id === billingTerm);
+  const monthlyBaseline = (selectedPlan?.price || 0) * (selectedTerm?.id === 'quarterly' ? 3 : selectedTerm?.id === 'semiannual' ? 6 : selectedTerm?.id === 'yearly' ? 12 : 1);
+  const finalPrice = getPriceForTerm(selectedPlan, billingTerm);
+  const savings = Math.max(0, monthlyBaseline - finalPrice);
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
+      <div
+        className="fixed inset-0 z-0 bg-no-repeat"
+        style={{
+          backgroundImage: `url(${enshroudedWallpaper})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/40 via-gray-900/30 to-gray-900/50"></div>
+      </div>
+
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <Link to="/deploy" className="inline-flex items-center text-amber-400 hover:text-amber-300 transition-colors mb-4">
+              ← Back to Servers
+            </Link>
+          </div>
+
+          <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+            <span className="text-gray-100">Configure Your</span>{' '}
+            <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
+              Enshrouded Server
+            </span>
+          </h1>
+
+          <p className="text-lg text-gray-100 max-w-3xl mb-8">
+            Survival, crafting, and action RPG — up to 16 players. Vanilla or modded.
+          </p>
+
+          <div className="bg-amber-500 text-white px-6 py-3 rounded-lg mb-8 inline-block">
+            Co-op voxel adventure • Game + Query ports included
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-6 h-6 bg-amber-500 rounded mr-3 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Server Configuration</h2>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Server Name</label>
+                    <input
+                      type="text"
+                      value={serverName}
+                      onChange={(e) => setServerName(e.target.value)}
+                      placeholder="Enter your server name"
+                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Server Location</label>
+                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-100">US East</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Game Type</h2>
+                <div className="space-y-3">
+                  {gameTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => setGameType(type.id)}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        gameType === type.id ? 'border-amber-500 bg-amber-500/10' : 'border-gray-600 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{type.name}</h3>
+                          <p className="text-gray-100 text-sm">{type.description}</p>
+                        </div>
+                        <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                          {gameType === type.id && <div className="w-2 h-2 bg-amber-500 rounded-full"></div>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Choose Your Plan</h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {visiblePlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      onClick={() => setPlanId(plan.id)}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        planId === plan.id ? 'border-amber-500 bg-amber-500/10' : 'border-gray-600 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                          {(plan.recommended || plan.ram === '6GB') && (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">${plan.price}</div>
+                          <div className="text-gray-200 text-sm">per month</div>
+                        </div>
+                      </div>
+                      <p className="text-gray-100 text-sm mb-2">{plan.description}</p>
+                      <div className="text-amber-400 text-sm font-semibold">
+                        {plan.ram} RAM • {plan.cpu} • {plan.disk}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Billing Period</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {billingTerms.map((term) => (
+                    <button
+                      key={term.id}
+                      onClick={() => setBillingTerm(term.id)}
+                      className={`px-4 py-3 rounded-lg transition-colors text-center ${
+                        billingTerm === term.id ? 'bg-amber-500 text-white' : 'bg-gray-700 text-gray-100 hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="font-semibold">{term.name}</div>
+                      {term.id === 'semiannual' ? (
+                        <div className="text-xs text-amber-300 font-medium">Best value · Save {term.discount}%</div>
+                      ) : term.discount > 0 ? (
+                        <div className="text-xs text-amber-300">Save {term.discount}%</div>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6 sticky top-8">
+                <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
+                <div className="space-y-4 mb-6">
+                  <div className="flex justify-between">
+                    <span className="text-gray-100">Server Plan ({selectedPlan?.name})</span>
+                    <span className="text-white">${selectedPlan?.price}/mo</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-100">Game Type</span>
+                    <span className="text-white">{gameTypes.find(t => t.id === gameType)?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-100">Billing</span>
+                    <span className="text-white">{selectedTerm?.name}</span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-600 pt-4 mb-6">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span className="text-amber-400">${finalPrice.toFixed(2)}</span>
+                  </div>
+                  {selectedTerm?.id !== 'monthly' && savings > 0 && (
+                    <div className="text-sm text-amber-300 text-right mt-1">
+                      Save ${savings.toFixed(2)} ({selectedTerm?.discount}% off)
+                    </div>
+                  )}
+                </div>
+                <div className="mb-6">
+                  <h4 className="text-white font-semibold mb-3">Included Features</h4>
+                  <div className="space-y-2">
+                    {['99.9% uptime SLA', 'Anti-DDoS', 'Instant setup & NVMe', 'Ryzen 7 9800X3D', '24/7 support'].map((feature, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className="w-4 h-4 bg-amber-500 rounded-full mr-3 flex items-center justify-center">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-white text-base">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!user) { navigate('/auth'); return; }
+                    createCheckout();
+                  }}
+                  disabled={loading || !serverName.trim()}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:transform-none disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Creating Server...' : (user ? 'Deploy Your Server' : 'Sign Up to Deploy Server')}
+                </button>
+              </div>
+            </div>
+          </div>
+          <GameTransparencySection gameSlug="enshrouded" accentColor="amber" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EnshroudedConfig;

@@ -85,7 +85,7 @@ const FAQ = () => {
         {
           id: 'refund-policy',
           question: 'What is your refund policy?',
-          answer: 'We offer a 48‑hour satisfaction guarantee for all new customers. If you\'re not satisfied with your server within the first 48 hours after activation, contact support and we\'ll provide a full refund. See our Terms of Service or Support Center for full details.'
+          answer: 'Not happy in the first 48 hours? Contact support for a full refund. We offer a 48‑hour satisfaction guarantee for all new customers. If you\'re not satisfied with your server within the first 48 hours after activation, contact support and we\'ll provide a full refund. See our Terms of Service or Support Center for full details.'
         },
         {
           id: 'server-suspension',
@@ -129,7 +129,7 @@ const FAQ = () => {
             </span>
           </h1>
           
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-gray-100 max-w-3xl mx-auto mb-8">
             Find answers to common questions about our services, technical specifications, 
             and billing policies.
           </p>
@@ -137,13 +137,13 @@ const FAQ = () => {
           {/* Search Bar */}
           <div className="max-w-md mx-auto mb-12">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-300" size={20} />
               <input
                 type="text"
                 placeholder="Search FAQs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/25"
+                className="w-full bg-gray-800/90 backdrop-blur-md border border-gray-600/50 rounded-lg pl-10 pr-4 py-3 text-white text-base placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/25"
               />
             </div>
           </div>
@@ -163,12 +163,12 @@ const FAQ = () => {
                 <h2 className="text-2xl font-bold text-emerald-400 mb-6">{category.title}</h2>
                 <div className="space-y-4">
                   {category.questions.map((faq) => (
-                    <div key={faq.id} className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-lg overflow-hidden">
+                    <div key={faq.id} className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-lg overflow-hidden">
                       <button
                         onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
                         className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-700/30 transition-colors"
                       >
-                        <span className="text-white font-medium">{faq.question}</span>
+                        <span className="text-white font-medium text-base">{faq.question}</span>
                         {openFaq === faq.id ? (
                           <ChevronDown className="text-emerald-400 flex-shrink-0" size={20} />
                         ) : (
@@ -177,7 +177,7 @@ const FAQ = () => {
                       </button>
                       {openFaq === faq.id && (
                         <div className="px-6 pb-4">
-                          <p className="text-gray-300 leading-relaxed">{faq.answer}</p>
+                          <p className="text-gray-100 text-base leading-relaxed">{faq.answer}</p>
                         </div>
                       )}
                     </div>

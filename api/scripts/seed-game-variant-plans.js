@@ -116,6 +116,15 @@ const variantCatalog = [
       { slug: 'rp-realm', label: 'RP Realm', eggName: 'Veloren RP Realm', surcharge: 1.5, minRam: 8, description: 'One-click Veloren roleplay-focused profile.' },
     ],
   },
+  {
+    game: 'enshrouded',
+    sourceEggName: 'Enshrouded',
+    display: 'Enshrouded',
+    variants: [
+      { slug: 'vanilla', label: 'Vanilla', eggName: 'Enshrouded Vanilla', surcharge: 0, minRam: 4, description: 'Official Enshrouded dedicated server. Up to 16 players.' },
+      { slug: 'modded', label: 'Modded', eggName: 'Enshrouded Modded', surcharge: 2, minRam: 6, description: 'Enshrouded server with mod support. Add QoL and content mods via panel.' },
+    ],
+  },
 ];
 
 function toPrice(value) {
@@ -151,7 +160,14 @@ function mapRows(rows) {
 }
 
 async function main() {
-  console.log(`💳 Seed all game variant plans (${isDryRun ? 'DRY RUN' : 'APPLY'})`);
+  const gameFilter = process.env.GAME_FILTER ? process.env.GAME_FILTER.toLowerCase() : null;
+  const catalog = gameFilter
+    ? variantCatalog.filter((g) => g.game.toLowerCase() === gameFilter)
+    : variantCatalog;
+  if (gameFilter && catalog.length === 0) {
+    throw new Error(`GAME_FILTER=${gameFilter} matched no game in variant catalog.`);
+  }
+  console.log(`💳 Seed all game variant plans (${isDryRun ? 'DRY RUN' : 'APPLY'}${gameFilter ? `, game=${gameFilter}` : ''})`);
   const conn = await pool.getConnection();
 
   try {
@@ -167,8 +183,8 @@ async function main() {
     const hasYearly = termCols.some((r) => r.column_name === 'price_yearly');
 
     const allEggNames = [
-      ...variantCatalog.map((g) => g.sourceEggName),
-      ...variantCatalog.flatMap((g) => g.variants.map((v) => v.eggName)),
+      ...catalog.map((g) => g.sourceEggName),
+      ...catalog.flatMap((g) => g.variants.map((v) => v.eggName)),
     ];
     const placeholders = allEggNames.map(() => '?').join(', ');
     const [eggRows] = await conn.execute(
@@ -188,7 +204,7 @@ async function main() {
     const legacyDeactivations = [];
     let generatedPlanCount = 0;
 
-    for (const gameEntry of variantCatalog) {
+    for (const gameEntry of catalog) {
       const sourceEggId = eggByName.get(gameEntry.sourceEggName);
       const [baseRows] = await conn.execute(
         `SELECT id, game, ram_gb, vcores, ssd_gb, price_monthly, ptero_egg_id
@@ -203,7 +219,8 @@ async function main() {
 
       const tiers = mapRows(baseRows);
       if (tiers.length === 0) {
-        throw new Error(`No active base plans found for ${gameEntry.game} from source egg "${gameEntry.sourceEggName}".`);
+        console.warn(`⚠ Skipping ${gameEntry.game}: no active base plans for source egg "${gameEntry.sourceEggName}".`);
+        continue;
       }
 
       const generatedIdsForGame = [];
@@ -305,7 +322,7 @@ async function main() {
       await conn.execute(deactivation.sql, deactivation.params);
     }
     await conn.commit();
-    console.log(`✅ Upserted ${generatedPlanCount} plans across ${variantCatalog.length} games and deactivated legacy base plans.`);
+    console.log(`✅ Upserted ${generatedPlanCount} plans across ${catalog.length} games and deactivated legacy base plans.`);
   } catch (error) {
     try {
       await conn.rollback();

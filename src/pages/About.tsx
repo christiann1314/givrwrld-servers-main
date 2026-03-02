@@ -50,9 +50,12 @@ const About = () => {
             <h1 className="text-4xl lg:text-5xl font-bold mb-6 text-white tracking-tight">
               About GIVRwrld Servers
             </h1>
-            <p className="text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
-              GIVRwrld Servers provides premium, one-click game server hosting for communities and creators. 
+            <p className="text-lg text-gray-100 leading-relaxed max-w-2xl mx-auto">
+              GIVRwrld Servers provides premium, one-click game server hosting for communities and creators.
               We focus on reliability, transparent pricing, and a single dashboard so you can run Minecraft, Rust, Palworld, and other titles without managing VPS or panels yourself.
+            </p>
+            <p className="text-base text-gray-200 mt-3 max-w-xl mx-auto">
+              DDoS mitigation is included for all game servers.
             </p>
           </div>
 
@@ -61,7 +64,7 @@ const About = () => {
             <h2 className="text-2xl font-semibold text-white mb-6 border-b border-gray-600/50 pb-2">
               Our focus
             </h2>
-            <p className="text-gray-300 leading-relaxed">
+            <p className="text-gray-100 text-base leading-relaxed">
               We built GIVRwrld to sit between generic VPS hosting and opaque game-hosting brands. You get dedicated game infrastructure, automatic provisioning, and one clear bill—no surprise overages or locked-in annual contracts you did not choose. We launch with US East; we add regions when we can deliver the same standards.
             </p>
           </div>
@@ -77,7 +80,7 @@ const About = () => {
                 return (
                   <div
                     key={index}
-                    className="bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 hover:border-emerald-500/30 transition-colors"
+                    className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-6 hover:border-emerald-500/30 transition-colors"
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -85,7 +88,7 @@ const About = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-white mb-1">{item.title}</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed">{item.description}</p>
+                        <p className="text-gray-100 text-base leading-relaxed">{item.description}</p>
                       </div>
                     </div>
                   </div>
@@ -99,14 +102,14 @@ const About = () => {
             <h2 className="text-2xl font-semibold text-white mb-6 border-b border-gray-600/50 pb-2">
               Who we serve
             </h2>
-            <p className="text-gray-300 leading-relaxed mb-6">
+            <p className="text-gray-100 text-base leading-relaxed mb-6">
               Our customers include content creators, community admins, and gaming groups who want a reliable host with clear pricing and real support. We do not overpromise features we have not shipped; we focus on game server hosting done well.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {['Content creators', 'Community admins', 'Gaming groups', 'Streamers', 'Modded servers', 'Roleplay communities'].map((label) => (
                 <div
                   key={label}
-                  className="bg-gray-800/40 border border-gray-600/30 rounded-lg px-4 py-3 text-center text-gray-300 text-sm font-medium"
+                  className="bg-gray-800/90 border border-gray-600/30 rounded-lg px-4 py-3 text-center text-gray-100 text-base font-medium"
                 >
                   {label}
                 </div>
@@ -115,9 +118,9 @@ const About = () => {
           </div>
 
           {/* CTA */}
-          <div className="text-center bg-gray-800/60 backdrop-blur-md border border-gray-600/30 rounded-xl p-8">
+          <div className="text-center bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-8">
             <h2 className="text-xl font-semibold text-white mb-3">Ready to deploy?</h2>
-            <p className="text-gray-300 text-sm mb-6 max-w-md mx-auto">
+            <p className="text-gray-100 text-base mb-6 max-w-md mx-auto">
               Choose your game, select a plan, and go live in minutes. No long-term lock-in; cancel or change plans from your dashboard.
             </p>
             <Link

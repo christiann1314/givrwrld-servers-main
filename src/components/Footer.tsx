@@ -15,6 +15,7 @@ const Footer = () => {
       title: "Company",
       links: [
         { name: "About Us", path: "/about" },
+        { name: "Transparency", path: "/transparency" },
         { name: "Blog", path: "/blog" },
         { name: "Affiliate Program", path: "/affiliate" },
         { name: "Contact", path: "/support" }
@@ -44,16 +45,16 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {footerSections.map((section, index) => (
             <div key={index}>
-              <h3 className="text-white font-semibold mb-4">{section.title}</h3>
+              <h3 className="text-white font-semibold mb-4 text-base">{section.title}</h3>
               <ul className="space-y-2">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
                     {link.path.startsWith('#') ? (
-                      <a href={link.path} className="text-gray-400 hover:text-emerald-400 transition-colors text-sm">
+                      <a href={link.path} className="text-gray-200 hover:text-emerald-400 transition-colors text-base">
                         {link.name}
                       </a>
                     ) : (
-                      <Link to={link.path} className="text-gray-400 hover:text-emerald-400 transition-colors text-sm">
+                      <Link to={link.path} className="text-gray-200 hover:text-emerald-400 transition-colors text-base">
                         {link.name}
                       </Link>
                     )}

@@ -15,12 +15,15 @@ type DeployCard = {
   configPath: string;
 };
 
+/** Wedge games shown first on Deploy; game-specific bullets (RAM/slot, mod-friendly, etc.). */
+const WEDGE_GAME_IDS = ['minecraft', 'rust', 'palworld'];
+
 const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   minecraft: {
     name: 'Minecraft',
     subtitle: 'Build, explore, survive',
     image: 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg',
-    features: ['Plugin & mod support', 'Instant setup', 'Ryzen 7 9800X3D'],
+    features: ['Plugin & mod support', '4–8GB for modded, 2–4GB vanilla', 'Ryzen 7 9800X3D', 'Java & Bedrock'],
     buttonColor: 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500',
     configPath: '/configure/minecraft',
   },
@@ -28,7 +31,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Rust',
     subtitle: 'Survival multiplayer game',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: ['Small to large servers', 'Plugin & mod support', 'Ryzen 7 9800X3D'],
+    features: ['Small to large servers', 'Mod-friendly, Oxide/uMod', 'Ryzen 7 9800X3D', 'NVMe storage'],
     buttonColor: 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500',
     configPath: '/configure/rust',
   },
@@ -36,7 +39,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Palworld',
     subtitle: 'Creature collection survival',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg',
-    features: ['4-6 players', 'Ryzen 7 9800X3D', 'Fast deployment'],
+    features: ['4–6 players typical', 'Dedicated Palworld egg', 'Ryzen 7 9800X3D', 'Fast deployment'],
     buttonColor: 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
     configPath: '/configure/palworld',
   },
@@ -112,6 +115,14 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     buttonColor: 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500',
     configPath: '/configure/veloren',
   },
+  enshrouded: {
+    name: 'Enshrouded',
+    subtitle: 'Survival, crafting & action RPG',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg',
+    features: ['Up to 16 players', 'Vanilla & modded support', 'Ryzen 7 9800X3D', 'Fast deployment'],
+    buttonColor: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
+    configPath: '/configure/enshrouded',
+  },
 };
 
 /** Fallback cards from GAME_DISPLAY when API returns no plans (all 12 games always show). */
@@ -166,7 +177,18 @@ const Deploy = () => {
           };
         });
 
-        if (active) setGameServers(cards.length > 0 ? cards : getFallbackCards());
+        if (active) {
+          const list = cards.length > 0 ? cards : getFallbackCards();
+          const wedgeFirst = [...list].sort((a, b) => {
+            const aIdx = WEDGE_GAME_IDS.indexOf(a.id);
+            const bIdx = WEDGE_GAME_IDS.indexOf(b.id);
+            if (aIdx >= 0 && bIdx >= 0) return aIdx - bIdx;
+            if (aIdx >= 0) return -1;
+            if (bIdx >= 0) return 1;
+            return a.id.localeCompare(b.id);
+          });
+          setGameServers(wedgeFirst);
+        }
       } catch (error) {
         console.error('Failed to load deploy cards from backend plans:', error);
         if (active) setGameServers(getFallbackCards());
@@ -211,25 +233,33 @@ const Deploy = () => {
             </span>
           </h1>
           
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-16">
-            Choose your game and get started instantly. Premium hosting with 
+          <p className="text-xl text-gray-100 max-w-3xl mx-auto mb-2">
+            Choose your game and get started instantly. Premium hosting with
             instant setup and 24/7 support.
+          </p>
+          <p className="text-base text-gray-200 max-w-2xl mx-auto mb-16">
+            DDoS mitigation is included for all game servers.
           </p>
         </section>
 
         {/* Game Server Cards */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
           {loading && (
-            <div className="text-center text-gray-300 mb-8">Loading available game plans...</div>
+            <div className="text-center text-gray-100 text-base mb-8">Loading available game plans...</div>
           )}
           {!loading && gameServers.length === 0 && (
             <div className="text-center text-yellow-300 mb-8">
               No active game plans found in local backend. Add plans in MariaDB to continue.
             </div>
           )}
+          {!loading && gameServers.length > 0 && (
+            <p className="text-gray-200 text-base mb-6">
+              Featured: Minecraft, Rust, and Palworld — then choose from more games below.
+            </p>
+          )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
             {gameServers.map((server) => (
-              <div key={server.id} className="bg-gray-800/40 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
+              <div key={server.id} className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
                 {/* Game Image */}
                 <div className="h-56 sm:h-60 lg:h-64 relative overflow-hidden">
                   <img 
@@ -248,7 +278,7 @@ const Deploy = () => {
                 <div className="p-6">
                   <div className="space-y-3 mb-6">
                     {server.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-gray-300 text-sm">
+                      <div key={index} className="flex items-center text-gray-100 text-base">
                         <div className="w-2 h-2 bg-emerald-400 rounded-full mr-3"></div>
                         <span>{feature}</span>
                       </div>
@@ -259,7 +289,7 @@ const Deploy = () => {
                   <div className="mb-6">
                     <div className="text-2xl font-bold text-white mb-1">
                       Starting at {server.price}
-                      <span className="text-sm font-normal text-gray-400 ml-1">/month</span>
+                      <span className="text-base font-normal text-gray-200 ml-1">/month</span>
                     </div>
                     <div className="text-xs text-gray-400">
                       NVMe • Ryzen 7 9800X3D
@@ -279,9 +309,9 @@ const Deploy = () => {
           </div>
 
           {/* Help Section */}
-          <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-8 text-center">
+          <div className="bg-gray-800/90 backdrop-blur-md border border-gray-600/50 rounded-xl p-8 text-center">
             <h2 className="text-2xl font-bold text-white mb-4">Not sure which to choose?</h2>
-            <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
+            <p className="text-gray-100 text-base mb-8 max-w-2xl mx-auto">
               All options come with 24/7 support, instant setup, and premium hardware. You 
               can always upgrade or switch plans later.
             </p>

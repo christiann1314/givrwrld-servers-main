@@ -18,7 +18,10 @@ VALUES
   ('vintage-story-4gb','game','vintage-story',   4, 2, 25, 11.99, NULL, 'Vintage Story 4GB',1),
   ('teeworlds-2gb',   'game', 'teeworlds',       2, 1, 10,  4.99, NULL, 'Teeworlds 2GB',   1),
   ('among-us-2gb',    'game', 'among-us',        2, 1, 10,  4.99, NULL, 'Among Us 2GB',    1),
-  ('veloren-4gb',     'game', 'veloren',         4, 2, 25, 10.99, NULL, 'Veloren 4GB',     1)
+  ('veloren-4gb',     'game', 'veloren',         4, 2, 25, 10.99, NULL, 'Veloren 4GB',     1),
+  ('enshrouded-4gb',  'game', 'enshrouded',      4, 2, 30,  9.99, NULL, 'Enshrouded 4GB',  1),
+  ('enshrouded-6gb',  'game', 'enshrouded',      6, 2, 40, 14.99, NULL, 'Enshrouded 6GB',  1),
+  ('enshrouded-8gb',  'game', 'enshrouded',      8, 3, 50, 19.99, NULL, 'Enshrouded 8GB',  1)
 ON DUPLICATE KEY UPDATE
   display_name = VALUES(display_name),
   ram_gb = VALUES(ram_gb),

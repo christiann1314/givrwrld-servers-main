@@ -14,6 +14,7 @@ import Auth from "@/pages/Auth";
 import Checkout from "@/pages/Checkout";
 import Success from "@/pages/Success";
 import Status from "@/pages/Status";
+import Transparency from "@/pages/Transparency";
 import Support from "@/pages/Support";
 import FAQ from "@/pages/FAQ";
 import Blog from "@/pages/Blog";
@@ -41,6 +42,7 @@ import VintageStoryConfig from "@/pages/VintageStoryConfig";
 import TeeworldsConfig from "@/pages/TeeworldsConfig";
 import AmongUsConfig from "@/pages/AmongUsConfig";
 import VelorenConfig from "@/pages/VelorenConfig";
+import EnshroudedConfig from "@/pages/EnshroudedConfig";
 import CommunityPack from "@/pages/CommunityPack";
 import GameExpansionPack from "@/pages/GameExpansionPack";
 import GivrwrldEssentials from "@/pages/GivrwrldEssentials";
@@ -77,6 +79,7 @@ const App = () => (
                 {/* Checkout routes removed - using configure pages instead */}
                 <Route path="/success" element={<Success />} />
                 <Route path="/status" element={<Status />} />
+                <Route path="/transparency" element={<Transparency />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/blog" element={<Blog />} />
@@ -108,6 +111,7 @@ const App = () => (
                 <Route path="/configure/teeworlds" element={<TeeworldsConfig />} />
                 <Route path="/configure/among-us" element={<AmongUsConfig />} />
                 <Route path="/configure/veloren" element={<VelorenConfig />} />
+                <Route path="/configure/enshrouded" element={<EnshroudedConfig />} />
                 <Route path="/community-pack" element={<CommunityPack />} />
                 <Route path="/game-expansion-pack" element={<GameExpansionPack />} />
                 <Route path="/givrwrld-essentials" element={<GivrwrldEssentials />} />

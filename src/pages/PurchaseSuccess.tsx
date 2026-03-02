@@ -134,7 +134,7 @@ const PurchaseSuccess = () => {
                 Payment Successful!
               </span>
             </h1>
-            <p className="text-xl text-gray-300">Your server is being set up and will be ready shortly.</p>
+            <p className="text-xl text-gray-300">Your server will be ready in a few minutes. Check your dashboard for status.</p>
           </div>
 
           {purchaseData && (

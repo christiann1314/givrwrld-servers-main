@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog } from '@/hooks/useGamePlanCatalog';
+import { GameTransparencySection } from '@/components/GameTransparencySection';
 const terrariaBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/105600/library_hero.jpg';
 
 const TerrariaConfig = () => {
@@ -100,13 +101,13 @@ const TerrariaConfig = () => {
           </div>
           
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-            <span className="text-gray-300">Configure Your</span>{' '}
+            <span className="text-gray-100">Configure Your</span>{' '}
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
               Terraria Server
             </span>
           </h1>
           
-          <p className="text-lg text-gray-300 max-w-3xl mb-8">
+          <p className="text-lg text-gray-100 max-w-3xl mb-8">
             Customize your server settings to match your gaming needs
           </p>
 
@@ -143,7 +144,7 @@ const TerrariaConfig = () => {
                   
                   <div>
                     <label className="block text-white font-semibold mb-2">Server Location</label>
-                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-300">
+                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-100">
                       US East
                     </div>
                   </div>
@@ -173,7 +174,7 @@ const TerrariaConfig = () => {
                       }`}
                     >
                       <div className="font-semibold text-white mb-1">{type.name}</div>
-                      <div className="text-sm text-gray-300">{type.description}</div>
+                      <div className="text-sm text-gray-100">{type.description}</div>
                     </button>
                   ))}
                 </div>
@@ -203,15 +204,15 @@ const TerrariaConfig = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-white">${plan.price}</div>
-                          <div className="text-gray-400 text-sm">per month</div>
+                          <div className="text-gray-200 text-sm">per month</div>
                         </div>
                       </div>
-                      <p className="text-gray-300 text-sm mb-2">{plan.description}</p>
+                      <p className="text-gray-100 text-sm mb-2">{plan.description}</p>
                       <div className="text-purple-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
                       {((plan as { ram_gb?: number }).ram_gb ?? 0) >= 8 || plan.ram === '8GB' ? (
-                        <div className="mt-2 text-xs text-gray-400">Auto backups included</div>
+                        <div className="mt-2 text-xs text-gray-200">Auto backups included</div>
                       ) : null}
                     </div>
                   ))}
@@ -231,7 +232,7 @@ const TerrariaConfig = () => {
                       className={`px-4 py-3 rounded-lg transition-colors text-center ${
                         billingTerm === term.id
                           ? 'bg-purple-500 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-700 text-gray-100 hover:bg-gray-600'
                       }`}
                     >
                       <div className="font-semibold">{term.name}</div>
@@ -253,17 +254,17 @@ const TerrariaConfig = () => {
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Server Plan ({selectedPlan?.name})</span>
+                    <span className="text-gray-100">Server Plan ({selectedPlan?.name})</span>
                     <span className="text-white">${selectedPlan?.price}/mo</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Game Type</span>
+                    <span className="text-gray-100">Game Type</span>
                     <span className="text-white">{gameTypes.find(t => t.id === gameType)?.name}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-gray-300">Billing</span>
+                    <span className="text-gray-100">Billing</span>
                     <span className="text-white">{selectedTerm?.name}</span>
                   </div>
                 </div>
@@ -297,7 +298,7 @@ const TerrariaConfig = () => {
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
-                        <span className="text-white text-sm">{feature}</span>
+                        <span className="text-white text-base">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -319,6 +320,7 @@ const TerrariaConfig = () => {
               </div>
             </div>
           </div>
+          <GameTransparencySection gameSlug="terraria" accentColor="lime" />
         </div>
       </div>
     </div>

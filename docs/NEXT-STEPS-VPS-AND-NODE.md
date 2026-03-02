@@ -1,6 +1,8 @@
 # Next Steps: VPS Then Dedicated Game Node
 
-Recommended order:
+**Deployment model:** We host the **entire tech stack on one dedicated server** (API, DB, Redis, Panel, frontend, agents, and Wings). The steps below also support splitting later: control on one VPS, game node(s) on separate machines.
+
+Recommended order when starting from zero:
 
 ---
 
@@ -43,4 +45,4 @@ Add a **dedicated machine** that runs **Pterodactyl Wings**:
 | **1. VPS** | Deploy API + DB + frontend + Panel + **agents** to one VPS | Live site, payments, orders; agents run 24/7; provisioning pending or test-only |
 | **2. Dedicated server** | Install Wings, add as node in Panel, set allocations | Full flow: pay → provision → play on the dedicated node |
 
-So: **yes — next steps are add the VPS, then add the dedicated server.**
+**Single-box option:** Deploy **everything** (Step 1 + Wings on the same machine) to one dedicated server. One bill, one host to secure and back up; add separate Wings nodes later if you need more game capacity.

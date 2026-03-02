@@ -76,6 +76,7 @@ function chooseEggForGame(game, eggs) {
     teeworlds: [/teeworlds/i],
     'among-us': [/among\s*us/i],
     veloren: [/veloren/i],
+    enshrouded: [/enshrouded/i],
   };
 
   const patterns = strategies[game] || [new RegExp(game.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i')];

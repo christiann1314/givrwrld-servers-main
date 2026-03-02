@@ -52,7 +52,7 @@ const FeaturesSection = () => {
             Features
           </span>
         </h2>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+        <p className="text-xl text-gray-100 max-w-2xl mx-auto">
           Everything you need for premium gaming experiences
         </p>
       </div>
@@ -62,12 +62,12 @@ const FeaturesSection = () => {
         {serviceFeatures.map((feature, index) => {
           const Icon = feature.icon;
           return (
-            <div key={index} className="bg-gray-800/40 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 text-center hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
+            <div key={index} className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 text-center hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
               <div className="w-16 h-16 bg-gray-700/50 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-500/20 transition-colors">
                 <Icon size={32} className="text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
-              <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+              <p className="text-gray-100 text-base leading-relaxed">{feature.description}</p>
             </div>
           );
         })}
@@ -78,12 +78,12 @@ const FeaturesSection = () => {
         {productFeatures.map((product, index) => {
           const Icon = product.icon;
           return (
-            <div key={index} className="bg-gray-800/40 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
+            <div key={index} className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
               <div className="w-12 h-12 bg-gray-700/50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-emerald-500/20 transition-colors">
                 <Icon size={24} className="text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">{product.title}</h3>
-              <p className="text-gray-400 leading-relaxed mb-6">{product.description}</p>
+              <p className="text-gray-100 text-base leading-relaxed mb-6">{product.description}</p>
               <div className="text-2xl font-bold text-emerald-400">{product.price}</div>
             </div>
           );
@@ -91,11 +91,11 @@ const FeaturesSection = () => {
       </div>
 
       {/* Call to Action */}
-      <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-8 text-center">
+      <div className="bg-gray-800/90 backdrop-blur-md border border-gray-600/50 rounded-xl p-8 text-center">
         <h3 className="text-2xl font-bold text-white mb-4">
           Ready to start your gaming server?
         </h3>
-        <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
+        <p className="text-gray-100 text-base mb-8 max-w-2xl mx-auto">
           Launch your custom game server in minutes with our simple setup process. 
           High performance, low latency, and 24/7 support included.
         </p>

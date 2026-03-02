@@ -48,26 +48,26 @@ const Header = () => {
 
           {/* Navigation Menu */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="flex items-center space-x-1 text-white hover:text-emerald-400 transition-colors">
-              <Home size={16} />
+            <Link to="/" className="flex items-center space-x-1 text-white hover:text-emerald-400 transition-colors text-base">
+              <Home size={18} />
               <span>Home</span>
             </Link>
             
-            <Link to="/discord" className="flex items-center space-x-1 text-gray-300 hover:text-emerald-400 transition-colors">
-              <MessageCircle size={16} />
+            <Link to="/discord" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">
+              <MessageCircle size={18} />
               <span>Discord</span>
             </Link>
-            <Link to="/faq" className="flex items-center space-x-1 text-gray-300 hover:text-emerald-400 transition-colors">
-              <HelpCircle size={16} />
+            <Link to="/faq" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">
+              <HelpCircle size={18} />
               <span>FAQ</span>
             </Link>
-            <Link to="/support" className="flex items-center space-x-1 text-gray-300 hover:text-emerald-400 transition-colors">
-              <Users size={16} />
+            <Link to="/support" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">
+              <Users size={18} />
               <span>Support</span>
             </Link>
-            <Link to="/dashboard" className="flex items-center space-x-1 text-gray-300 hover:text-emerald-400 transition-colors">
-              <Settings size={16} />
-              <span>User Dashboard</span>
+            <Link to="/dashboard" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">
+              <Settings size={18} />
+              <span>Dashboard</span>
             </Link>
           </nav>
 
@@ -75,7 +75,7 @@ const Header = () => {
           <div className="relative">
             <button
               onClick={() => setIsAccountOpen(!isAccountOpen)}
-              className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+              className="flex items-center space-x-2 text-gray-100 hover:text-white transition-colors text-base"
             >
               <User size={16} />
               <span>Account</span>
@@ -87,25 +87,25 @@ const Header = () => {
                 <div className="py-2">
                   {user ? (
                     <>
-                      <div className="px-4 py-2 text-gray-300 border-b border-gray-600/50">
-                        <div className="text-sm font-medium text-white">
+                      <div className="px-4 py-2 text-gray-100 border-b border-gray-600/50">
+                        <div className="text-base font-medium text-white">
                            {user.display_name || user.email?.split('@')[0] || 'User'}
                         </div>
-                        <div className="text-xs text-gray-400">Signed in</div>
+                        <div className="text-sm text-gray-200">Signed in</div>
                       </div>
-                      <Link to="/dashboard" className="flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-emerald-500/10 transition-colors">
-                        <Settings size={16} />
+                      <Link to="/dashboard" className="flex items-center space-x-2 px-4 py-2 text-gray-100 hover:text-white hover:bg-emerald-500/10 transition-colors text-base">
+                        <Settings size={18} />
                         <span>Dashboard</span>
                       </Link>
                       <button 
                         onClick={handleLogout}
                         disabled={isLoggingOut}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center space-x-2 px-4 py-2 text-gray-100 hover:text-white hover:bg-emerald-500/10 transition-colors disabled:opacity-50 text-base text-left"
                       >
                         {isLoggingOut && (
                           <div className="w-4 h-4 border-2 border-gray-300/30 border-t-gray-300 rounded-full animate-spin"></div>
                         )}
-                        <LogOut size={16} />
+                        <LogOut size={18} />
                         <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
                       </button>
                     </>
@@ -114,17 +114,17 @@ const Header = () => {
                       <Link
                         to="/auth"
                         onClick={() => setIsAccountOpen(false)}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-emerald-500/10 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 text-gray-100 hover:text-white hover:bg-emerald-500/10 transition-colors text-base"
                       >
-                        <LogIn size={16} />
+                        <LogIn size={18} />
                         <span>Sign In</span>
                       </Link>
                       <Link
                         to="/auth"
                         onClick={() => setIsAccountOpen(false)}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-emerald-500/10 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 text-gray-100 hover:text-white hover:bg-emerald-500/10 transition-colors text-base"
                       >
-                        <UserPlus size={16} />
+                        <UserPlus size={18} />
                         <span>Sign Up</span>
                       </Link>
                     </>

@@ -23,6 +23,8 @@ const ServerCard: React.FC<ServerCardProps> = ({
         return '/configure/rust';
       case 'palworld':
         return '/configure/palworld';
+      case 'enshrouded':
+        return '/configure/enshrouded';
       default:
         return '/deploy';
     }
@@ -39,13 +41,13 @@ const ServerCard: React.FC<ServerCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
         <div className="absolute bottom-3 left-3 right-3">
           <h3 className="text-xl font-bold text-white drop-shadow-md">{game}</h3>
-          <p className="text-gray-200 text-xs drop-shadow-md">{subtitle}</p>
+          <p className="text-gray-100 text-sm drop-shadow-md">{subtitle}</p>
         </div>
       </div>
       <div className="p-4">
-        <div className="mb-4 text-sm">
-          <div className="text-emerald-300">Starting at {price}<span className="text-gray-400">/month</span></div>
-          <div className="text-gray-400">Instant setup • Premium hardware</div>
+        <div className="mb-4 text-base">
+          <div className="text-emerald-300">Starting at {price}<span className="text-gray-200">/month</span></div>
+          <div className="text-gray-100">Instant setup • Premium hardware</div>
         </div>
         <Link
           to={getConfigPath(game)}

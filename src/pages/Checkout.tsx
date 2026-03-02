@@ -137,7 +137,7 @@ const Checkout = () => {
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">Plan not found</h1>
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-200 mb-6">
             {error || 'The requested plan could not be loaded. Please try again.'}
           </p>
           <div className="space-y-3">
@@ -176,8 +176,8 @@ const Checkout = () => {
               Back to Deploy
             </Button>
             <h1 className="text-3xl font-bold">Complete Your Order</h1>
-            <p className="text-gray-400 mt-2">
-              Review your plan details and proceed to secure payment
+            <p className="text-gray-200 mt-2">
+              Review your plan details and proceed to secure payment. Pay with PayPal (card or account).
             </p>
           </div>
 
@@ -257,7 +257,7 @@ const Checkout = () => {
                   
                   <div className="flex justify-between">
                     <span>Region: US East</span>
-                    <span className="text-sm text-gray-400">Included</span>
+                    <span className="text-base text-gray-200">Included</span>
                   </div>
 
                   <hr className="border-gray-700" />
@@ -286,12 +286,14 @@ const Checkout = () => {
                     )}
                   </Button>
 
-                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                  <div className="flex items-center space-x-2 text-base text-gray-200">
                     <Shield className="h-4 w-4" />
-                    <span>Secure payment by PayPal</span>
+                    <span>Pay with PayPal (card or account). Secure checkout.</span>
                   </div>
-
-                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                  <p className="text-base text-gray-200">
+                    Not happy in the first 48 hours? Contact support for a full refund.
+                  </p>
+                  <div className="flex items-center space-x-2 text-base text-gray-200">
                     <Clock className="h-4 w-4" />
                     <span>Server ready in under 60 seconds</span>
                   </div>

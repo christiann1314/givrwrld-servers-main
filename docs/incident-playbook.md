@@ -1,6 +1,6 @@
 # Incident Playbook
 
-Five common incidents and step-by-step response.
+Five common incidents and step-by-step response. For who updates status and where incident copy lives, see **docs/STATUS-PAGE-RESILIENCE.md**.
 
 ---
 
