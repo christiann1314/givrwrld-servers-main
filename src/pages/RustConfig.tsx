@@ -295,7 +295,7 @@ const RustConfig = () => {
                       '99.9% uptime SLA',
                       'Anti-DDoS Game protection',
                       'Instant setup & NVMe',
-                      'Ryzen 7 9800X3D',
+                      'Ryzen 9 5900X',
                       '24/7 support and Discord community access',
                       ...(selectedPlan && ((selectedPlan as { ram_gb?: number }).ram_gb ?? 0) >= 8 ? ['Daily auto backups'] : []),
                     ].map((feature, index) => (

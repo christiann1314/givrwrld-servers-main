@@ -60,7 +60,7 @@ const FAQ = () => {
         {
           id: 'server-hardware',
           question: 'What hardware do your servers run on?',
-          answer: 'Our servers run on Ryzen 7 9800X3D nodes with NVMe storage. All servers are housed in Tier 1 data centers with redundant power and network connections.'
+          answer: 'Our servers run on a dedicated Rise-3 node (AMD Ryzen 9 5900X, 64GB RAM, 2×512GB NVMe, 1Gbit unmetered) in US East (Vinthill). Game plans share this hardware; your plan size sets the RAM and CPU allocated to your server.'
         },
         {
           id: 'custom-plugins',

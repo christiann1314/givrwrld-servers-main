@@ -71,7 +71,7 @@ function rust(): TransparencyContent {
     ],
     faq: [
       { question: 'Do you support Oxide or uMod?', answer: 'Yes. You can install and run Oxide/uMod on your Rust server. Use the panel file manager or our supported egg where available.' },
-      { question: 'What hardware do Rust servers run on?', answer: 'Rust servers run on our premium nodes (Ryzen 7 9800X3D, NVMe). Plan size determines RAM and CPU allocated to your server.' },
+      { question: 'What hardware do Rust servers run on?', answer: 'Rust servers run on our dedicated Rise-3 node (Ryzen 9 5900X, NVMe). Plan size determines RAM and CPU allocated to your server.' },
       { question: 'Can I change the map or wipe?', answer: 'Yes. You have full control over server config, including map seed, size, and wipes. Use the panel and console to manage wipes and updates.' },
     ],
     whatIsHosting: [
@@ -114,7 +114,7 @@ function genericGame(gameName: string, supportedItems: string[], supportedBlurb:
     gameName,
     features: [
       { title: 'Panel control', description: 'Start, stop, and restart your server from the panel. Use the file manager and console for full control.', icon: 'panel' },
-      { title: 'Fast deployment', description: 'Your server is provisioned on premium hardware (NVMe, Ryzen). Ready in minutes after checkout.', icon: 'version' },
+      { title: 'Fast deployment', description: 'Your server is provisioned on our Rise-3 node (Ryzen 9 5900X, NVMe). Ready in minutes after checkout.', icon: 'version' },
       { title: 'Support', description: '24/7 support and Discord community. DDoS mitigation included for all game servers.', icon: 'support' },
     ],
     supportedTitle: `What we offer for ${gameName}`,

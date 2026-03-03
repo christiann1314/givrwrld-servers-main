@@ -12,7 +12,7 @@ const About = () => {
     {
       icon: Server,
       title: 'Dedicated game infrastructure',
-      description: 'We run game-optimized nodes with NVMe storage and low-latency networking. One region at launch (US East) so we do it right before we expand.',
+      description: 'We run on a dedicated Rise-3 server (Ryzen 9 5900X, 64GB RAM, 2×512GB NVMe, 1Gbit unmetered) in US East (Vinthill). One region at launch so we do it right before we expand.',
     },
     {
       icon: Shield,

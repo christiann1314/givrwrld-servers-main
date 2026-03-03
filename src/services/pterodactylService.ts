@@ -138,18 +138,31 @@ export class PterodactylService {
         continue;
       }
 
-      // Fetch real stats from Pterodactyl
-      const stats = await this.getServerStats(order.ptero_identifier);
-      
-      const status = stats ? 
-        (stats.state === 'running' ? 'online' : 
-         stats.state === 'starting' ? 'starting' : 
+      // Use live stats from API when present (avoids CORS by not calling Panel from browser)
+      let stats: PterodactylServerStats | null = null;
+      const live = (order as any).live;
+      if (live && typeof live.state === 'string') {
+        stats = {
+          state: live.state,
+          cpu_percent: Number(live.cpu_percent) || 0,
+          memory_bytes: 0,
+          disk_bytes: 0,
+          uptime_ms: (Number(live.uptime_seconds) || 0) * 1000,
+          server_identifier: order.ptero_identifier,
+        };
+      } else {
+        stats = await this.getServerStats(order.ptero_identifier);
+      }
+
+      const status = stats ?
+        (stats.state === 'running' ? 'online' :
+         stats.state === 'starting' ? 'starting' :
          stats.state === 'stopping' ? 'stopping' : 'offline') :
-        (order.status === 'active' ? 'online' : 
+        (order.status === 'active' ? 'online' :
          order.status === 'provisioned' ? 'starting' : 'offline');
 
-      const uptime = stats ? 
-        `${((stats.uptime_ms / (1000 * 60 * 60 * 24)) * 100).toFixed(1)}%` : 
+      const uptime = stats ?
+        `${((stats.uptime_ms / (1000 * 60 * 60 * 24)) * 100).toFixed(1)}%` :
         '99.9%';
 
       enhancedServers.push({

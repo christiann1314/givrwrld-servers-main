@@ -251,7 +251,7 @@ const EnshroudedConfig = () => {
                 <div className="mb-6">
                   <h4 className="text-white font-semibold mb-3">Included Features</h4>
                   <div className="space-y-2">
-                    {['99.9% uptime SLA', 'Anti-DDoS', 'Instant setup & NVMe', 'Ryzen 7 9800X3D', '24/7 support'].map((feature, index) => (
+                    {['99.9% uptime SLA', 'Anti-DDoS', 'Instant setup & NVMe', 'Ryzen 9 5900X', '24/7 support'].map((feature, index) => (
                       <div key={index} className="flex items-center">
                         <div className="w-4 h-4 bg-amber-500 rounded-full mr-3 flex items-center justify-center">
                           <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">

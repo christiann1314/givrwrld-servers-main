@@ -64,11 +64,13 @@ function inferRequiredEnvValue(key, rules, context) {
 
   const gameKey = normalizeGameKey(order.game);
   if (upper === 'APP_ID') return steamAppIdsByGame[gameKey] || '1';
+  if (upper === 'SRCDS_APPID') return steamAppIdsByGame[gameKey] || '1';
   if (upper === 'AUTO_UPDATE') return '1';
   if (upper === 'MAX_PLAYERS') return String(estimatedPlayers);
-  if (upper === 'SERVER_NAME' || upper === 'HOSTNAME' || upper === 'SESSION_NAME') {
+  if (upper === 'SERVER_NAME' || upper === 'HOSTNAME' || upper === 'SESSION_NAME' || upper === 'SRV_NAME') {
     return String(order.server_name || 'GIVRwrld Server').slice(0, 80);
   }
+  if (upper === 'WINDOWS_INSTALL') return '1';
   if (upper === 'SERVER_MAP' || upper === 'MAP') return 'TheIsland';
   if (upper === 'ARK_ADMIN_PASSWORD' || upper === 'SERVER_ADMIN_PASSWORD') {
     return buildSafeToken('Ark', order.id, 32);
@@ -285,11 +287,22 @@ async function insertSnapshot(orderId, live) {
 
 /**
  * GET /api/servers
- * Get user's servers
+ * Get user's servers with live Panel stats (avoids frontend CORS to Panel).
  */
 router.get('/', authenticate, async (req, res) => {
   try {
     const servers = await getUserServers(req.userId);
+    for (const server of servers) {
+      const live = await resolvePanelStatsForOrder(server);
+      server.live = {
+        state: live.state,
+        cpu_percent: live.cpu_percent ?? 0,
+        ram_percent: live.ram_percent ?? 0,
+        uptime_seconds: live.uptime_seconds ?? 0,
+        players_online: live.players_online ?? 0,
+        players_max: live.players_max ?? 0,
+      };
+    }
     res.json({
       success: true,
       servers
@@ -733,6 +746,7 @@ export async function provisionServer(orderId) {
       teeworlds: '380840',
       rust: '258550',
       ark: '376030',
+      enshrouded: '2278520',
     };
     const rimworldUrl =
       process.env.RIMWORLD_SERVER_PACKAGE_URL ||
@@ -815,6 +829,20 @@ export async function provisionServer(orderId) {
       environment.ARK_ADMIN_PASSWORD = String(environment.ARK_ADMIN_PASSWORD || arkAdminPassword).replace(/[^a-zA-Z0-9_-]/g, '');
       if (!environment.ARK_ADMIN_PASSWORD) {
         environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
+      }
+    }
+
+    // Enshrouded (and variant eggs): Panel may not return variables for cloned eggs; set required env explicitly.
+    if (gameKey === 'enshrouded') {
+      const enshroudedDefaults = {
+        WINDOWS_INSTALL: '1',
+        SRCDS_APPID: steamAppIdsByGame.enshrouded || '2278520',
+        SRV_NAME: String(order.server_name || 'GIVRwrld Enshrouded Server').slice(0, 80),
+      };
+      for (const [key, value] of Object.entries(enshroudedDefaults)) {
+        if (environment[key] === undefined || environment[key] === null || String(environment[key]).trim() === '') {
+          environment[key] = value;
+        }
       }
     }
 

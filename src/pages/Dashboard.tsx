@@ -126,6 +126,7 @@ const Dashboard = () => {
     teeworlds: ['https://cdn.akamai.steamstatic.com/steam/apps/380840/library_hero.jpg'],
     'among-us': ['https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg'],
     veloren: ['https://gitlab.com/veloren/book/-/raw/master/src/contributors/journalists/data/screenshots/Savannah%20Exploration.jpg'],
+    enshrouded: ['https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg'],
   };
 
   const getGameIconCandidates = (gameType: string) => {

@@ -321,27 +321,32 @@ export async function getOrCreatePterodactylUser(userId, userEmail, displayName,
     const trimmed = baseUsername.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '');
     const username = (trimmed || `user${String(userId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`).slice(0, 32);
 
-    // Create new Pterodactyl user
-    const pteroUserResponse = await fetch(`${panelUrl}/api/application/users`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${panelAppKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'Application/vnd.pterodactyl.v1+json',
-      },
-      body: JSON.stringify({
-        email: userEmail,
-        username,
-        first_name: displayName?.split(' ')[0] || 'User',
-        last_name: displayName?.split(' ').slice(1).join(' ') || '',
-        root_admin: false,
-        language: 'en',
-      }),
-    });
+    async function createPteroUser(preferredUsername) {
+      const resp = await fetch(`${panelUrl}/api/application/users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${panelAppKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'Application/vnd.pterodactyl.v1+json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          username: preferredUsername,
+          first_name: displayName?.split(' ')[0] || 'User',
+          last_name: displayName?.split(' ').slice(1).join(' ') || '',
+          root_admin: false,
+          language: 'en',
+        }),
+      });
+      return resp;
+    }
+
+    // First attempt with base username
+    let pteroUserResponse = await createPteroUser(username);
 
     if (!pteroUserResponse.ok) {
       const errorText = await pteroUserResponse.text();
-      // If user already exists, try to find them
+      // If user already exists, try to find them by email
       if (pteroUserResponse.status === 422) {
         const searchResponse = await fetch(`${panelUrl}/api/application/users?filter[email]=${encodeURIComponent(userEmail)}`, {
           headers: {
@@ -353,7 +358,6 @@ export async function getOrCreatePterodactylUser(userId, userEmail, displayName,
           const searchData = await searchResponse.json();
           if (searchData.data && searchData.data.length > 0) {
             const pteroUserId = searchData.data[0].attributes.id;
-            // Update MySQL with Pterodactyl user ID
             await pool.execute(
               `UPDATE users SET pterodactyl_user_id = ? WHERE id = ?`,
               [pteroUserId, userId]
@@ -361,8 +365,18 @@ export async function getOrCreatePterodactylUser(userId, userEmail, displayName,
             return pteroUserId;
           }
         }
+
+        // Username collision (422 with no existing email match): retry once with a suffixed username.
+        const suffix = String(userId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 6) || 'user';
+        const altUsername = `${username}-${suffix}`.slice(0, 32);
+        pteroUserResponse = await createPteroUser(altUsername);
+        if (!pteroUserResponse.ok) {
+          const retryText = await pteroUserResponse.text();
+          throw new Error(`Failed to create Pterodactyl user after retry: ${retryText}`);
+        }
+      } else {
+        throw new Error(`Failed to create Pterodactyl user: ${errorText}`);
       }
-      throw new Error(`Failed to create Pterodactyl user: ${errorText}`);
     }
 
     const pteroUserData = await pteroUserResponse.json();

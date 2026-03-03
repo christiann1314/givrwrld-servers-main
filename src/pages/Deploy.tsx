@@ -23,7 +23,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Minecraft',
     subtitle: 'Build, explore, survive',
     image: 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg',
-    features: ['Plugin & mod support', '4–8GB for modded, 2–4GB vanilla', 'Ryzen 7 9800X3D', 'Java & Bedrock'],
+    features: ['Plugin & mod support', '4–8GB for modded, 2–4GB vanilla', 'Ryzen 9 5900X', 'Java & Bedrock'],
     buttonColor: 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500',
     configPath: '/configure/minecraft',
   },
@@ -31,7 +31,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Rust',
     subtitle: 'Survival multiplayer game',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: ['Small to large servers', 'Mod-friendly, Oxide/uMod', 'Ryzen 7 9800X3D', 'NVMe storage'],
+    features: ['Small to large servers', 'Mod-friendly, Oxide/uMod', 'Ryzen 9 5900X', 'NVMe storage'],
     buttonColor: 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500',
     configPath: '/configure/rust',
   },
@@ -39,7 +39,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Palworld',
     subtitle: 'Creature collection survival',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg',
-    features: ['4–6 players typical', 'Dedicated Palworld egg', 'Ryzen 7 9800X3D', 'Fast deployment'],
+    features: ['4–6 players typical', 'Dedicated Palworld egg', 'Ryzen 9 5900X', 'Fast deployment'],
     buttonColor: 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
     configPath: '/configure/palworld',
   },
@@ -119,7 +119,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Enshrouded',
     subtitle: 'Survival, crafting & action RPG',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg',
-    features: ['Up to 16 players', 'Vanilla & modded support', 'Ryzen 7 9800X3D', 'Fast deployment'],
+    features: ['Up to 16 players', 'Vanilla & modded support', 'Ryzen 9 5900X', 'Fast deployment'],
     buttonColor: 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
     configPath: '/configure/enshrouded',
   },
@@ -292,7 +292,7 @@ const Deploy = () => {
                       <span className="text-base font-normal text-gray-200 ml-1">/month</span>
                     </div>
                     <div className="text-xs text-gray-400">
-                      NVMe • Ryzen 7 9800X3D
+                      NVMe • Ryzen 9 5900X • US East (Vinthill)
                     </div>
                   </div>
 

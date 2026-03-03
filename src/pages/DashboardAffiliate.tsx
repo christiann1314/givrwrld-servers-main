@@ -38,6 +38,24 @@ const DashboardAffiliate = () => {
     navigator.clipboard.writeText(`https://givrwrld.com/signup?ref=${affiliateData.referralCode}`);
   };
 
+  const referralUrl = `https://givrwrld.com/signup?ref=${affiliateData.referralCode}`;
+
+  const handleShareX = () => {
+    const text = 'Get premium game servers with GIVRwrld (my referral link):';
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralUrl)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleShareDiscord = () => {
+    try {
+      navigator.clipboard.writeText(referralUrl);
+    } catch {
+      // best-effort; ignore clipboard failures
+    }
+    const discordUrl = 'https://discord.com/app';
+    window.open(discordUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       {/* Fantasy Forest Background */}
@@ -125,11 +143,17 @@ const DashboardAffiliate = () => {
                   </button>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+                  <button
+                    onClick={handleShareX}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm"
+                  >
                     <Share2 size={16} className="mr-2" />
-                    Share on Twitter
+                    Share on X
                   </button>
-                  <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm">
+                  <button
+                    onClick={handleShareDiscord}
+                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm"
+                  >
                     <Share2 size={16} className="mr-2" />
                     Share on Discord
                   </button>
