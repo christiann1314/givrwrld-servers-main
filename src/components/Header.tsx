@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, HelpCircle, MessageCircle, User, LogIn, UserPlus, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { Home, Users, HelpCircle, MessageCircle, User, LogIn, UserPlus, ChevronDown, Settings, LogOut, Radio } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const Header = () => {
@@ -51,6 +51,11 @@ const Header = () => {
             <Link to="/" className="flex items-center space-x-1 text-white hover:text-emerald-400 transition-colors text-base">
               <Home size={18} />
               <span>Home</span>
+            </Link>
+
+            <Link to="/streamers" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">
+              <Radio size={18} />
+              <span>Streamers</span>
             </Link>
             
             <Link to="/discord" className="flex items-center space-x-1 text-gray-100 hover:text-emerald-400 transition-colors text-base">

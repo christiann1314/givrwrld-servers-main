@@ -24,7 +24,7 @@ const DashboardOrder = () => {
 
   const sidebarItems = [
     { name: "Overview", icon: BarChart3, link: "/dashboard", active: false },
-    { name: "My Services", icon: Server, link: "/dashboard/services" },
+    { name: "Game Panel", icon: Server, link: "/dashboard/services" },
     { name: "Billing", icon: CreditCard, link: "/dashboard/billing" },
     { name: "Support", icon: HeadphonesIcon, link: "/dashboard/support" },
     { name: "Affiliate", icon: Users, link: "/dashboard/affiliate" },
@@ -275,7 +275,7 @@ const DashboardOrder = () => {
               <div className="mb-8">
                 <Link 
                   to="/dashboard"
-                  className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors mb-4"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/40 bg-black/55 text-sm font-medium text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition-colors mb-4"
                 >
                   <ChevronLeft size={16} className="mr-1" />
                   Back to Dashboard

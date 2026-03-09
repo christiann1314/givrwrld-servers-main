@@ -25,9 +25,9 @@ export default function DashboardAdmin() {
         <div className="mb-6">
           <Link
             to="/dashboard"
-            className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/40 bg-black/55 text-sm font-medium text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition-colors"
           >
-            <ArrowLeft size={20} className="mr-2" />
+            <ArrowLeft size={20} className="mr-1" />
             Back to Dashboard
           </Link>
         </div>

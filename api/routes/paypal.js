@@ -163,6 +163,45 @@ async function handlePayPalWebhook(req, res) {
     return res.status(400).json({ error: 'Missing event id' });
   }
 
+  // Require webhook configuration for any state-changing behavior.
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) {
+    req.log?.warn?.(
+      { paypal_event_id: eventId, event_type: eventType },
+      'paypal_webhook_missing_id_configuration',
+    );
+    // Accept but do not mutate any state when verification cannot be performed.
+    return res.status(202).send();
+  }
+
+  // Verify webhook signature before recording or acting on the event.
+  const aesKey = process.env.AES_KEY;
+  const clientId =
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null) ||
+    process.env.PAYPAL_CLIENT_ID;
+  const clientSecret =
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) ||
+    process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    req.log?.error?.(
+      { paypal_event_id: eventId },
+      'paypal_webhook_missing_client_credentials',
+    );
+    return res.status(500).json({ error: 'Webhook verification unavailable' });
+  }
+
+  const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
+  const opts = getVerifyOptsFromRequest(req, webhookId);
+  const valid = await verifyWebhookSignature(opts, accessToken, SANDBOX);
+  if (!valid) {
+    req.log?.warn?.(
+      { paypal_event_id: eventId, event_type: eventType },
+      'paypal_webhook_signature_invalid',
+    );
+    return res.status(401).json({ error: 'Webhook signature verification failed' });
+  }
+
   // Idempotency: if we already processed this event_id, return 200 and skip
   try {
     await pool.execute(
@@ -175,22 +214,6 @@ async function handlePayPalWebhook(req, res) {
       return res.status(200).send();
     }
     throw insertErr;
-  }
-
-  // Optional: verify webhook signature when PAYPAL_WEBHOOK_ID is set
-  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
-  if (webhookId) {
-    const aesKey = process.env.AES_KEY;
-    const clientId = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null) || process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null) || process.env.PAYPAL_CLIENT_SECRET;
-    if (clientId && clientSecret) {
-      const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
-      const opts = getVerifyOptsFromRequest(req, webhookId);
-      const valid = await verifyWebhookSignature(opts, accessToken, SANDBOX);
-      if (!valid) {
-        return res.status(401).json({ error: 'Webhook signature verification failed' });
-      }
-    }
   }
 
   if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED') {

@@ -46,15 +46,17 @@ const FeaturesSection = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       {/* Features Header */}
-      <div className="text-center mb-16">
-        <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-          <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Features
-          </span>
-        </h2>
-        <p className="text-xl text-gray-100 max-w-2xl mx-auto">
-          Everything you need for premium gaming experiences
-        </p>
+      <div className="text-center mb-16 flex justify-center">
+        <div className="inline-block rounded-2xl border border-gray-800/80 bg-black/55 backdrop-blur-sm px-6 sm:px-10 py-6">
+          <h2 className="text-4xl lg:text-5xl font-bold mb-3">
+            <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Features
+            </span>
+          </h2>
+          <p className="text-lg sm:text-xl text-gray-100 max-w-2xl">
+            Everything you need for premium gaming experiences
+          </p>
+        </div>
       </div>
 
       {/* Service Features Grid */}

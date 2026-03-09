@@ -23,6 +23,7 @@ import Affiliate from "@/pages/Affiliate";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import About from "@/pages/About";
+import HowToPage from "@/pages/HowToPage";
 import NotFound from "@/pages/NotFound";
 import DashboardBilling from "@/pages/DashboardBilling";
 import DashboardOrder from "@/pages/DashboardOrder";
@@ -30,6 +31,9 @@ import DashboardSettings from "@/pages/DashboardSettings";
 import DashboardSupport from "@/pages/DashboardSupport";
 import DashboardAffiliate from "@/pages/DashboardAffiliate";
 import DashboardServices from "@/pages/DashboardServices";
+import DashboardServerDetails from "@/pages/DashboardServerDetails";
+import PublicServerPage from "@/pages/PublicServerPage";
+import StreamersPage from "@/pages/StreamersPage";
 import MinecraftConfig from "@/pages/MinecraftConfig";
 import RustConfig from "@/pages/RustConfig";
 import PalworldConfig from "@/pages/PalworldConfig";
@@ -55,6 +59,7 @@ import DashboardAdminOverview from "@/pages/DashboardAdminOverview";
 import DashboardAdminTickets from "@/pages/DashboardAdminTickets";
 import DashboardAdminTicketDetail from "@/pages/DashboardAdminTicketDetail";
 import DashboardAdminMetrics from "@/pages/DashboardAdminMetrics";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -71,7 +76,8 @@ const App = () => (
                 <Route path="/" element={<Home />} />
                 <Route path="/deploy" element={<Deploy />} />
                 <Route path="/about" element={<About />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/how-to" element={<HowToPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Navigate to="/auth" replace />} />
                 <Route path="/signup" element={<Navigate to="/auth" replace />} />
@@ -87,13 +93,16 @@ const App = () => (
                 <Route path="/affiliate" element={<Affiliate />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
-                <Route path="/dashboard/billing" element={<DashboardBilling />} />
-                <Route path="/dashboard/order" element={<DashboardOrder />} />
-                <Route path="/dashboard/services" element={<DashboardServices />} />
-                <Route path="/dashboard/settings" element={<DashboardSettings />} />
-                <Route path="/dashboard/support" element={<DashboardSupport />} />
-                <Route path="/dashboard/affiliate" element={<DashboardAffiliate />} />
-                <Route path="/dashboard/admin" element={<AdminGuard><DashboardAdmin /></AdminGuard>}>
+                <Route path="/dashboard/billing" element={<ProtectedRoute><DashboardBilling /></ProtectedRoute>} />
+                <Route path="/dashboard/order" element={<ProtectedRoute><DashboardOrder /></ProtectedRoute>} />
+                <Route path="/dashboard/services" element={<ProtectedRoute><DashboardServices /></ProtectedRoute>} />
+                <Route path="/dashboard/services/:orderId" element={<ProtectedRoute><DashboardServerDetails /></ProtectedRoute>} />
+                <Route path="/streamers" element={<StreamersPage />} />
+                <Route path="/server/:slug" element={<PublicServerPage />} />
+                <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
+                <Route path="/dashboard/support" element={<ProtectedRoute><DashboardSupport /></ProtectedRoute>} />
+                <Route path="/dashboard/affiliate" element={<ProtectedRoute><DashboardAffiliate /></ProtectedRoute>} />
+                <Route path="/dashboard/admin" element={<ProtectedRoute><AdminGuard><DashboardAdmin /></AdminGuard></ProtectedRoute>}>
                   <Route index element={<DashboardAdminOverview />} />
                   <Route path="tickets" element={<DashboardAdminTickets />} />
                   <Route path="tickets/:id" element={<DashboardAdminTicketDetail />} />

@@ -333,7 +333,7 @@ const MinecraftConfig = () => {
                 <button
                   onClick={() => {
                     if (!user) {
-                      navigate('/auth');
+                      navigate('/auth', { state: { returnTo: location.pathname + location.search } });
                       return;
                     }
                     createCheckout();

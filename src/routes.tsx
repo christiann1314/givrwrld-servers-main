@@ -4,6 +4,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Success from "./pages/Success";
 import About from "./pages/About";
+import HowToPage from "./pages/HowToPage";
 import Affiliate from "./pages/Affiliate";
 import Discord from "./pages/Discord";
 import Support from "./pages/Support";
@@ -27,8 +28,11 @@ import DashboardSupport from "./pages/DashboardSupport";
 import DashboardAffiliate from "./pages/DashboardAffiliate";
 import DashboardOrder from "./pages/DashboardOrder";
 import DashboardServices from "./pages/DashboardServices";
+import DashboardServerDetails from "./pages/DashboardServerDetails";
 import DashboardSettings from "./pages/DashboardSettings";
 import DashboardBilling from "./pages/DashboardBilling";
+import PublicServerPage from "./pages/PublicServerPage";
+import StreamersPage from "./pages/StreamersPage";
 import Migration from "./pages/Migration";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { TrafficMonitor } from "./components/TrafficMonitor";
@@ -42,6 +46,7 @@ export function AppRoutes() {
       <Route path="/signup" element={<Auth />} />
       <Route path="/success" element={<Success />} />
       <Route path="/about" element={<About />} />
+      <Route path="/how-to" element={<HowToPage />} />
       <Route path="/affiliate" element={<Affiliate />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/discord" element={<Discord />} />
@@ -65,6 +70,9 @@ export function AppRoutes() {
       <Route path="/dashboard/affiliate" element={<ProtectedRoute><DashboardAffiliate /></ProtectedRoute>} />
       <Route path="/dashboard/order" element={<ProtectedRoute><DashboardOrder /></ProtectedRoute>} />
       <Route path="/dashboard/services" element={<ProtectedRoute><DashboardServices /></ProtectedRoute>} />
+      <Route path="/dashboard/services/:orderId" element={<ProtectedRoute><DashboardServerDetails /></ProtectedRoute>} />
+      <Route path="/streamers" element={<StreamersPage />} />
+      <Route path="/server/:slug" element={<PublicServerPage />} />
       <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
       <Route path="/dashboard/billing" element={<ProtectedRoute><DashboardBilling /></ProtectedRoute>} />
       <Route path="/dashboard/traffic" element={<ProtectedRoute><TrafficMonitor /></ProtectedRoute>} />

@@ -169,9 +169,12 @@ const Dashboard = () => {
   ];
 
   const isAdmin = Boolean(user?.roles?.includes('admin'));
+  const hasAnyServers = servers.length > 0;
   const sidebarItems = [
     { name: "Overview", icon: BarChart3, link: "/dashboard", active: true },
-    { name: "My Services", icon: Server, link: "/dashboard/services" },
+    ...(hasAnyServers
+      ? [{ name: "Game Panel", icon: Server, link: "/dashboard/services" }]
+      : []),
     { name: "Billing", icon: CreditCard, link: "/dashboard/billing" },
     { name: "Support", icon: HeadphonesIcon, link: "/dashboard/support" },
     { name: "Affiliate", icon: Users, link: "/dashboard/affiliate" },
@@ -269,24 +272,13 @@ const Dashboard = () => {
                     Welcome back, {displayName}!
                   </h1>
                   <p className="text-gray-300 text-lg">
-                    Manage your servers, billing, and account settings
+                    Manage your game servers, billing, and account settings.
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     <span className="text-sm text-emerald-400">
                       🚀 Live Data Active — {new Date().toLocaleTimeString()}
                     </span>
                     <span className="text-gray-600">|</span>
-                    <button
-                      onClick={() => {
-                        analytics.trackGamePanelAccess(user?.id || '', 'main-panel');
-                        window.open(ENV.PANEL_URL, '_blank');
-                      }}
-                      className="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors inline-flex items-center gap-1.5"
-                    >
-                      <Server size={16} />
-                      Open Game Panel
-                      <ChevronRight size={14} className="opacity-80" />
-                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 lg:gap-8 shrink-0">
@@ -360,17 +352,6 @@ const Dashboard = () => {
                         >
                           View confirmation
                         </Link>
-                        <a 
-                          href={server.pterodactylUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => {
-                            analytics.trackGamePanelAccess(user?.id || '', server.id);
-                          }}
-                          className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-emerald-500/30"
-                        >
-                          Game Panel
-                        </a>
                       </div>
                     </div>
                   </div>

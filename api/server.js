@@ -2,6 +2,7 @@
 // Self-hosted API for local/production deployments
 
 import express from 'express';
+import http from 'node:http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fs from 'node:fs';
@@ -27,8 +28,10 @@ import { createLogger } from './lib/logger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { authLimiter, publicLimiter, webhookLimiter } from './middleware/rateLimit.js';
 import { runReconcilePass } from './jobs/reconcile-provisioning.js';
+import { runRefreshPublicServerSnapshots } from './jobs/refresh-public-server-snapshots.js';
 import pool from './config/database.js';
 import { log as sharedLog } from './lib/sharedLogger.js';
+import { attachConsoleWebSocketServer } from './ws/consoleGateway.js';
 
 dotenv.config();
 validateEnv();
@@ -37,6 +40,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('./package.json');
 const logger = createLogger();
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 const startTime = Date.now();
 
@@ -192,12 +196,20 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Attach WebSocket console gateway
+attachConsoleWebSocketServer(server);
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info({ port: PORT }, 'GIVRwrld API Server running');
   // Reconcile job: every 2 minutes
   cron.schedule('*/2 * * * *', () => {
     runReconcilePass(logger).catch((e) => logger.error({ err: e }, 'Reconcile job error'));
+  });
+  cron.schedule('*/2 * * * *', () => {
+    runRefreshPublicServerSnapshots(logger).catch((e) =>
+      logger.error({ err: e }, 'Public page snapshot refresh job error')
+    );
   });
 });
 

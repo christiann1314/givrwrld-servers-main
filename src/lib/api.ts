@@ -87,21 +87,18 @@ async function http<T>(
       });
 
       if (!retryRes.ok) {
-        const msg = await safeErrorMessage(retryRes);
-        throw new Error(msg);
+        throw await buildHttpError(retryRes);
       }
       return (await retryRes.json()) as T;
     }
 
     // refresh failed -> clear tokens
     clearTokens();
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg || "Unauthorized");
+    throw await buildHttpError(res);
   }
 
   if (!res.ok) {
-    const msg = await safeErrorMessage(res);
-    throw new Error(msg);
+    throw await buildHttpError(res);
   }
 
   return (await res.json()) as T;
@@ -113,6 +110,25 @@ async function safeErrorMessage(res: Response): Promise<string> {
     return data?.message || data?.error || `Request failed (${res.status})`;
   } catch {
     return `Request failed (${res.status})`;
+  }
+}
+
+async function buildHttpError(res: Response): Promise<Error & { status?: number; fields?: Record<string, string> }> {
+  try {
+    const data = await res.json();
+    const error = new Error(data?.message || data?.error || `Request failed (${res.status})`) as Error & {
+      status?: number;
+      fields?: Record<string, string>;
+    };
+    error.status = res.status;
+    if (data?.fields && typeof data.fields === "object") {
+      error.fields = data.fields;
+    }
+    return error;
+  } catch {
+    const error = new Error(`Request failed (${res.status})`) as Error & { status?: number };
+    error.status = res.status;
+    return error;
   }
 }
 
@@ -244,6 +260,46 @@ export const api = {
 
   async getServerStats(orderId: string) {
     return await http<any>(`/api/servers/stats?order_id=${encodeURIComponent(orderId)}`, { method: "GET" });
+  },
+
+  async getServer(orderId: string) {
+    return await http<any>(`/api/servers/${encodeURIComponent(orderId)}`, { method: "GET" });
+  },
+
+  async getServerResources(orderId: string) {
+    return await http<any>(`/api/servers/${encodeURIComponent(orderId)}/resources`, { method: "GET" });
+  },
+
+  async getServerPublicPage(orderId: string) {
+    return await http<any>(`/api/servers/${encodeURIComponent(orderId)}/public-page`, { method: "GET" });
+  },
+
+  async updateServerPublicPage(orderId: string, data: any) {
+    return await http<any>(`/api/servers/${encodeURIComponent(orderId)}/public-page`, {
+      method: "PUT",
+      body: data,
+    });
+  },
+
+  async checkPublicSlugAvailability(orderId: string, slug: string) {
+    return await http<any>(
+      `/api/servers/public-page/slug-availability?order_id=${encodeURIComponent(orderId)}&slug=${encodeURIComponent(slug)}`,
+      { method: "GET" }
+    );
+  },
+
+  async getPublicServerPage(slug: string) {
+    return await http<any>(`/api/public/server/${encodeURIComponent(slug)}`, {
+      method: "GET",
+      retryOnAuthFail: false,
+    });
+  },
+
+  async getPublicStreamers() {
+    return await http<{ streamers: any[] }>("/api/public/streamers", {
+      method: "GET",
+      retryOnAuthFail: false,
+    });
   },
 
   async syncPanelUser() {

@@ -61,7 +61,7 @@ services:
       - TZ=UTC
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - wings-config:/etc/pterodactyl
+      - ./wings-live-config.yml:/etc/pterodactyl/config.yml
       - wings-data:/var/lib/pterodactyl
       - /tmp/pterodactyl:/tmp/pterodactyl
     ports:
@@ -79,7 +79,6 @@ volumes:
   panel-logs:
   mariadb-data:
   redis-data:
-  wings-config:
   wings-data:
 
 networks:

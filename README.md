@@ -10,7 +10,7 @@ Production-ready game server hosting: customers pick a plan, pay with **PayPal**
 |-------------|----------------------|-------------------------|
 | **Frontend**| Vite + React         | `http://localhost:8080` |
 | **Backend** | Node.js + Express    | `http://localhost:3001` |
-| **Database**| MySQL / MariaDB      | `app_core` (e.g. 3306)  |
+| **Database**| MySQL / MariaDB      | `app_core` (local default `3307`) |
 | **Panel**   | Pterodactyl Panel + Wings | `http://localhost:8000` |
 | **Payments**| PayPal Subscriptions | Webhook + finalize-order |
 | **Auth**    | JWT (Express API)    | Login/signup, email verification |
@@ -23,26 +23,35 @@ No Supabase or Stripe in the primary flow. Checkout, provisioning, and dashboard
 
 **See [LAUNCH-STACK.md](./LAUNCH-STACK.md)** for:
 
-- How to run the stack (DB, API, frontend, Pterodactyl)
-- Purchase flow (PayPal → webhook/finalize → `provisionServer`)
+- How to run the stack (DB, Redis, API, provision worker, frontend, Pterodactyl)
+- Purchase flow (PayPal → webhook → provisioning queue → `provisionServer`)
 - Plan/egg mapping: `plans.ptero_egg_id` → `ptero_eggs` → Pterodactyl server create
 
-**From repo root:**
+**From repo root (minimal local stack):**
 
 ```bash
 # Dependencies
 npm install
 cd api && npm install && cd ..
 
-# Backend (from api/ or: npm run dev:api)
+docker compose -f docker-compose.mysql.yml up -d
+
+# Start Redis (for provisioning queue)
+# e.g. Docker Desktop single-node or a local redis-server on 6379
+
+# Backend API (from api/ or: npm run dev:api)
 cd api && npm run dev
 
-# Frontend (second terminal; or: npm run dev:frontend)
-npm run dev
+# Provision worker (separate terminal)
+cd api && node workers/provisionerWorker.js
+
+# Frontend (separate terminal; or: npm run dev:frontend)
+cd .. && npm run dev
 ```
 
 - Frontend: **http://localhost:8080**  
 - API: **http://localhost:3001**  
+- Database: **127.0.0.1:3307** (via `docker-compose.mysql.yml`)  
 - Panel: **http://localhost:8000** (when Pterodactyl is running, e.g. Docker in `pterodactyl/`)
 
 ---

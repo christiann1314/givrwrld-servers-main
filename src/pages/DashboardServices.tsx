@@ -1,27 +1,15 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ArrowLeft, Server, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Server } from 'lucide-react';
 import { useUserServers } from '../hooks/useUserServers';
 import { useAuth } from '../hooks/useAuth';
 import { useServiceMetrics } from '../hooks/useServiceMetrics';
 
-function formatUptime(seconds: number) {
-  const safe = Math.max(0, Number(seconds || 0));
-  const hours = Math.floor(safe / 3600);
-  const minutes = Math.floor((safe % 3600) / 60);
-  return `${hours}h ${minutes}m`;
-}
-
 const DashboardServices = () => {
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const { user } = useAuth();
   const { serversData } = useUserServers(user?.email);
   const serverIds = React.useMemo(() => (serversData.servers || []).map((s: any) => s.id), [serversData.servers]);
-  const { liveByServer, summaryByServer, wsConnected } = useServiceMetrics(serverIds);
-
-  const toggleSummary = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const { liveByServer, wsConnected } = useServiceMetrics(serverIds);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -36,8 +24,11 @@ const DashboardServices = () => {
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6 flex items-center justify-between">
-            <Link to="/dashboard" className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors">
-              <ArrowLeft size={20} className="mr-2" />
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/40 bg-black/55 text-sm font-medium text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition-colors"
+            >
+              <ArrowLeft size={20} className="mr-1" />
               Back to Dashboard
             </Link>
             <div className="text-xs text-gray-300 bg-gray-800/60 border border-gray-600/50 px-3 py-1 rounded-full">
@@ -48,10 +39,10 @@ const DashboardServices = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
               <span className="bg-gradient-to-r from-emerald-400 via-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                My Services
+                Game Panel
               </span>
             </h1>
-            <p className="text-gray-300">Executive summary of server health and performance.</p>
+            <p className="text-gray-300">Native control panel for all of your game servers.</p>
           </div>
 
           {serversData.loading ? (
@@ -76,14 +67,6 @@ const DashboardServices = () => {
                   ramPercent: 0,
                   uptimeSeconds: 0,
                 };
-                const summary = summaryByServer[server.id] || {
-                  avgCpuPercent: 0,
-                  peakPlayers: 0,
-                  uptimePercent: 0,
-                  restartCount: 0,
-                };
-                const isExpanded = !!expanded[server.id];
-
                 return (
                   <div key={server.id} className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6 hover:border-emerald-500/40 transition-all">
                     <div className="flex items-start justify-between mb-4">
@@ -96,72 +79,22 @@ const DashboardServices = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
                         <div className="text-xs text-gray-400">Players</div>
                         <div className="text-lg font-semibold">{live.currentPlayers} / {live.maxPlayers || 0}</div>
                       </div>
-                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                        <div className="text-xs text-gray-400">Live CPU %</div>
-                        <div className="text-lg font-semibold">{Number(live.cpuPercent || 0).toFixed(1)}%</div>
-                      </div>
-                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                        <div className="text-xs text-gray-400">Live RAM %</div>
-                        <div className="text-lg font-semibold">{Number(live.ramPercent || 0).toFixed(1)}%</div>
-                      </div>
-                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                        <div className="text-xs text-gray-400">Uptime</div>
-                        <div className="text-lg font-semibold">{formatUptime(live.uptimeSeconds || 0)}</div>
-                      </div>
-                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-center gap-2">
+                      <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3 flex items-center justify-center">
                         <Link
-                          to={`/success?order_id=${encodeURIComponent(server.id)}`}
+                          to={`/dashboard/services/${server.id}`}
                           className="text-gray-300 hover:text-white text-sm font-medium"
                         >
-                          View confirmation
-                        </Link>
-                        <a
-                          href={server.pterodactyl_url || server.pterodactylUrl || '#'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-emerald-300 hover:text-emerald-200 text-sm font-medium"
-                        >
                           Open Game Panel
-                        </a>
+                        </Link>
                       </div>
                     </div>
 
-                    <div className="mt-4">
-                      <button
-                        onClick={() => toggleSummary(server.id)}
-                        className="inline-flex items-center text-sm text-cyan-300 hover:text-cyan-200"
-                      >
-                        <BarChart3 size={14} className="mr-2" />
-                        7-Day Performance Summary
-                        <ChevronDown size={14} className={`ml-2 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                          <div className="text-xs text-gray-400">Avg CPU %</div>
-                          <div className="text-lg font-semibold">{Number(summary.avgCpuPercent || 0).toFixed(1)}%</div>
-                        </div>
-                        <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                          <div className="text-xs text-gray-400">Peak Players</div>
-                          <div className="text-lg font-semibold">{summary.peakPlayers || 0}</div>
-                        </div>
-                        <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                          <div className="text-xs text-gray-400">Uptime %</div>
-                          <div className="text-lg font-semibold">{Number(summary.uptimePercent || 0).toFixed(1)}%</div>
-                        </div>
-                        <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-3">
-                          <div className="text-xs text-gray-400">Restart Count</div>
-                          <div className="text-lg font-semibold">{summary.restartCount || 0}</div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Historical performance summary removed for now; users can see detailed metrics on the server details page. */}
                   </div>
                 );
               })}

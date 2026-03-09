@@ -9,7 +9,7 @@ const HeroSection = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="grid lg:grid-cols-2 gap-12 items-center">
         {/* Left Column - Hero Content */}
-        <div className="space-y-8">
+          <div className="space-y-8">
           <div className="space-y-6">
             <div className="inline-block">
               <span className="bg-gray-900/95 text-emerald-400 px-4 py-2 rounded-full text-base font-medium border border-emerald-500/30">
@@ -23,7 +23,7 @@ const HeroSection = () => {
               </span>
             </h1>
             
-            <p className="text-xl text-gray-100 leading-relaxed max-w-lg">
+            <p className="inline-block text-xl text-gray-100 leading-relaxed max-w-xl px-4 py-3 rounded-2xl border border-gray-800/80 bg-black/55 backdrop-blur-sm">
               Deploy your custom game server in seconds. Premium hardware, instant setup, and 24/7 support for the ultimate gaming experience.
             </p>
           </div>
@@ -64,6 +64,27 @@ const HeroSection = () => {
             <span className="text-gray-200 text-base">—</span>
             <span className="text-white font-medium">Excellent</span>
           </div>
+
+          <Link
+            to="/how-to"
+            className="block rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-r from-emerald-600/20 via-gray-900/90 to-blue-900/30 px-6 py-6 shadow-xl hover:border-emerald-300/60 hover:from-emerald-500/25 hover:to-blue-800/35 transition-all"
+          >
+            <div className="flex flex-col gap-3">
+              <div className="inline-flex w-fit items-center rounded-full border border-emerald-400/35 bg-black/35 px-3 py-1 text-sm font-semibold text-emerald-300">
+                Start Here
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+                New to GIVRwrld? Read the full user guide before you deploy.
+              </h2>
+              <p className="text-base sm:text-lg text-gray-100 leading-relaxed max-w-2xl">
+                Learn every major feature we offer, how the dashboard works, how to manage servers, and how
+                streamer pages and community tools fit into the platform.
+              </p>
+              <div className="inline-flex items-center text-emerald-300 font-semibold text-base">
+                Open the guide
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Right Column - Server Cards */}

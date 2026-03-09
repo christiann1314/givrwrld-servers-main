@@ -33,7 +33,7 @@ system:
     enabled: false
     directory: /run/wings/etc
   machine_id:
-    enabled: true
+    enabled: false
     directory: /run/wings/machine-id
   disk_check_interval: 150
   activity_send_interval: 60

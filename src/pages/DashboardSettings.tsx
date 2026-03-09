@@ -90,8 +90,11 @@ const DashboardSettings = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb */}
           <div className="mb-6">
-            <Link to="/dashboard" className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors">
-              <ArrowLeft size={20} className="mr-2" />
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/40 bg-black/55 text-sm font-medium text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition-colors"
+            >
+              <ArrowLeft size={20} className="mr-1" />
               Back to Dashboard
             </Link>
           </div>
@@ -143,17 +146,6 @@ const DashboardSettings = () => {
                   >
                     <Bell size={20} />
                     <span>Notifications</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('pterodactyl')}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === 'pterodactyl'
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
-                    }`}
-                  >
-                    <Server size={20} />
-                    <span>Pterodactyl Access</span>
                   </button>
                 </nav>
               </div>

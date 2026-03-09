@@ -1,6 +1,7 @@
 // Servers Route
 import express from 'express';
 import crypto from 'node:crypto';
+import rateLimit from 'express-rate-limit';
 import {
   getUserServers,
   getDecryptedSecret,
@@ -21,9 +22,130 @@ import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
 import { recordProvisionSuccess, recordProvisionFailure } from '../lib/metrics.js';
+import {
+  getServerDetails,
+  getServerResources as getPterodactylResources,
+  sendPowerAction,
+  PterodactylError,
+  mapPterodactylErrorToHttp,
+} from '../services/pterodactylService.js';
+import {
+  upsertPublicServerSnapshot,
+  getServerPublicPageSettings,
+  validatePublicPageInput,
+  isPublicSlugAvailable,
+  upsertServerPublicPageSettings,
+  isOrderEligibleForPublicPage,
+} from '../lib/publicServerPages.js';
 
 const logger = getLogger();
 const router = express.Router();
+const isDev = process.env.NODE_ENV !== 'production';
+
+// In-memory cache for short-lived resources responses (per order_id).
+// TTL is intentionally short (2.5s) and responses are *never* used for billing.
+const SERVER_RESOURCES_TTL_MS = 2500;
+const serverResourcesCache = new Map();
+
+function getCachedResources(orderId) {
+  const key = String(orderId);
+  const entry = serverResourcesCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    serverResourcesCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCachedResources(orderId, value) {
+  const key = String(orderId);
+  serverResourcesCache.set(key, {
+    value,
+    expiresAt: Date.now() + SERVER_RESOURCES_TTL_MS,
+  });
+}
+
+async function persistPublicSnapshotBestEffort(orderId, payload, snapshotSource) {
+  try {
+    await upsertPublicServerSnapshot({
+      orderId,
+      status: payload.state,
+      playersOnline: payload.players_online,
+      playersMax: payload.players_max,
+      snapshotSource,
+      capturedAt: payload.measured_at || new Date(),
+    });
+  } catch (err) {
+    logger.warn(
+      {
+        order_id: orderId,
+        err: err?.message || String(err),
+      },
+      'Failed to persist public server snapshot'
+    );
+  }
+}
+
+// Simple in-memory per-order power action rate limiter.
+// This is per-process and intended as a guardrail; a future iteration can
+// move this to Redis for multi-instance coordination.
+const POWER_RATE_WINDOW_MS = 5 * 60 * 1000;
+const POWER_RATE_MAX_PER_ORDER = 5;
+const powerRateState = new Map();
+const slugAvailabilityLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 120 : 20,
+  message: { error: 'Too many requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+function checkPowerRateLimit(orderId) {
+  const key = String(orderId);
+  const now = Date.now();
+  const current = powerRateState.get(key);
+
+  if (!current || now - current.windowStart > POWER_RATE_WINDOW_MS) {
+    powerRateState.set(key, { windowStart: now, count: 1 });
+    return { allowed: true, retryAfterMs: 0 };
+  }
+
+  if (current.count >= POWER_RATE_MAX_PER_ORDER) {
+    const retryAfterMs = Math.max(0, POWER_RATE_WINDOW_MS - (now - current.windowStart));
+    return { allowed: false, retryAfterMs };
+  }
+
+  current.count += 1;
+  powerRateState.set(key, current);
+  return { allowed: true, retryAfterMs: 0 };
+}
+
+async function getUserGameOrderById(orderId, userId) {
+  const [rows] = await pool.execute(
+    `SELECT
+       o.id,
+       o.user_id,
+       o.status,
+       o.item_type,
+       p.game,
+       o.region,
+       o.plan_id,
+       o.server_name,
+       o.ptero_server_id,
+       o.ptero_identifier,
+       o.ptero_node_id,
+       p.ram_gb,
+       p.vcores,
+       p.ssd_gb
+     FROM orders o
+     LEFT JOIN plans p ON p.id = o.plan_id
+     WHERE o.id = ? AND o.user_id = ? AND o.item_type = 'game'
+     LIMIT 1`,
+    [orderId, userId]
+  );
+  return rows?.[0] || null;
+}
 
 function hasRequiredRule(rules) {
   return String(rules || '').toLowerCase().includes('required');
@@ -302,6 +424,16 @@ router.get('/', authenticate, async (req, res) => {
         players_online: live.players_online ?? 0,
         players_max: live.players_max ?? 0,
       };
+      await persistPublicSnapshotBestEffort(
+        server.id,
+        {
+          state: server.live.state,
+          players_online: server.live.players_online,
+          players_max: server.live.players_max,
+          measured_at: new Date().toISOString(),
+        },
+        'dashboard-list'
+      );
     }
     res.json({
       success: true,
@@ -339,6 +471,16 @@ router.get('/stats', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
     const live = await resolvePanelStatsForOrder(order);
+    await persistPublicSnapshotBestEffort(
+      order.id,
+      {
+        state: live.state,
+        players_online: live.players_online ?? 0,
+        players_max: live.players_max ?? 0,
+        measured_at: new Date().toISOString(),
+      },
+      'dashboard-stats'
+    );
     const serverIdentifier = order.ptero_server_id != null ? String(order.ptero_server_id) : String(order.id);
     res.json({
       state: live.state,
@@ -477,12 +619,374 @@ router.get('/metrics/summary', authenticate, async (req, res) => {
 });
 
 /**
+ * GET /api/servers/public-page/slug-availability?slug=&order_id=
+ * Authenticated advisory check for normalized slug uniqueness.
+ */
+router.get('/public-page/slug-availability', authenticate, slugAvailabilityLimiter, async (req, res) => {
+  try {
+    const slug = String(req.query.slug || '');
+    const orderId = String(req.query.order_id || '');
+
+    if (!slug) {
+      return res.status(400).json({ error: 'slug is required' });
+    }
+
+    if (!orderId) {
+      return res.status(400).json({ error: 'order_id is required' });
+    }
+
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const available = await isPublicSlugAvailable(slug, order.id);
+    return res.json({ available });
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to check public slug availability');
+    return res.status(500).json({
+      error: 'Failed to check slug availability',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * GET /api/servers/:orderId/public-page
+ * Authenticated server-owner view of public page settings.
+ */
+router.get('/:orderId/public-page', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const settings = await getServerPublicPageSettings(order.id);
+    const eligible = isOrderEligibleForPublicPage(order);
+    return res.json({
+      ...settings,
+      eligible,
+    });
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to fetch server public page settings');
+    return res.status(500).json({
+      error: 'Failed to fetch public page settings',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/servers/:orderId/public-page
+ * Authenticated server-owner update of public page settings.
+ */
+router.put('/:orderId/public-page', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (!isOrderEligibleForPublicPage(order)) {
+      return res.status(400).json({ error: 'This server is not eligible for a public page.' });
+    }
+
+    const validated = validatePublicPageInput(req.body || {});
+    if (Object.keys(validated.errors).length > 0) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        fields: validated.errors,
+      });
+    }
+
+    if (validated.data.public_slug) {
+      const available = await isPublicSlugAvailable(validated.data.public_slug, order.id);
+      if (!available) {
+        return res.status(409).json({
+          error: 'Slug is already in use',
+          fields: { public_slug: 'That slug is already taken.' },
+        });
+      }
+    }
+
+    const settings = await upsertServerPublicPageSettings(order.id, validated.data);
+    return res.json({
+      ...settings,
+      eligible: true,
+    });
+  } catch (error) {
+    if (error?.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        error: 'Slug is already in use',
+        fields: { public_slug: 'That slug is already taken.' },
+      });
+    }
+
+    logger.error({ err: error, user_id: req.userId }, 'Failed to update server public page settings');
+    return res.status(500).json({
+      error: 'Failed to update public page settings',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * GET /api/servers/:orderId
+ * Server details for a single order, including basic Panel details when available.
+ * Auth invariant: user must own the order; client never provides ptero_server_id.
+ */
+router.get('/:orderId', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    let panel = null;
+    if (order.ptero_server_id != null) {
+      try {
+        const details = await getServerDetails(order.ptero_server_id);
+        panel = details;
+      } catch (err) {
+        if (err instanceof PterodactylError) {
+          const mapped = mapPterodactylErrorToHttp(err);
+          logger.warn(
+            {
+              order_id: order.id,
+              ptero_server_id: order.ptero_server_id,
+              code: mapped.body.code,
+              status: mapped.status,
+            },
+            'Failed to fetch Pterodactyl server details for order'
+          );
+        } else {
+          logger.error(
+            {
+              order_id: order.id,
+              ptero_server_id: order.ptero_server_id,
+              err: err?.message || String(err),
+            },
+            'Unexpected error fetching Pterodactyl server details'
+          );
+        }
+        // For PR2, treat Panel detail failures as non-fatal; return order info only.
+      }
+    }
+
+    res.json({
+      id: order.id,
+      status: order.status,
+      game: order.game,
+      region: order.region,
+      server_name: order.server_name,
+      plan: {
+        id: order.plan_id,
+        ram_gb: order.ram_gb,
+        vcores: order.vcores,
+        ssd_gb: order.ssd_gb,
+      },
+      panel,
+    });
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to fetch server details for order');
+    res.status(500).json({
+      error: 'Failed to fetch server details',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * GET /api/servers/:orderId/resources
+ * Live resources for a single order, with short TTL caching (2.5s).
+ * This endpoint is informational only and must not be used for billing.
+ */
+router.get('/:orderId/resources', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const cached = getCachedResources(order.id);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // If the server is not yet provisioned, return a synthetic "provisioning" snapshot.
+    if (order.ptero_server_id == null) {
+      const measuredAt = new Date().toISOString();
+      const memoryLimitBytes =
+        order.ram_gb != null ? Number(order.ram_gb) * 1024 * 1024 * 1024 : null;
+      const payload = {
+        state: normalizeState(order.status),
+        cpu_percent: 0,
+        memory_bytes: 0,
+        memory_limit_bytes: memoryLimitBytes,
+        disk_bytes: 0,
+        players_online: 0,
+        players_max: 0,
+        uptime_seconds: 0,
+        measured_at: measuredAt,
+      };
+      setCachedResources(order.id, payload);
+      await persistPublicSnapshotBestEffort(order.id, payload, 'provisioning');
+      return res.json(payload);
+    }
+
+    try {
+      const resources = await getPterodactylResources(order.ptero_server_id);
+      const payload = {
+        state: resources.state,
+        cpu_percent: resources.cpuPercent,
+        memory_bytes: resources.memoryBytes,
+        memory_limit_bytes: resources.memoryLimitBytes,
+        disk_bytes: resources.diskBytes,
+        players_online: resources.playersOnline ?? 0,
+        players_max: resources.playersMax ?? 0,
+        uptime_seconds: resources.uptimeSeconds ?? 0,
+        measured_at: resources.measuredAt,
+      };
+      setCachedResources(order.id, payload);
+      await persistPublicSnapshotBestEffort(order.id, payload, 'panel-cache');
+      res.json(payload);
+    } catch (err) {
+      if (err instanceof PterodactylError) {
+        const mapped = mapPterodactylErrorToHttp(err);
+        logger.warn(
+          {
+            order_id: order.id,
+            ptero_server_id: order.ptero_server_id,
+            code: mapped.body.code,
+            status: mapped.status,
+          },
+          'Failed to fetch Pterodactyl resources for order'
+        );
+        return res.status(mapped.status).json(mapped.body);
+      }
+
+      logger.error(
+        {
+          order_id: order.id,
+          ptero_server_id: order.ptero_server_id,
+          err: err?.message || String(err),
+        },
+        'Unexpected error fetching Pterodactyl resources for order'
+      );
+      return res.status(502).json({
+        code: 'PTERO_UNKNOWN',
+        message: 'Failed to fetch server resources from panel',
+      });
+    }
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to fetch server resources for order');
+    res.status(500).json({
+      error: 'Failed to fetch server resources',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * POST /api/servers/:orderId/power
+ * Power controls for a single order (start/stop/restart/kill).
+ * Enforces per-order rate limiting and never accepts ptero_server_id from the client.
+ */
+router.post('/:orderId/power', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { action } = req.body || {};
+
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+    if (!action || typeof action !== 'string') {
+      return res.status(400).json({ error: 'action is required' });
+    }
+
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (order.ptero_server_id == null) {
+      return res.status(409).json({
+        error: 'Server not provisioned yet',
+        code: 'SERVER_NOT_PROVISIONED',
+      });
+    }
+
+    const rate = checkPowerRateLimit(order.id);
+    if (!rate.allowed) {
+      return res.status(429).json({
+        error: 'Too many power actions for this server. Please wait before trying again.',
+        code: 'RATE_LIMITED_POWER_ACTIONS',
+        retry_after_seconds: Math.ceil(rate.retryAfterMs / 1000),
+      });
+    }
+
+    try {
+      const result = await sendPowerAction(order.ptero_server_id, action);
+      return res.json({
+        success: true,
+        state: result.state,
+      });
+    } catch (err) {
+      if (err instanceof PterodactylError) {
+        const mapped = mapPterodactylErrorToHttp(err);
+        logger.warn(
+          {
+            order_id: order.id,
+            ptero_server_id: order.ptero_server_id,
+            code: mapped.body.code,
+            status: mapped.status,
+          },
+          'Pterodactyl power action failed for order'
+        );
+        return res.status(mapped.status).json(mapped.body);
+      }
+
+      logger.error(
+        {
+          order_id: order.id,
+          ptero_server_id: order.ptero_server_id,
+          err: err?.message || String(err),
+        },
+        'Unexpected error sending power action to Pterodactyl'
+      );
+      return res.status(502).json({
+        code: 'PTERO_UNKNOWN',
+        message: 'Failed to send power action to panel',
+      });
+    }
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to process power action for order');
+    res.status(500).json({
+      error: 'Failed to process power action',
+      message: error?.message,
+    });
+  }
+});
+
+/**
  * Provision server function (can be called directly or via HTTP).
  * Idempotent: does not create a second server if ptero_server_id exists or status is provisioned.
  */
 export async function provisionServer(orderId) {
+  const startedAt = Date.now();
   try {
-    const startedAt = Date.now();
     if (!orderId) {
       throw new Error('order_id is required');
     }
@@ -640,8 +1144,13 @@ export async function provisionServer(orderId) {
     // 1) explicit PTERO_DEFAULT_ALLOCATION_ID (if set)
     // 2) optional CSV list in PTERO_ALLOCATION_IDS
     // 3) API-discovered free allocation IDs (if app key has access)
+    //
+    // Important safety rule:
+    // If the app key cannot list allocations, we do NOT guess allocation IDs.
+    // Provisioning must fail fast unless explicit safe allocation IDs are configured.
     const allocationCandidates = [];
     let allocationListUnauthorized = false;
+    let allocationListFailed = false;
     const pushCandidate = (value) => {
       const n = Number(value);
       if (n > 0 && !allocationCandidates.includes(n)) allocationCandidates.push(n);
@@ -671,17 +1180,22 @@ export async function provisionServer(orderId) {
           .forEach((a) => pushCandidate(a.id));
       } else if (allocRes.status === 401 || allocRes.status === 403) {
         allocationListUnauthorized = true;
+      } else {
+        allocationListFailed = true;
       }
     } catch {
-      // Best effort only. We'll rely on candidate env list if API listing is unauthorized.
+      allocationListFailed = true;
     }
 
-    if (allocationListUnauthorized) {
-      const scanMin = Math.max(1, Number(process.env.PTERO_ALLOCATION_SCAN_MIN || 1));
-      const scanMax = Math.max(scanMin, Number(process.env.PTERO_ALLOCATION_SCAN_MAX || 300));
-      for (let id = scanMin; id <= scanMax; id += 1) {
-        pushCandidate(id);
-      }
+    const hasExplicitAllocationCandidates = allocationCandidates.length > 0;
+    if ((allocationListUnauthorized || allocationListFailed) && !hasExplicitAllocationCandidates) {
+      const failureReason = allocationListUnauthorized
+        ? `Panel app key cannot list allocations for node ${node.ptero_node_id} (received 401/403).`
+        : `Panel allocation listing failed for node ${node.ptero_node_id}.`;
+      throw new Error(
+        `${failureReason} Configure allocation visibility for the app key or set ` +
+        `PTERO_DEFAULT_ALLOCATION_ID / PTERO_ALLOCATION_IDS in api/.env.`
+      );
     }
 
     if (allocationCandidates.length === 0) {
@@ -987,7 +1501,7 @@ export async function provisionServer(orderId) {
  * POST /api/servers/provision
  * Provision a new server (called by webhook or manually)
  */
-router.post('/provision', async (req, res) => {
+router.post('/provision', authenticate, async (req, res) => {
   try {
     const { order_id } = req.body;
 

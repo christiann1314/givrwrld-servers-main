@@ -221,25 +221,30 @@ const Deploy = () => {
         
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <div className="mb-8">
-            <Link to="/" className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors mb-6">
-              ← Back to Home
-            </Link>
+          <div className="inline-block max-w-3xl mx-auto rounded-2xl border border-gray-800/80 bg-black/55 backdrop-blur-md px-6 sm:px-10 py-8 shadow-xl">
+            <div className="mb-4">
+              <Link
+                to="/"
+                className="inline-flex items-center text-sm font-medium text-emerald-300 hover:text-emerald-200 transition-colors"
+              >
+                ← Back to Home
+              </Link>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-5">
+              <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Deploy Your Game Server
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-gray-100 mb-2">
+              Choose your game and get started instantly. Premium hosting with
+              instant setup and 24/7 support.
+            </p>
+            <p className="text-sm sm:text-base text-gray-200">
+              DDoS mitigation is included for all game servers.
+            </p>
           </div>
-          
-          <h1 className="text-5xl lg:text-6xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Deploy Your Game Server
-            </span>
-          </h1>
-          
-          <p className="text-xl text-gray-100 max-w-3xl mx-auto mb-2">
-            Choose your game and get started instantly. Premium hosting with
-            instant setup and 24/7 support.
-          </p>
-          <p className="text-base text-gray-200 max-w-2xl mx-auto mb-16">
-            DDoS mitigation is included for all game servers.
-          </p>
         </section>
 
         {/* Game Server Cards */}

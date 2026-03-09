@@ -94,7 +94,7 @@ const Auth = () => {
             title: "Welcome back!",
             description: "You've been logged in successfully.",
           });
-          navigate('/'); // Always redirect to home page after login
+          navigate(returnTo);
         }
       } else {
         // Sign up - Security: Validate password strength

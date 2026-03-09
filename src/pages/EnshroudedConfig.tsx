@@ -265,7 +265,10 @@ const EnshroudedConfig = () => {
                 </div>
                 <button
                   onClick={() => {
-                    if (!user) { navigate('/auth'); return; }
+                    if (!user) {
+                      navigate('/auth', { state: { returnTo: location.pathname + location.search } });
+                      return;
+                    }
                     createCheckout();
                   }}
                   disabled={loading || !serverName.trim()}
