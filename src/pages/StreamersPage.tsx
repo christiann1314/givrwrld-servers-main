@@ -186,6 +186,7 @@ const StreamersPage: React.FC = () => {
                       </a>
                       <Link
                         to={`/server/${streamer.slug}`}
+                        state={{ from: "streamers" }}
                         className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-600 text-sm font-semibold text-gray-200 hover:text-white hover:border-gray-500 transition-colors"
                       >
                         View Server Page

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Server, Cpu, HardDrive, MapPin, Power, PowerOff, RefreshCcw, ExternalLink } from "lucide-react";
+import { ArrowLeft, Server, Cpu, HardDrive, MapPin, Power, PowerOff, RefreshCcw, ExternalLink, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "@/components/ui/use-toast";
 import { getAccessToken } from "@/lib/auth";
@@ -1274,9 +1274,12 @@ const DashboardServerDetails: React.FC = () => {
                             type="button"
                             onClick={handleSavePublicPage}
                             disabled={publicPageSaving || (publicPage?.eligible === false)}
-                            className="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400 text-white text-sm font-semibold transition-colors"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400 text-white text-sm font-semibold transition-colors min-w-[170px]"
                           >
-                            {publicPageSaving ? "Saving..." : "Save public page"}
+                            {publicPageSaving && (
+                              <Loader2 size={16} className="animate-spin" />
+                            )}
+                            <span>Save public page</span>
                           </button>
                           {publicForm.public_page_enabled && publicForm.public_slug && (
                             <>
@@ -1292,15 +1295,14 @@ const DashboardServerDetails: React.FC = () => {
                                   ? "Copy failed"
                                   : "Copy public URL"}
                               </button>
-                              <a
-                                href={`/server/${publicForm.public_slug}`}
-                                target="_blank"
-                                rel="noreferrer"
+                              <Link
+                                to={`/server/${publicForm.public_slug}`}
+                                state={{ from: "dashboard-server", orderId }}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-600 text-sm font-medium text-gray-200 hover:text-white hover:border-gray-500 transition-colors"
                               >
                                 <ExternalLink size={14} />
                                 Open public page
-                              </a>
+                              </Link>
                             </>
                           )}
                         </div>

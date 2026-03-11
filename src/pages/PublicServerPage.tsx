@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Copy, ExternalLink, Server, Users, Radio, ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
 import PublicStreamSection, { type PublicStreamData } from "@/components/public/PublicStreamSection";
@@ -33,6 +33,7 @@ const statusTone: Record<string, string> = {
 
 const PublicServerPage: React.FC = () => {
   const { slug = "" } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [page, setPage] = React.useState<PublicServerResponse | null>(null);
@@ -84,6 +85,19 @@ const PublicServerPage: React.FC = () => {
   const statusKey = String(page?.status || "unknown").toLowerCase();
   const statusClassName = statusTone[statusKey] || statusTone.unknown;
 
+  const state = location.state as any;
+  const from = state?.from;
+  let backHref = "/";
+  let backLabel = "Back to Home";
+
+  if (from === "streamers") {
+    backHref = "/streamers";
+    backLabel = "Back to Streamers";
+  } else if (from === "dashboard-server" && state?.orderId) {
+    backHref = `/dashboard/services/${state.orderId}`;
+    backLabel = "Back to Game Panel";
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <div
@@ -98,11 +112,11 @@ const PublicServerPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="mb-8">
             <Link
-              to="/"
+              to={backHref}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-500/40 bg-black/55 text-sm font-medium text-emerald-300 hover:text-emerald-200 hover:border-emerald-400 transition-colors"
             >
               <ArrowLeft size={18} />
-              Back to Home
+              {backLabel}
             </Link>
           </div>
 
