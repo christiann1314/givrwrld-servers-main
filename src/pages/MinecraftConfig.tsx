@@ -37,7 +37,6 @@ const fallbackGameTypes = [
   { id: 'minecraft-vanillacord', name: 'VanillaCord', description: 'Minecraft itself with added support for BungeeCord ip_forward setting' },
   { id: 'minecraft-folia', name: 'Folia', description: 'Fork of Paper that adds regionized multithreading to the dedicated server' },
   { id: 'minecraft-purpur-geyser-floodgate', name: 'Purpur-Geyser-Floodgate', description: 'Drop-in replacement for Paper with GeyserMC and Floodgate support' },
-  { id: 'minecraft-paper', name: 'Paper', description: 'High performance Spigot fork that aims to fix gameplay and mechanics inconsistencies' },
 ];
 
 const MinecraftConfig = () => {
