@@ -1,0 +1,3 @@
+[submodule "ops/pterodactyl-eggs"]
+	path = ops/pterodactyl-eggs
+	url = https://gitlab.com/parkervcp/eggs.git

@@ -29,6 +29,7 @@ import {
   PterodactylError,
   mapPterodactylErrorToHttp,
 } from '../services/pterodactylService.js';
+import { getModProfileForOrder } from '../config/modProfiles.js';
 import {
   upsertPublicServerSnapshot,
   getServerPublicPageSettings,
@@ -1265,6 +1266,22 @@ export async function provisionServer(orderId) {
     const rimworldUrl =
       process.env.RIMWORLD_SERVER_PACKAGE_URL ||
       'https://example.com/rimworld-server.zip';
+
+    // Attach mod profile metadata (if configured) based on game + plan/variant.
+    const modProfile = getModProfileForOrder(order, gameKey);
+    if (modProfile?.env) {
+      for (const [key, value] of Object.entries(modProfile.env)) {
+        if (value !== undefined && value !== null && value !== '') {
+          environment[key] = String(value);
+        }
+      }
+    }
+    if (modProfile?.profileId && !environment.MOD_PROFILE_ID) {
+      environment.MOD_PROFILE_ID = String(modProfile.profileId);
+    }
+    if (modProfile?.label && !environment.MOD_PROFILE_LABEL) {
+      environment.MOD_PROFILE_LABEL = String(modProfile.label);
+    }
 
     const staticDefaults = {
       SERVER_JARFILE: 'server.jar',
