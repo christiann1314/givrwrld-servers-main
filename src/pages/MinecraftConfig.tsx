@@ -48,6 +48,10 @@ const MinecraftConfig = () => {
   const [gameType, setGameType] = useState(fallbackGameTypes[0].id);
   const [billingTerm, setBillingTerm] = useState('semiannual');
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('minecraft', fallbackPlans, fallbackGameTypes);
+  const effectiveGameTypes = React.useMemo(
+    () => gameTypes.filter((g) => g.name !== 'Paper'),
+    [gameTypes]
+  );
 
   const { run: createCheckout, loading } = useAction(async () => {
     if (!serverName.trim()) throw new Error('Server name is required');
@@ -73,10 +77,10 @@ const MinecraftConfig = () => {
   }, [plans, planId]);
 
   React.useEffect(() => {
-    if (gameTypes.length > 0 && !gameTypes.some((g) => g.id === gameType)) {
-      setGameType(gameTypes[0].id);
+    if (effectiveGameTypes.length > 0 && !effectiveGameTypes.some((g) => g.id === gameType)) {
+      setGameType(effectiveGameTypes[0].id);
     }
-  }, [gameTypes, gameType]);
+  }, [effectiveGameTypes, gameType]);
 
   const billingTerms = [
     { id: 'monthly', name: 'Monthly', discount: 0 },
@@ -179,7 +183,7 @@ const MinecraftConfig = () => {
                 <h2 className="text-xl font-bold text-white mb-4">Game Type</h2>
                 
                 <div className="space-y-3">
-                  {gameTypes.map((type) => (
+                  {effectiveGameTypes.map((type) => (
                     <div
                       key={type.id}
                       onClick={() => setGameType(type.id)}
@@ -285,7 +289,7 @@ const MinecraftConfig = () => {
                   
                   <div className="flex justify-between">
                     <span className="text-gray-100">Game Type</span>
-                    <span className="text-white">{gameTypes.find(t => t.id === gameType)?.name}</span>
+                    <span className="text-white">{effectiveGameTypes.find(t => t.id === gameType)?.name}</span>
                   </div>
                   
                   <div className="flex justify-between">
