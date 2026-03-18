@@ -1415,6 +1415,16 @@ export async function provisionServer(orderId) {
       const maxDaemonAttempts = Math.max(1, Number(process.env.PTERO_DAEMON_RETRY_ATTEMPTS || 4));
       for (let attempt = 1; attempt <= maxDaemonAttempts && !serverData; attempt += 1) {
         for (const allocationId of allocationCandidates) {
+          // Pterodactyl enforces uniqueness on its generated `identifier` (derived from `name`).
+          // When provisioning retries, reusing the same `name` can cause UniqueConstraintViolationException.
+          // We make the Panel server name deterministic + unique per order id.
+          const uniqueSuffix = String(order.id || '')
+            .replace(/-/g, '')
+            .slice(0, 8);
+          const maxBaseLen = Math.max(0, 80 - (uniqueSuffix.length + 1));
+          const baseName = String(order.server_name || 'GIVRwrld Server').slice(0, maxBaseLen);
+          const uniqueServerName = `${baseName}-${uniqueSuffix}`;
+
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
             headers: {
@@ -1423,8 +1433,8 @@ export async function provisionServer(orderId) {
               'Accept': 'Application/vnd.pterodactyl.v1+json',
             },
             body: JSON.stringify({
-              name: order.server_name,
-              description: `GIVRwrld ${order.game} server for ${order.server_name}`,
+              name: uniqueServerName,
+              description: `GIVRwrld ${order.game} server for ${uniqueServerName}`,
               user: pteroUserId,
               egg: order.ptero_egg_id,
               docker_image: (egg.docker_image || 'ghcr.io/pterodactyl/yolks:java_17').replace(/\\\//g, '/'),
