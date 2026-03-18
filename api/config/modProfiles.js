@@ -58,7 +58,8 @@ const modProfiles = {
   },
 
   terraria: {
-    'tmodloader-2gb': {
+    // Terraria tModLoader requires >= 4GB in your catalog.
+    'tmodloader-4gb': {
       profileId: 'terraria-tmodloader',
       label: 'Terraria tModLoader',
       env: {
@@ -92,6 +93,14 @@ const modProfiles = {
   },
 
   enshrouded: {
+    // Enshrouded Modded tiers in your catalog are 6GB and 8GB.
+    'modded-6gb': {
+      profileId: 'enshrouded-modded',
+      label: 'Enshrouded Modded',
+      env: {
+        MOD_PROFILE: 'enshrouded-modded',
+      },
+    },
     'modded-8gb': {
       profileId: 'enshrouded-modded',
       label: 'Enshrouded Modded',
