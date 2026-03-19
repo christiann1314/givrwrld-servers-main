@@ -1425,6 +1425,20 @@ export async function provisionServer(orderId) {
           const baseName = String(order.server_name || 'GIVRwrld Server').slice(0, maxBaseLen);
           const uniqueServerName = `${baseName}-${uniqueSuffix}`;
 
+          // Some eggs assume server files live under /mnt/server and the entrypoint
+          // may not always set the working directory to that path.
+          // Terraria tModLoader egg starts `./tModLoaderServer`, so ensure CWD matches.
+          let startupCmd = egg.startup_cmd || 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}';
+          if (
+            String(order.ptero_egg_id) === '68' ||
+            (typeof startupCmd === 'string' && startupCmd.toLowerCase().includes('tmodloaderserver'))
+          ) {
+            const lower = String(startupCmd).toLowerCase();
+            if (!lower.includes('cd /mnt/server')) {
+              startupCmd = `cd /mnt/server && ${startupCmd}`;
+            }
+          }
+
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
             headers: {
@@ -1438,7 +1452,7 @@ export async function provisionServer(orderId) {
               user: pteroUserId,
               egg: order.ptero_egg_id,
               docker_image: (egg.docker_image || 'ghcr.io/pterodactyl/yolks:java_17').replace(/\\\//g, '/'),
-              startup: egg.startup_cmd || 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}',
+              startup: startupCmd,
               environment: environment,
               limits: {
                 memory: order.ram_gb * 1024,
