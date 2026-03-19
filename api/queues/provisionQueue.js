@@ -1,11 +1,10 @@
 import bullmq from 'bullmq';
-const { Queue, QueueScheduler } = bullmq;
+const { Queue } = bullmq;
 import { getLogger } from '../lib/logger.js';
 
 const logger = getLogger();
 
 let queue;
-let scheduler;
 
 function getRedisConnection() {
   const url = process.env.REDIS_URL;
@@ -23,10 +22,6 @@ export function getProvisionQueue() {
   if (!queue) {
     const connection = getRedisConnection();
     queue = new Queue('provisioning', { connection });
-    scheduler = new QueueScheduler('provisioning', { connection });
-    scheduler.waitUntilReady().catch((err) => {
-      logger.error({ err }, 'Provision queue scheduler failed to start');
-    });
   }
   return queue;
 }
