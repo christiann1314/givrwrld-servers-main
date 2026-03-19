@@ -1008,7 +1008,19 @@ export async function provisionServer(orderId) {
       };
     }
 
-    await transitionToProvisioning(orderId);
+    const transitioned = await transitionToProvisioning(orderId);
+    if (!transitioned) {
+      // Another worker/request likely transitioned this order already.
+      // Exit idempotently to avoid duplicate create-server attempts.
+      const latest = await getOrder(orderId, true);
+      return {
+        success: true,
+        order_id: orderId,
+        server_id: latest?.ptero_server_id ?? order.ptero_server_id ?? null,
+        server_identifier: latest?.ptero_identifier ?? order.ptero_identifier ?? null,
+        message: 'Provisioning already in progress or order not eligible for transition',
+      };
+    }
     await startProvisionAttempt(orderId);
 
     // Capacity reservation: choose a node with available headroom and reserve RAM/disk for this order.
