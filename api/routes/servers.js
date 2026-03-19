@@ -276,6 +276,17 @@ function isRetryableDaemonError(text) {
   );
 }
 
+function normalizeStartupCommand(startupCmd) {
+  const raw = String(startupCmd || '').trim();
+  if (!raw) {
+    return 'cd /mnt/server && ./start.sh';
+  }
+  if (raw.toLowerCase().includes('cd /mnt/server')) {
+    return raw;
+  }
+  return `cd /mnt/server && ${raw}`;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -1437,19 +1448,11 @@ export async function provisionServer(orderId) {
           const baseName = String(order.server_name || 'GIVRwrld Server').slice(0, maxBaseLen);
           const uniqueServerName = `${baseName}-${uniqueSuffix}`;
 
-          // Some eggs assume server files live under /mnt/server and the entrypoint
-          // may not always set the working directory to that path.
-          // Terraria tModLoader egg starts `./tModLoaderServer`, so ensure CWD matches.
-          let startupCmd = egg.startup_cmd || 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}';
-          if (
-            String(order.ptero_egg_id) === '68' ||
-            (typeof startupCmd === 'string' && startupCmd.toLowerCase().includes('tmodloaderserver'))
-          ) {
-            const lower = String(startupCmd).toLowerCase();
-            if (!lower.includes('cd /mnt/server')) {
-              startupCmd = `cd /mnt/server && ${startupCmd}`;
-            }
-          }
+          // Ensure all game startup commands execute from the server files root.
+          // Many eggs assume binaries are in /mnt/server and fail from /home/container.
+          const startupCmd = normalizeStartupCommand(
+            egg.startup_cmd || 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}'
+          );
 
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
