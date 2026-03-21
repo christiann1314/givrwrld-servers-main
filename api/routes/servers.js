@@ -279,16 +279,14 @@ function isRetryableDaemonError(text) {
 function normalizeStartupCommand(startupCmd) {
   const raw = String(startupCmd || '').trim();
   if (!raw) {
-    return 'cd /mnt/server && ./start.sh';
+    return 'cd /home/container && ./start.sh';
   }
-  // If the egg already uses `cd /mnt/server`, make it resilient by ensuring the directory exists.
-  if (raw.toLowerCase().includes('cd /mnt/server')) {
-    return raw.replace(/cd\s*\/mnt\/server\s*&&\s*/i, 'mkdir -p /mnt/server && cd /mnt/server && ');
+  // Normalize all startup commands to /home/container, which is where server files are mounted
+  // for runtime containers in this deployment.
+  if (raw.toLowerCase().includes('cd /home/container')) {
+    return raw;
   }
-
-  // Eggs frequently use relative executables (e.g. "./TerrariaServer.bin.x86_64").
-  // Normalize the working dir to /mnt/server, but create it first so `cd` never fails.
-  return `(if [ -d /mnt ]; then mkdir -p /mnt/server; cd /mnt/server; elif [ -d /home/container ]; then cd /home/container; fi) && ${raw}`;
+  return `cd /home/container && ${raw}`;
 }
 
 function sleep(ms) {
