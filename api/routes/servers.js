@@ -281,13 +281,14 @@ function normalizeStartupCommand(startupCmd) {
   if (!raw) {
     return 'cd /mnt/server && ./start.sh';
   }
+  // If the egg already uses `cd /mnt/server`, make it resilient by ensuring the directory exists.
   if (raw.toLowerCase().includes('cd /mnt/server')) {
-    return raw;
+    return raw.replace(/cd\s*\/mnt\/server\s*&&\s*/i, 'mkdir -p /mnt/server && cd /mnt/server && ');
   }
+
   // Eggs frequently use relative executables (e.g. "./TerrariaServer.bin.x86_64").
-  // Different eggs/images may expect different working dirs; enforce a safe cwd switch
-  // with fallbacks to avoid "cd: /mnt/server: No such file or directory".
-  return `(if [ -d /mnt/server ]; then cd /mnt/server; elif [ -d /home/container ]; then cd /home/container; fi) && ${raw}`;
+  // Normalize the working dir to /mnt/server, but create it first so `cd` never fails.
+  return `(if [ -d /mnt ]; then mkdir -p /mnt/server; cd /mnt/server; elif [ -d /home/container ]; then cd /home/container; fi) && ${raw}`;
 }
 
 function sleep(ms) {
