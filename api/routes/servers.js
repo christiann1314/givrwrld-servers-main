@@ -284,7 +284,10 @@ function normalizeStartupCommand(startupCmd) {
   if (raw.toLowerCase().includes('cd /mnt/server')) {
     return raw;
   }
-  return `cd /mnt/server && ${raw}`;
+  // Eggs frequently use relative executables (e.g. "./TerrariaServer.bin.x86_64").
+  // Different eggs/images may expect different working dirs; enforce a safe cwd switch
+  // with fallbacks to avoid "cd: /mnt/server: No such file or directory".
+  return `(if [ -d /mnt/server ]; then cd /mnt/server; elif [ -d /home/container ]; then cd /home/container; fi) && ${raw}`;
 }
 
 function sleep(ms) {
