@@ -276,17 +276,50 @@ function isRetryableDaemonError(text) {
   );
 }
 
+async function getPanelServerByExternalId(panelUrl, panelAppKey, externalId) {
+  const safeExternalId = String(externalId || '').trim();
+  if (!safeExternalId) return null;
+
+  const res = await fetch(
+    `${String(panelUrl).replace(/\/+$/, '')}/api/application/servers/external/${encodeURIComponent(safeExternalId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${panelAppKey}`,
+        Accept: 'Application/vnd.pterodactyl.v1+json',
+      },
+    }
+  );
+
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Failed to lookup panel server by external_id: ${body}`);
+  }
+
+  const data = await res.json();
+  return data?.attributes || null;
+}
+
 function normalizeStartupCommand(startupCmd) {
   const raw = String(startupCmd || '').trim();
   if (!raw) {
     return 'cd /home/container && ./start.sh';
   }
-  // Normalize all startup commands to /home/container, which is where server files are mounted
-  // for runtime containers in this deployment.
-  if (raw.toLowerCase().includes('cd /home/container')) {
-    return raw;
+  // Eggs often embed "cd /home/container" inside an elif while still trying /mnt first.
+  // /mnt can be read-only in our Wings layout, so never treat "contains cd /home/container"
+  // as already safe — only a leading cd counts.
+  let tail = raw.replace(
+    /^\(\s*if\s*\[\s*-d\s+\/mnt\s*\];\s*then\s*mkdir\s+-p\s+\/mnt\/server;\s*cd\s+\/mnt\/server;\s*(?:elif\s*\[\s*-d\s+\/home\/container\s*\];\s*then\s*cd\s+\/home\/container;\s*)?fi\s*\)\s*&&\s*/i,
+    ''
+  ).trim();
+  if (!tail) {
+    tail = './start.sh';
   }
-  return `cd /home/container && ${raw}`;
+  const lower = tail.toLowerCase();
+  if (lower.startsWith('cd /home/container')) {
+    return tail;
+  }
+  return `cd /home/container && ${tail}`;
 }
 
 function sleep(ms) {
@@ -941,6 +974,12 @@ router.post('/:orderId/power', authenticate, async (req, res) => {
         code: 'SERVER_NOT_PROVISIONED',
       });
     }
+    if (order.ptero_identifier == null || String(order.ptero_identifier).trim() === '') {
+      return res.status(409).json({
+        error: 'Server is missing panel identifier; power actions require a linked Pterodactyl server.',
+        code: 'PTERO_IDENTIFIER_MISSING',
+      });
+    }
 
     const rate = checkPowerRateLimit(order.id);
     if (!rate.allowed) {
@@ -952,7 +991,7 @@ router.post('/:orderId/power', authenticate, async (req, res) => {
     }
 
     try {
-      const result = await sendPowerAction(order.ptero_server_id, action);
+      const result = await sendPowerAction(order.ptero_identifier, action);
       return res.json({
         success: true,
         state: result.state,
@@ -1120,6 +1159,20 @@ export async function provisionServer(orderId) {
       throw new Error('Pterodactyl credentials not found. Set PANEL_URL and PANEL_APP_KEY in api/.env');
     }
 
+    // Idempotency guard against duplicate panel servers across retries/workers.
+    // If a panel server already exists for this order's external_id, persist and return it.
+    const existingPanelServer = await getPanelServerByExternalId(panelUrl, panelAppKey, orderId);
+    if (existingPanelServer?.id) {
+      await transitionToProvisioned(orderId, existingPanelServer.id, existingPanelServer.identifier || null);
+      return {
+        success: true,
+        order_id: orderId,
+        server_id: existingPanelServer.id,
+        server_identifier: existingPanelServer.identifier || null,
+        message: 'Server already existed in panel; order synchronized',
+      };
+    }
+
     // Validate plan has egg ID
     if (!order.ptero_egg_id) {
       await recordProvisionError(orderId, 'Plan does not have ptero_egg_id configured');
@@ -1236,6 +1289,9 @@ export async function provisionServer(orderId) {
     // 2) apply sane overrides for commonly-used keys
     const environment = {};
     const requiredVarMeta = [];
+    /** Prefer Panel egg startup/docker over app DB — MySQL catalog rows can be wrong (e.g. cloned egg IDs). */
+    let panelEggStartup = null;
+    let panelEggDockerImage = null;
     try {
       if (egg.ptero_nest_id) {
         const eggDetailsRes = await fetch(
@@ -1249,7 +1305,14 @@ export async function provisionServer(orderId) {
         );
         if (eggDetailsRes.ok) {
           const eggDetailsData = await eggDetailsRes.json();
-          const variableRows = eggDetailsData?.attributes?.relationships?.variables?.data || [];
+          const attrs = eggDetailsData?.attributes || {};
+          const su = attrs.startup != null ? String(attrs.startup).trim() : '';
+          if (su) panelEggStartup = su;
+          const rawDi = attrs.docker_image;
+          if (typeof rawDi === 'string' && rawDi.trim()) {
+            panelEggDockerImage = rawDi.replace(/\\\//g, '/');
+          }
+          const variableRows = attrs.relationships?.variables?.data || [];
                   for (const row of variableRows) {
             const attr = row?.attributes || {};
             const key = String(attr?.env_variable || '').trim();
@@ -1450,11 +1513,9 @@ export async function provisionServer(orderId) {
           const baseName = String(order.server_name || 'GIVRwrld Server').slice(0, maxBaseLen);
           const uniqueServerName = `${baseName}-${uniqueSuffix}`;
 
-          // Ensure all game startup commands execute from the server files root.
-          // Many eggs assume binaries are in /mnt/server and fail from /home/container.
-          const startupCmd = normalizeStartupCommand(
-            egg.startup_cmd || 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}'
-          );
+          // Eggs often use /mnt/server first; our node layout can make /mnt read-only. Stripping
+          // that wrapper and running from /home/container matches how files are mounted here.
+          const startupCmd = resolvedStartupCmd;
 
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
@@ -1466,9 +1527,10 @@ export async function provisionServer(orderId) {
             body: JSON.stringify({
               name: uniqueServerName,
               description: `GIVRwrld ${order.game} server for ${uniqueServerName}`,
+              external_id: String(orderId),
               user: pteroUserId,
               egg: order.ptero_egg_id,
-              docker_image: (egg.docker_image || 'ghcr.io/pterodactyl/yolks:java_17').replace(/\\\//g, '/'),
+              docker_image: resolvedDockerImage,
               startup: startupCmd,
               environment: environment,
               limits: {
@@ -1503,6 +1565,15 @@ export async function provisionServer(orderId) {
           }
           if (isRetryableDaemonError(errorText)) {
             break; // move to delayed next attempt cycle
+          }
+          // If create failed because this external_id already exists (possible retry race),
+          // fetch that server and continue idempotently.
+          if (String(errorText).toLowerCase().includes('external_id')) {
+            const existingByExternalId = await getPanelServerByExternalId(panelUrl, panelAppKey, orderId);
+            if (existingByExternalId?.id) {
+              serverData = { attributes: existingByExternalId };
+              break;
+            }
           }
           // Non-allocation, non-retryable validation errors should fail fast.
           throw new Error(`Failed to create server in Pterodactyl: ${errorText}`);
