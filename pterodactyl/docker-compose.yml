@@ -6,8 +6,9 @@ services:
     image: ghcr.io/pterodactyl/panel:latest
     environment:
       - APP_URL=https://panel.givrwrldservers.com
-      # Set APP_KEY so Panel boots (replace with your own for production)
-      - APP_KEY=base64:coPAmsJCgvFq+jr4JI4abwZZN+prVcYX87KNUHFLjos=
+      # Do NOT set APP_KEY here in production: it overrides /app/.env and breaks decryption of
+      # nodes.daemon_token (500 "The MAC is invalid" on /admin/nodes). Set APP_KEY in the mounted
+      # panel volume .env only (e.g. generate once with: php artisan key:generate --show).
       - APP_TIMEZONE=UTC
       - APP_SERVICE_AUTHOR=admin@localhost
       - DB_HOST=mariadb
