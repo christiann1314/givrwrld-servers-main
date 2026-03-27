@@ -5,7 +5,9 @@ services:
   panel:
     image: ghcr.io/pterodactyl/panel:latest
     environment:
-      - APP_URL=http://localhost:8000
+      - APP_URL=https://panel.givrwrldservers.com
+      # Set APP_KEY so Panel boots (replace with your own for production)
+      - APP_KEY=base64:coPAmsJCgvFq+jr4JI4abwZZN+prVcYX87KNUHFLjos=
       - APP_TIMEZONE=UTC
       - APP_SERVICE_AUTHOR=admin@localhost
       - DB_HOST=mariadb
@@ -19,6 +21,8 @@ services:
       - REDIS_HOST=redis
       - GUZZLE_TIMEOUT=60
       - GUZZLE_CONNECT_TIMEOUT=10
+      # Behind Cloudflare / nginx TLS: trust X-Forwarded-* so Laravel uses https URLs and sessions.
+      - TRUSTED_PROXIES=*
     volumes:
       - panel-var:/app/var
       - panel-nginx:/etc/nginx/http.d
@@ -62,10 +66,17 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./wings-live-config.yml:/etc/pterodactyl/config.yml
-      - wings-data:/var/lib/pterodactyl
+      # Host bind is required: Wings uses the host Docker daemon. Game containers get bind
+      # mounts whose source is a path on the HOST (e.g. /var/lib/pterodactyl/<server-uuid>).
+      # A named Docker volume here only populates /var/lib/pterodactyl inside the Wings
+      # container, not on the host → "bind source path does not exist" for every server.
+      - /var/lib/pterodactyl:/var/lib/pterodactyl
+      # machine-id and passwd helpers live under /run/wings; host Docker bind-mounts these paths.
+      - /run/wings:/run/wings
       - /tmp/pterodactyl:/tmp/pterodactyl
+      - /etc/letsencrypt/live/node.givrwrldservers.com:/etc/letsencrypt/live/node.givrwrldservers.com:ro
     ports:
-      - "8082:8080"
+      - "8080:8080"
       - "2022:2022"
     networks:
       - pterodactyl-network
@@ -79,7 +90,6 @@ volumes:
   panel-logs:
   mariadb-data:
   redis-data:
-  wings-data:
 
 networks:
   pterodactyl-network:
