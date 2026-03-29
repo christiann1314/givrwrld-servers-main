@@ -221,6 +221,52 @@ const DashboardServerDetails: React.FC = () => {
     };
   }, [orderId]);
 
+  // Re-fetch server details while provisioning completes or panel metadata is still missing (single load() is not enough).
+  React.useEffect(() => {
+    if (!orderId || !details) return;
+
+    const status = String(details.status || "").toLowerCase();
+    const waitingForPanel =
+      details.ptero_server_id != null &&
+      !details.panel &&
+      (status === "provisioned" || status === "provisioning");
+    const stillProvisioning = details.ptero_server_id == null && status === "provisioning";
+
+    if (!waitingForPanel && !stillProvisioning) return;
+
+    let cancelled = false;
+    let ticks = 0;
+    const maxTicks = 24; // ~2 minutes at 5s
+
+    const id = window.setInterval(async () => {
+      ticks += 1;
+      if (ticks > maxTicks || cancelled) {
+        window.clearInterval(id);
+        return;
+      }
+      try {
+        const next = await api.getServer(orderId);
+        if (cancelled) return;
+        setDetails(next as ServerDetailsResponse);
+        const st = String(next.status || "").toLowerCase();
+        if (st === "error" || st === "canceled") {
+          window.clearInterval(id);
+          return;
+        }
+        if (next.panel || (next.ptero_server_id == null && st !== "provisioning")) {
+          window.clearInterval(id);
+        }
+      } catch {
+        // keep trying until maxTicks
+      }
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [orderId, details?.status, details?.ptero_server_id, details?.panel]);
+
   // Keep CPU/RAM/disk/state in sync with Pterodactyl while this page is open (not only on Metrics tab).
   React.useEffect(() => {
     if (!orderId || !details?.ptero_server_id) return;

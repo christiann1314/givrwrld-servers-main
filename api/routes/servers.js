@@ -1661,7 +1661,7 @@ export async function provisionServer(orderId) {
 
 /**
  * POST /api/servers/provision
- * Provision a new server (called by webhook or manually)
+ * Provision a new server (called by webhook or manually).
  */
 router.post('/provision', authenticate, async (req, res) => {
   try {
@@ -1669,7 +1669,7 @@ router.post('/provision', authenticate, async (req, res) => {
 
     if (!order_id) {
       return res.status(400).json({
-        error: 'order_id is required'
+        error: 'order_id is required',
       });
     }
 
@@ -1679,7 +1679,7 @@ router.post('/provision', authenticate, async (req, res) => {
     req.log?.error({ err: error, order_id: req.body?.order_id }, 'Provision API error');
     res.status(500).json({
       error: 'Failed to provision server',
-      message: error.message
+      message: error.message,
     });
   }
 });

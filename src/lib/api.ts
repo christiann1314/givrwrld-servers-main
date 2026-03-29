@@ -8,6 +8,15 @@ function fixGivrwrldHostnameTypo(url: string): string {
   return url.replace(/givrwldservers\.com/gi, "givrwrldservers.com");
 }
 
+/** Fetch paths in this app are `/api/...`; base URL must be origin only (no trailing `/api`). */
+function finalizeApiBaseUrl(url: string): string {
+  const t = fixGivrwrldHostnameTypo(url).replace(/\/+$/, "");
+  if (!t || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(t)) {
+    return t;
+  }
+  return /\/api$/i.test(t) ? t.replace(/\/api$/i, "") : t;
+}
+
 export function getApiBase(): string {
   // Prefer VITE_API_URL, fallback to VITE_API_BASE_URL; otherwise same-origin.
   const env = (import.meta as any)?.env;
@@ -48,7 +57,23 @@ export function getApiBase(): string {
     }
   }
 
-  return normalized;
+  return finalizeApiBaseUrl(normalized);
+}
+
+/**
+ * Join API origin with a path. If env was mis-set to `.../api` and paths are `/api/...`,
+ * avoid `.../api/api/...` (wrong route → often 404/405 via proxies).
+ */
+function resolveApiUrl(path: string): { url: string; apiBase: string } {
+  const apiBase = getApiBase().replace(/\/+$/, "");
+  if (path.startsWith("http")) {
+    return { url: path, apiBase };
+  }
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (p.startsWith("/api/") && /\/api$/i.test(apiBase)) {
+    return { url: `${apiBase}${p.slice(4)}`, apiBase };
+  }
+  return { url: `${apiBase}${p}`, apiBase };
 }
 
 async function http<T>(
@@ -60,8 +85,7 @@ async function http<T>(
     retryOnAuthFail?: boolean;
   } = {}
 ): Promise<T> {
-  const apiBase = getApiBase();
-  const url = path.startsWith("http") ? path : `${apiBase}${path}`;
+  const { url, apiBase } = resolveApiUrl(path);
 
   const method = options.method || "GET";
   const headers: Record<string, string> = {
