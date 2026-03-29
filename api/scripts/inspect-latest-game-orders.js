@@ -19,6 +19,7 @@ async function main() {
   const [rows] = await pool.execute(
     `SELECT
        id,
+       server_name,
        user_id,
        item_type,
        plan_id,

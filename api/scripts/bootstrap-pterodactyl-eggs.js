@@ -17,6 +17,8 @@ const gameEggNames = [
   'Minecraft Purpur',
   'Minecraft Fabric',
   'Minecraft Forge',
+  'Rust',
+  'Ark: Survival Evolved',
   'Palworld',
   'Terraria',
   'Factorio',
@@ -26,6 +28,7 @@ const gameEggNames = [
   'Teeworlds',
   'Among Us',
   'Veloren',
+  'Enshrouded',
 ];
 
 function shellOrThrow(command, args, label) {

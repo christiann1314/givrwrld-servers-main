@@ -344,7 +344,7 @@ EOF`,
     ],
   },
   'Among Us': {
-    dockerImage: 'ghcr.io/parkervcp/yolks:dotnet_6',
+    dockerImage: 'ghcr.io/parkervcp/yolks:dotnet_8',
     startup: 'dotnet Impostor.Server.dll --port {{SERVER_PORT}} {{ADDITIONAL_ARGS}}',
     stop: '^C',
     startupDone: 'Listening on',

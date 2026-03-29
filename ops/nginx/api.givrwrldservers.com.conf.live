@@ -1,0 +1,53 @@
+# Live API host (HTTPS) — includes WebSocket Upgrade for /ws/ (browser console).
+# Deploy: sudo cp to /etc/nginx/sites-enabled/api.givrwrldservers.com.conf && sudo nginx -t && sudo systemctl reload nginx
+upstream givrwrld_api {
+    server 127.0.0.1:3001;
+    keepalive 32;
+}
+
+server {
+    server_name api.givrwrldservers.com;
+
+    # Without Upgrade + Connection, Node never emits 'upgrade'; Express returns 404 for GET /ws/...
+    location /ws/ {
+        proxy_pass http://givrwrld_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 86400s;
+    }
+
+    location / {
+        proxy_pass http://givrwrld_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/givrwrldservers.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/givrwrldservers.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = api.givrwrldservers.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name api.givrwrldservers.com;
+    return 404; # managed by Certbot
+}

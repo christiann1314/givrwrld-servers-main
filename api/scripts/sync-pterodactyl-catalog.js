@@ -12,6 +12,9 @@ dotenv.config({ path: join(__dirname, '../.env') });
 const isDryRun = process.argv.includes('--dry-run') || !process.argv.includes('--apply');
 const panelDbContainer = process.env.PANEL_DB_CONTAINER || 'pterodactyl-mariadb-1';
 
+/** VPS deploys often require `sudo docker` for the ubuntu user. */
+const useSudoDocker = ['1', 'true', 'yes'].includes(String(process.env.DOCKER_USE_SUDO || '').toLowerCase());
+
 function shellOrThrow(command, args, label) {
   const result = spawnSync(command, args, { encoding: 'utf8' });
   if (result.status !== 0) {
@@ -19,6 +22,13 @@ function shellOrThrow(command, args, label) {
     throw new Error(`${label} failed${details ? `: ${details}` : ''}`);
   }
   return (result.stdout || '').trim();
+}
+
+function dockerCmd(args, label) {
+  if (useSudoDocker) {
+    return shellOrThrow('sudo', ['docker', ...args], label);
+  }
+  return shellOrThrow('docker', args, label);
 }
 
 function parseContainerEnv(text) {
@@ -33,7 +43,7 @@ function parseContainerEnv(text) {
 
 function runPanelSql({ container, user, password, database, sql }) {
   const args = ['exec', container, 'mariadb', `-u${user}`, `-p${password}`, database, '-N', '-e', sql];
-  return shellOrThrow('docker', args, 'Panel SQL query');
+  return dockerCmd(args, 'Panel SQL query');
 }
 
 function parseRows(text, expectedColumns) {
@@ -93,8 +103,7 @@ async function main() {
   console.log(`Mode: ${isDryRun ? 'DRY RUN (no DB writes)' : 'APPLY (writes enabled)'}`);
   console.log(`Panel DB Container: ${panelDbContainer}`);
 
-  const envOutput = shellOrThrow(
-    'docker',
+  const envOutput = dockerCmd(
     ['inspect', '-f', '{{range .Config.Env}}{{println .}}{{end}}', panelDbContainer],
     'Inspect panel DB container env'
   );
