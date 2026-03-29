@@ -95,6 +95,7 @@ export function mapPterodactylErrorToHttp(error) {
 
 const rawPanelUrl = (process.env.PANEL_URL || '').trim();
 const rawPanelAppKey = (process.env.PANEL_APP_KEY || '').trim();
+const rawPanelClientKey = (process.env.PTERO_CLIENT_KEY || '').trim();
 
 let panelBaseUrl = null;
 let panelConfigured = false;
@@ -136,6 +137,130 @@ if (rawPanelUrl && rawPanelAppKey) {
 
 export function isPanelConfigured() {
   return panelConfigured;
+}
+
+/**
+ * Panel HTTP origin for API calls (application + client).
+ */
+function getPanelOrigin() {
+  if (panelBaseUrl) return panelBaseUrl;
+  if (!rawPanelUrl) return null;
+  try {
+    const url = new URL(rawPanelUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    return url.origin.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Client API (user/session key). Required for server power — Application API has no /servers/{id}/power.
+ * Never logs PTERO_CLIENT_KEY.
+ */
+async function requestClientApi(path, { method = 'GET', body } = {}) {
+  const origin = getPanelOrigin();
+  if (!origin || !rawPanelClientKey) {
+    throw new PterodactylError(
+      PTERO_ERROR_CODES.CONFIG_MISSING,
+      'Pterodactyl client API is not configured (set PANEL_URL and PTERO_CLIENT_KEY for power control)',
+      { httpStatus: 500 }
+    );
+  }
+
+  const url = `${origin}/api/client${path}`;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${rawPanelClientKey}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    logger.error(
+      {
+        service: 'pterodactyl',
+        url,
+        method,
+        err: err?.message || String(err),
+      },
+      'Failed to reach Pterodactyl panel (client API)'
+    );
+    throw new PterodactylError(
+      PTERO_ERROR_CODES.UNAVAILABLE,
+      'Pterodactyl panel is unavailable',
+      { httpStatus: 503, cause: err }
+    );
+  }
+
+  if (response.ok) {
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return null;
+    }
+    const text = await response.text();
+    if (!text || !text.trim()) return null;
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      logger.error(
+        {
+          service: 'pterodactyl',
+          url,
+          method,
+          status: response.status,
+          err: err?.message || String(err),
+        },
+        'Failed to parse Pterodactyl client API JSON'
+      );
+      throw new PterodactylError(
+        PTERO_ERROR_CODES.UNKNOWN,
+        'Failed to parse Pterodactyl response',
+        { httpStatus: 502, cause: err }
+      );
+    }
+  }
+
+  const status = response.status;
+  let errorCode = PTERO_ERROR_CODES.UNKNOWN;
+
+  if (status === 400) errorCode = PTERO_ERROR_CODES.BAD_REQUEST;
+  else if (status === 401) errorCode = PTERO_ERROR_CODES.UNAUTHORIZED;
+  else if (status === 403) errorCode = PTERO_ERROR_CODES.FORBIDDEN;
+  else if (status === 404) errorCode = PTERO_ERROR_CODES.NOT_FOUND;
+  else if (status === 429) errorCode = PTERO_ERROR_CODES.RATE_LIMITED;
+  else if (status >= 500) errorCode = PTERO_ERROR_CODES.UNAVAILABLE;
+
+  let errorText = '';
+  try {
+    errorText = await response.text();
+  } catch {
+    // ignore
+  }
+
+  logger.warn(
+    {
+      service: 'pterodactyl',
+      url,
+      method,
+      status,
+      code: errorCode,
+    },
+    'Pterodactyl client API responded with non-OK status'
+  );
+
+  throw new PterodactylError(
+    errorCode,
+    'Pterodactyl client API request failed',
+    {
+      httpStatus: status,
+      details: errorText ? { raw: errorText } : undefined,
+    }
+  );
 }
 
 /**
@@ -245,6 +370,43 @@ async function requestApplicationApi(path, { method = 'GET', body } = {}) {
 // ---------- Public service interface ----------
 
 /**
+ * Pterodactyl Application API returns allocations as JSON:API relationship refs; full rows live in `included`.
+ */
+function resolvePrimaryAllocation(serverPayload) {
+  const attrs = serverPayload?.attributes || {};
+  const rel =
+    serverPayload?.relationships?.allocations?.data || attrs.relationships?.allocations?.data;
+  if (!Array.isArray(rel) || rel.length === 0) return null;
+
+  const included = Array.isArray(serverPayload?.included) ? serverPayload.included : [];
+
+  const resolveRef = (ref) => {
+    if (!ref) return null;
+    if (ref.attributes) return ref;
+    const type = String(ref.type || '').toLowerCase();
+    const id = String(ref.id ?? '');
+    return (
+      included.find(
+        (inc) => String(inc.type || '').toLowerCase() === type && String(inc.id) === id
+      ) || null
+    );
+  };
+
+  let chosen = null;
+  for (const ref of rel) {
+    const full = resolveRef(ref);
+    if (full?.attributes?.is_default) {
+      chosen = full;
+      break;
+    }
+  }
+  if (!chosen) {
+    chosen = resolveRef(rel[0]);
+  }
+  return chosen;
+}
+
+/**
  * Fetch static server details for a given Pterodactyl server id.
  *
  * Normalized response shape (subset of Pterodactyl Application API):
@@ -273,15 +435,21 @@ export async function getServerDetails(pteroServerId) {
     );
   }
 
-  const data = await requestApplicationApi(`/servers/${pteroServerId}?include=allocations`);
+  const body = await requestApplicationApi(`/servers/${pteroServerId}?include=allocations`);
+  const data = body?.data != null ? body.data : body;
+  const merged = {
+    ...data,
+    included: Array.isArray(body?.included) ? body.included : data?.included || [],
+  };
   const attrs = data?.attributes || {};
 
-  const primaryAllocation = Array.isArray(attrs.relationships?.allocations?.data)
-    ? attrs.relationships.allocations.data.find((alloc) => alloc.attributes?.is_default)
-      || attrs.relationships.allocations.data[0]
-    : null;
+  const primaryAllocation = resolvePrimaryAllocation(merged);
 
-  const ip = primaryAllocation?.attributes?.ip || primaryAllocation?.attributes?.ip_alias || null;
+  const ip =
+    primaryAllocation?.attributes?.ip ||
+    primaryAllocation?.attributes?.ip_alias ||
+    primaryAllocation?.attributes?.alias ||
+    null;
   const port = primaryAllocation?.attributes?.port != null
     ? Number(primaryAllocation.attributes.port)
     : null;
@@ -328,10 +496,12 @@ export async function getServerResources(pteroServerId) {
     );
   }
 
-  const data = await requestApplicationApi(`/servers/${pteroServerId}/resources`);
+  const body = await requestApplicationApi(`/servers/${pteroServerId}/resources`);
+  const data = body?.data != null ? body.data : body;
   const attrs = data?.attributes || {};
 
-  const stateRaw = String(attrs.current_state || attrs.state || '').toLowerCase();
+  const res = attrs.resources && typeof attrs.resources === 'object' ? attrs.resources : {};
+  const stateRaw = String(res.current_state || attrs.current_state || attrs.state || '').toLowerCase();
   let state = 'unknown';
   if (['running', 'online'].includes(stateRaw)) state = 'online';
   else if (['stopped', 'offline'].includes(stateRaw)) state = 'offline';
@@ -339,23 +509,27 @@ export async function getServerResources(pteroServerId) {
 
   const nowIso = new Date().toISOString();
 
+  const uptimeRaw = Number(res.uptime ?? attrs.uptime ?? 0);
+  const uptimeSeconds =
+    Number.isFinite(uptimeRaw) && uptimeRaw > 0 ? Math.max(0, Math.floor(uptimeRaw / 1000)) : 0;
+
   return {
     state,
-    cpuPercent: Number(attrs.resources?.cpu_absolute ?? 0),
-    memoryBytes: Number(attrs.resources?.memory_bytes ?? 0),
+    cpuPercent: Number(res.cpu_absolute ?? attrs.cpu_absolute ?? 0),
+    memoryBytes: Number(res.memory_bytes ?? attrs.memory_bytes ?? 0),
     memoryLimitBytes: attrs.limits?.memory != null
       ? Number(attrs.limits.memory) * 1024 * 1024
       : null,
-    diskBytes: Number(attrs.resources?.disk_bytes ?? 0),
-    playersOnline: attrs.resources?.players_current != null
-      ? Number(attrs.resources.players_current)
-      : null,
-    playersMax: attrs.resources?.players_max != null
-      ? Number(attrs.resources.players_max)
-      : null,
-    uptimeSeconds: attrs.resources?.uptime != null
-      ? Number(attrs.resources.uptime)
-      : null,
+    diskBytes: Number(res.disk_bytes ?? attrs.disk_bytes ?? 0),
+    playersOnline:
+      res.players_current != null ? Number(res.players_current) : attrs.players_current != null
+        ? Number(attrs.players_current)
+        : null,
+    playersMax:
+      res.players_max != null ? Number(res.players_max) : attrs.players_max != null
+        ? Number(attrs.players_max)
+        : null,
+    uptimeSeconds,
     measuredAt: nowIso,
   };
 }
@@ -363,13 +537,17 @@ export async function getServerResources(pteroServerId) {
 /**
  * Send a power action to a server: start, stop, restart, kill.
  *
+ * Uses the **Client API** (`POST /api/client/servers/{identifier}/power`). The Application API does not
+ * expose a power endpoint on current Pterodactyl Panel releases (POST there returns 405).
+ *
+ * @param {string} pteroIdentifier Panel server **identifier** (short id / UUID), not numeric internal id.
  * Normalized response:
  * {
  *   ok: boolean,
  *   state: 'online' | 'offline' | 'starting' | 'stopping' | 'unknown',
  * }
  */
-export async function sendPowerAction(pteroServerId, action) {
+export async function sendPowerAction(pteroIdentifier, action) {
   const allowed = new Set(['start', 'stop', 'restart', 'kill']);
   if (!allowed.has(action)) {
     throw new PterodactylError(
@@ -378,16 +556,16 @@ export async function sendPowerAction(pteroServerId, action) {
       { httpStatus: 400 }
     );
   }
-  if (!pteroServerId && pteroServerId !== 0) {
+  if (pteroIdentifier == null || String(pteroIdentifier).trim() === '') {
     throw new PterodactylError(
       PTERO_ERROR_CODES.BAD_REQUEST,
-      'pteroServerId is required',
+      'ptero_identifier is required',
       { httpStatus: 400 }
     );
   }
 
-  // Pterodactyl expects { signal: 'start'|'stop'|'restart'|'kill' }
-  await requestApplicationApi(`/servers/${pteroServerId}/power`, {
+  const id = encodeURIComponent(String(pteroIdentifier).trim());
+  await requestClientApi(`/servers/${id}/power`, {
     method: 'POST',
     body: { signal: action },
   });

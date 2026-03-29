@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Server, Cpu, HardDrive, MapPin, Power, PowerOff, RefreshCcw, ExternalLink, Loader2 } from "lucide-react";
-import api from "@/lib/api";
+import api, { getApiBase } from "@/lib/api";
 import { toast } from "@/components/ui/use-toast";
 import { getAccessToken } from "@/lib/auth";
+import { ENV } from "@/config/env";
 
 interface ServerPlan {
   id: string;
@@ -37,6 +38,7 @@ interface ServerDetailsResponse {
   plan: ServerPlan;
   panel?: PanelDetails | null;
   ptero_identifier?: string | null;
+  ptero_server_id?: number | null;
 }
 
 interface ServerResourcesResponse {
@@ -160,6 +162,7 @@ const DashboardServerDetails: React.FC = () => {
   const wsRef = React.useRef<WebSocket | null>(null);
   const reconnectAttemptsRef = React.useRef(0);
   const manualCloseRef = React.useRef(false);
+  const consoleOpeningRef = React.useRef(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -218,16 +221,45 @@ const DashboardServerDetails: React.FC = () => {
     };
   }, [orderId]);
 
+  // Keep CPU/RAM/disk/state in sync with Pterodactyl while this page is open (not only on Metrics tab).
+  React.useEffect(() => {
+    if (!orderId || !details?.ptero_server_id) return;
+
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const live = await api.getServerResources(orderId);
+        if (!cancelled) {
+          setResources(live as ServerResourcesResponse);
+          setMetricsError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setMetricsError((prev) => prev ?? "Could not refresh live stats");
+        }
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [orderId, details?.ptero_server_id]);
+
   const hasPanel = !!details?.panel;
+  const panelServerIdentifier = details?.panel?.identifier || details?.ptero_identifier || null;
   const currentState = (resources?.state || details?.status || "").toLowerCase();
   const isOnline = currentState.startsWith("online") || currentState === "running" || currentState === "starting";
-  const isProvisioning = currentState === "provisioning" || (!resources && (details?.status || "").toLowerCase() === "provisioning");
+  const isProvisioning =
+    (details?.ptero_server_id == null && (details?.status || "").toLowerCase() === "provisioning") ||
+    currentState === "provisioning";
 
   function buildConsoleWsUrl(id: string) {
-    const env = (import.meta as any)?.env;
-    const rawBase = String(env?.VITE_API_URL || env?.VITE_API_BASE_URL || window.location.origin).replace(/\/+$/, "");
-    const hasProtocol = /^https?:\/\//i.test(rawBase);
-    const base = hasProtocol ? rawBase : window.location.origin.replace(/\/+$/, "");
+    const base = getApiBase().replace(/\/+$/, "") || window.location.origin.replace(/\/+$/, "");
     const wsProtocol = base.startsWith("https://") ? "wss://" : "ws://";
     const host = base.replace(/^https?:\/\//, "");
     const token = getAccessToken();
@@ -244,9 +276,10 @@ const DashboardServerDetails: React.FC = () => {
 
   const connectConsole = React.useCallback(() => {
     if (!orderId || !details) return;
-    if (wsRef.current) return;
+    if (wsRef.current || consoleOpeningRef.current) return;
 
     manualCloseRef.current = false;
+    consoleOpeningRef.current = true;
     setConsoleStatus("connecting");
 
     const url = buildConsoleWsUrl(orderId);
@@ -254,6 +287,7 @@ const DashboardServerDetails: React.FC = () => {
     try {
       ws = new WebSocket(url);
     } catch (err) {
+      consoleOpeningRef.current = false;
       setConsoleStatus("error");
       appendConsoleLine("[console] Failed to open websocket.");
       return;
@@ -262,6 +296,8 @@ const DashboardServerDetails: React.FC = () => {
     wsRef.current = ws;
 
     ws.onopen = () => {
+      consoleOpeningRef.current = false;
+      if (wsRef.current !== ws) return;
       reconnectAttemptsRef.current = 0;
       setConsoleStatus("connected");
       appendConsoleLine("[console] Connected.");
@@ -286,29 +322,32 @@ const DashboardServerDetails: React.FC = () => {
     };
 
     ws.onclose = () => {
+      consoleOpeningRef.current = false;
+      if (wsRef.current !== ws) return;
       wsRef.current = null;
       if (manualCloseRef.current) {
         setConsoleStatus("disconnected");
         return;
       }
       const attempt = (reconnectAttemptsRef.current += 1);
-      if (attempt > 5) {
+      if (attempt > 15) {
         setConsoleStatus("error");
         appendConsoleLine("[console] Disconnected. Click reconnect to try again.");
         return;
       }
       setConsoleStatus("connecting");
-      const baseDelay = 1000 * 2 ** (attempt - 1);
-      const jitter = Math.floor(Math.random() * 250);
-      const delay = Math.min(30000, baseDelay + jitter);
+      const baseDelay = 1000 * 2 ** Math.min(attempt - 1, 6);
+      const jitter = Math.floor(Math.random() * 400);
+      const delay = Math.min(45000, baseDelay + jitter);
       setTimeout(() => {
-        if (!manualCloseRef.current && !wsRef.current) {
+        if (!manualCloseRef.current && !wsRef.current && !consoleOpeningRef.current) {
           connectConsole();
         }
       }, delay);
     };
 
     ws.onerror = () => {
+      consoleOpeningRef.current = false;
       // Errors are handled by close + reconnect.
     };
   }, [appendConsoleLine, details, orderId]);
@@ -321,6 +360,7 @@ const DashboardServerDetails: React.FC = () => {
       manualCloseRef.current = true;
       wsRef.current.close();
       wsRef.current = null;
+      consoleOpeningRef.current = false;
       setConsoleStatus("disconnected");
     }
   }, [activeTab, connectConsole, details, orderId]);
@@ -332,6 +372,7 @@ const DashboardServerDetails: React.FC = () => {
         wsRef.current.close();
         wsRef.current = null;
       }
+      consoleOpeningRef.current = false;
     },
     []
   );
@@ -692,15 +733,15 @@ const DashboardServerDetails: React.FC = () => {
                       Power, console, and metrics are best managed from this Game Panel view. You can still
                       open the legacy Pterodactyl panel for advanced configuration when needed.
                     </p>
-                    {details.ptero_identifier ? (
+                    {panelServerIdentifier ? (
                       <a
-                        href={`${window.location.origin.replace(/:\\d+$/, '')}/server/${details.ptero_identifier}`}
+                        href={`${String(ENV.PANEL_URL || "").replace(/\/+$/, "")}/server/${encodeURIComponent(panelServerIdentifier)}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center text-xs font-medium text-emerald-300 hover:text-emerald-200"
                       >
                         <ExternalLink size={12} className="mr-1" />
-                        Open legacy Pterodactyl panel
+                        Open Pterodactyl panel
                       </a>
                     ) : (
                       <p className="text-xs text-gray-400">
@@ -789,11 +830,12 @@ const DashboardServerDetails: React.FC = () => {
                             type="button"
                             onClick={() => {
                               if (!orderId || !details) return;
+                              manualCloseRef.current = false;
                               if (wsRef.current) {
-                                manualCloseRef.current = true;
                                 wsRef.current.close();
                                 wsRef.current = null;
                               }
+                              consoleOpeningRef.current = false;
                               reconnectAttemptsRef.current = 0;
                               connectConsole();
                             }}

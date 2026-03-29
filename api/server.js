@@ -40,6 +40,8 @@ const require = createRequire(import.meta.url);
 const pkg = require('./package.json');
 const logger = createLogger();
 const app = express();
+// Behind nginx / reverse proxy: restores client IP and keeps express-rate-limit happy (X-Forwarded-For).
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 const startTime = Date.now();
@@ -64,13 +66,20 @@ app.use((req, res, next) => {
 });
 app.use(pinoHttp({ logger, genReqId: (req) => req.id }));
 
-// CORS configuration - must be before other middleware
+// CORS: dashboard is on www; API on api subdomain — both must be allowed when using split hosts.
+// Use FRONTEND_URL (comma-separated) or fall back to PUBLIC_SITE_URL so production isn't stuck on origin:false.
+const rawCorsOrigins =
+  String(process.env.FRONTEND_URL || '').trim() || String(process.env.PUBLIC_SITE_URL || '').trim();
+const corsOriginOption = rawCorsOrigins
+  ? rawCorsOrigins.split(',').map((url) => url.trim()).filter(Boolean)
+  : process.env.NODE_ENV === 'production'
+    ? false
+    : true;
 const corsOptions = {
-  origin: process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-    : (process.env.NODE_ENV === 'production' ? false : true),
-  credentials: process.env.FRONTEND_URL ? true : (process.env.NODE_ENV === 'production' ? false : true),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: corsOriginOption,
+  credentials:
+    corsOriginOption === true || (Array.isArray(corsOriginOption) && corsOriginOption.length > 0),
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));

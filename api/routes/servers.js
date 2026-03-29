@@ -781,80 +781,10 @@ router.put('/:orderId/public-page', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/servers/:orderId
- * Server details for a single order, including basic Panel details when available.
- * Auth invariant: user must own the order; client never provides ptero_server_id.
- */
-router.get('/:orderId', authenticate, async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    if (!orderId) {
-      return res.status(400).json({ error: 'orderId is required' });
-    }
-
-    const order = await getUserGameOrderById(orderId, req.userId);
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-
-    let panel = null;
-    if (order.ptero_server_id != null) {
-      try {
-        const details = await getServerDetails(order.ptero_server_id);
-        panel = details;
-      } catch (err) {
-        if (err instanceof PterodactylError) {
-          const mapped = mapPterodactylErrorToHttp(err);
-          logger.warn(
-            {
-              order_id: order.id,
-              ptero_server_id: order.ptero_server_id,
-              code: mapped.body.code,
-              status: mapped.status,
-            },
-            'Failed to fetch Pterodactyl server details for order'
-          );
-        } else {
-          logger.error(
-            {
-              order_id: order.id,
-              ptero_server_id: order.ptero_server_id,
-              err: err?.message || String(err),
-            },
-            'Unexpected error fetching Pterodactyl server details'
-          );
-        }
-        // For PR2, treat Panel detail failures as non-fatal; return order info only.
-      }
-    }
-
-    res.json({
-      id: order.id,
-      status: order.status,
-      game: order.game,
-      region: order.region,
-      server_name: order.server_name,
-      plan: {
-        id: order.plan_id,
-        ram_gb: order.ram_gb,
-        vcores: order.vcores,
-        ssd_gb: order.ssd_gb,
-      },
-      panel,
-    });
-  } catch (error) {
-    logger.error({ err: error, user_id: req.userId }, 'Failed to fetch server details for order');
-    res.status(500).json({
-      error: 'Failed to fetch server details',
-      message: error?.message,
-    });
-  }
-});
-
-/**
  * GET /api/servers/:orderId/resources
  * Live resources for a single order, with short TTL caching (2.5s).
  * This endpoint is informational only and must not be used for billing.
+ * Registered before GET /:orderId so paths like .../resources are never captured by the param route.
  */
 router.get('/:orderId/resources', authenticate, async (req, res) => {
   try {
@@ -1028,6 +958,80 @@ router.post('/:orderId/power', authenticate, async (req, res) => {
     logger.error({ err: error, user_id: req.userId }, 'Failed to process power action for order');
     res.status(500).json({
       error: 'Failed to process power action',
+      message: error?.message,
+    });
+  }
+});
+
+/**
+ * GET /api/servers/:orderId
+ * Server details for a single order, including basic Panel details when available.
+ * Auth invariant: user must own the order; client never provides ptero_server_id.
+ * Registered after /:orderId/resources and /:orderId/power so those paths match first.
+ */
+router.get('/:orderId', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
+    const order = await getUserGameOrderById(orderId, req.userId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    let panel = null;
+    if (order.ptero_server_id != null) {
+      try {
+        const details = await getServerDetails(order.ptero_server_id);
+        panel = details;
+      } catch (err) {
+        if (err instanceof PterodactylError) {
+          const mapped = mapPterodactylErrorToHttp(err);
+          logger.warn(
+            {
+              order_id: order.id,
+              ptero_server_id: order.ptero_server_id,
+              code: mapped.body.code,
+              status: mapped.status,
+            },
+            'Failed to fetch Pterodactyl server details for order'
+          );
+        } else {
+          logger.error(
+            {
+              order_id: order.id,
+              ptero_server_id: order.ptero_server_id,
+              err: err?.message || String(err),
+            },
+            'Unexpected error fetching Pterodactyl server details'
+          );
+        }
+        // For PR2, treat Panel detail failures as non-fatal; return order info only.
+      }
+    }
+
+    res.json({
+      id: order.id,
+      status: order.status,
+      game: order.game,
+      region: order.region,
+      server_name: order.server_name,
+      ptero_server_id: order.ptero_server_id ?? null,
+      ptero_identifier: order.ptero_identifier ?? null,
+      plan: {
+        id: order.plan_id,
+        ram_gb: order.ram_gb,
+        vcores: order.vcores,
+        ssd_gb: order.ssd_gb,
+      },
+      panel,
+    });
+  } catch (error) {
+    logger.error({ err: error, user_id: req.userId }, 'Failed to fetch server details for order');
+    res.status(500).json({
+      error: 'Failed to fetch server details',
       message: error?.message,
     });
   }
