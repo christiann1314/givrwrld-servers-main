@@ -1,4 +1,4 @@
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { URL } from 'node:url';
 import pool from '../config/database.js';
 import { verifyToken } from '../utils/jwt.js';
@@ -8,13 +8,47 @@ const logger = getLogger();
 
 const MAX_GLOBAL_SESSIONS = 64;
 const MAX_SESSIONS_PER_USER = 4;
-const MAX_SESSIONS_PER_ORDER = 2;
+const MAX_SESSIONS_PER_ORDER = 1;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 const COMMAND_WINDOW_MS = 2000;
 const COMMANDS_PER_WINDOW = 10;
 const MAX_MESSAGE_BYTES = 4096;
 const PANEL_CLIENT_KEY = (process.env.PTERO_CLIENT_KEY || '').trim();
 const PANEL_URL = (process.env.PANEL_URL || '').trim();
+const PANEL_RATE_LIMIT_COOLDOWN_MS = 120000;
+const PANEL_OPEN_TIMEOUT_MS = 20000;
+/** Browser→API pings so nginx/proxies do not treat the console stream as idle and RST it. */
+const CLIENT_WS_PING_MS = 25000;
+
+/** Serialize panel token HTTP calls per server so tabs/users don't stampede the Panel rate limiter. */
+const panelTokenMutexByIdentifier = new Map();
+const panelTokenBackoffUntil = new Map();
+
+function getPanelTokenMutex(identifier) {
+  const key = String(identifier);
+  let mutex = panelTokenMutexByIdentifier.get(key);
+  if (!mutex) {
+    let chain = Promise.resolve();
+    mutex = (fn) => {
+      const run = chain.then(() => fn());
+      chain = run.catch(() => {}).then(() => {});
+      return run;
+    };
+    panelTokenMutexByIdentifier.set(key, mutex);
+  }
+  return mutex;
+}
+
+function isPanelRateLimitedStatus(status, text) {
+  if (status === 429) return true;
+  const raw = String(text || '').toLowerCase();
+  return raw.includes('too many attempts') || raw.includes('throttlerequestsexception');
+}
+
+function isPanelRateLimitedError(err) {
+  const raw = String(err?.message || err || '').toLowerCase();
+  return raw.includes('429') || raw.includes('too many attempts') || raw.includes('throttlerequestsexception');
+}
 
 const sessionsByUser = new Map(); // userId -> count
 const sessionsByOrder = new Map(); // orderId -> count
@@ -68,7 +102,6 @@ async function getUserOrder(orderId, userId) {
        o.user_id,
        o.status,
        o.item_type,
-       o.game,
        o.region,
        o.server_name,
        o.ptero_server_id,
@@ -81,53 +114,111 @@ async function getUserOrder(orderId, userId) {
   return rows?.[0] || null;
 }
 
+async function fetchPanelWebsocketCredentials(order) {
+  const id = String(order.ptero_identifier);
+  const run = getPanelTokenMutex(id);
+  return run(async () => {
+    const until = panelTokenBackoffUntil.get(id) || 0;
+    const delayMs = until - Date.now();
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    const base = String(PANEL_URL).replace(/\/+$/, '');
+    const res = await fetch(
+      `${base}/api/client/servers/${encodeURIComponent(order.ptero_identifier)}/websocket`,
+      {
+        headers: {
+          Authorization: `Bearer ${PANEL_CLIENT_KEY}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    const text = await res.text().catch(() => '');
+    if (!res.ok) {
+      if (isPanelRateLimitedStatus(res.status, text)) {
+        panelTokenBackoffUntil.set(id, Date.now() + PANEL_RATE_LIMIT_COOLDOWN_MS);
+      }
+      throw new Error(`Failed to obtain panel websocket token (${res.status}): ${text}`);
+    }
+
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      throw new Error('Panel websocket response was not valid JSON');
+    }
+    const token = body?.data?.token || body?.token;
+    const socketUrl = body?.data?.socket || body?.socket;
+    if (!token || !socketUrl) {
+      throw new Error('Panel websocket response missing token or socket URL');
+    }
+    return { token, socketUrl };
+  });
+}
+
 async function createPanelSocket(order, onMessage, onClose) {
   if (!PANEL_URL || !PANEL_CLIENT_KEY || !order.ptero_identifier) {
     throw new Error('Panel client API not configured for console streaming');
   }
 
-  const base = String(PANEL_URL).replace(/\/+$/, '');
-  const res = await fetch(
-    `${base}/api/client/servers/${encodeURIComponent(order.ptero_identifier)}/websocket`,
-    {
-      headers: {
-        Authorization: `Bearer ${PANEL_CLIENT_KEY}`,
-        Accept: 'application/json',
-      },
-    }
-  );
+  const { token, socketUrl } = await fetchPanelWebsocketCredentials(order);
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Failed to obtain panel websocket token (${res.status}): ${text}`);
-  }
+  return new Promise((resolve, reject) => {
+    const panelWs = new WebSocket(socketUrl);
+    let settled = false;
+    let connected = false;
 
-  const body = await res.json();
-  const token = body?.data?.token || body?.token;
-  const socketUrl = body?.data?.socket || body?.socket;
-  if (!token || !socketUrl) {
-    throw new Error('Panel websocket response missing token or socket URL');
-  }
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(openTimer);
+      try {
+        panelWs.close();
+      } catch {
+        // ignore
+      }
+      reject(err);
+    };
 
-  const panelWs = new WebSocket(socketUrl);
+    const openTimer = setTimeout(() => {
+      fail(new Error('Panel websocket open timeout'));
+    }, PANEL_OPEN_TIMEOUT_MS);
 
-  panelWs.onopen = () => {
-    panelWs.send(JSON.stringify({ event: 'auth', args: [token] }));
-  };
+    panelWs.onopen = () => {
+      clearTimeout(openTimer);
+      try {
+        panelWs.send(JSON.stringify({ event: 'auth', args: [token] }));
+      } catch (err) {
+        fail(err);
+        return;
+      }
+      if (!settled) {
+        settled = true;
+        connected = true;
+        resolve(panelWs);
+      }
+    };
 
-  panelWs.onmessage = (event) => {
-    onMessage(event.data);
-  };
+    panelWs.onmessage = (event) => {
+      onMessage(event.data);
+    };
 
-  panelWs.onclose = () => {
-    onClose();
-  };
+    panelWs.onclose = () => {
+      clearTimeout(openTimer);
+      if (connected) {
+        onClose();
+      } else if (!settled) {
+        settled = true;
+        reject(new Error('Panel websocket closed before ready'));
+      }
+    };
 
-  panelWs.onerror = () => {
-    // Errors are surfaced via close and our retry logic.
-  };
-
-  return panelWs;
+    panelWs.onerror = () => {
+      fail(new Error('Panel websocket connection error'));
+    };
+  });
 }
 
 export function attachConsoleWebSocketServer(server) {
@@ -159,13 +250,6 @@ export function attachConsoleWebSocketServer(server) {
 
       const userCount = sessionsByUser.get(String(userId)) || 0;
       if (userCount >= MAX_SESSIONS_PER_USER) {
-        socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-
-      const orderCount = sessionsByOrder.get(String(orderId)) || 0;
-      if (orderCount >= MAX_SESSIONS_PER_ORDER) {
         socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
         socket.destroy();
         return;
@@ -210,6 +294,8 @@ export function attachConsoleWebSocketServer(server) {
       closed: false,
       panelWs: null,
       reconnectAttempts: 0,
+      panelConnectInFlight: false,
+      lastRateLimitNoticeAt: 0,
     };
 
     const idleTimer = setInterval(() => {
@@ -223,6 +309,14 @@ export function attachConsoleWebSocketServer(server) {
       }
     }, 30000);
 
+    const clientPingTimer = setInterval(() => {
+      try {
+        if (ws.readyState === ws.OPEN) ws.ping();
+      } catch {
+        // ignore
+      }
+    }, CLIENT_WS_PING_MS);
+
     function cleanup() {
       if (meta.closed) return;
       meta.closed = true;
@@ -232,6 +326,7 @@ export function attachConsoleWebSocketServer(server) {
       dec(sessionsByOrder, orderId);
 
       clearInterval(idleTimer);
+      clearInterval(clientPingTimer);
 
       if (meta.panelWs && meta.panelWs.readyState === meta.panelWs.OPEN) {
         try {
@@ -285,7 +380,7 @@ export function attachConsoleWebSocketServer(server) {
       if (meta.closed) return;
       meta.reconnectAttempts += 1;
       const attempt = meta.reconnectAttempts;
-      if (attempt > 5) {
+      if (attempt > 12) {
         safeSend(ws, {
           type: 'error',
           code: 'PTERO_UNAVAILABLE',
@@ -293,17 +388,31 @@ export function attachConsoleWebSocketServer(server) {
         });
         return;
       }
-      const baseDelay = 1000 * 2 ** (attempt - 1);
+      const baseDelay = 1000 * 2 ** Math.min(attempt - 1, 5);
       const jitter = Math.floor(Math.random() * 250);
-      const delay = Math.min(30000, baseDelay + jitter);
+      const delay = Math.min(45000, baseDelay + jitter);
       setTimeout(() => {
         if (meta.closed) return;
         connectPanel();
       }, delay);
     }
 
+    function sendRateLimitedNotice() {
+      const now = Date.now();
+      if (now - meta.lastRateLimitNoticeAt < 30000) return;
+      meta.lastRateLimitNoticeAt = now;
+      safeSend(ws, {
+        type: 'console.system',
+        message: 'Panel rate-limited console token requests; retrying shortly.',
+      });
+    }
+
     function connectPanel() {
       if (meta.closed) return;
+      if (meta.panelConnectInFlight) return;
+      if (meta.panelWs && (meta.panelWs.readyState === meta.panelWs.OPEN || meta.panelWs.readyState === meta.panelWs.CONNECTING)) {
+        return;
+      }
       if (!PANEL_URL || !PANEL_CLIENT_KEY) {
         safeSend(ws, {
           type: 'error',
@@ -312,10 +421,12 @@ export function attachConsoleWebSocketServer(server) {
         });
         return;
       }
+      meta.panelConnectInFlight = true;
       createPanelSocket(
         order,
         (data) => forwardPanelMessage(data),
         () => {
+          meta.panelWs = null;
           if (!meta.closed) {
             scheduleReconnect();
           }
@@ -324,12 +435,14 @@ export function attachConsoleWebSocketServer(server) {
         .then((panelWs) => {
           meta.panelWs = panelWs;
           meta.reconnectAttempts = 0;
+          meta.panelConnectInFlight = false;
           safeSend(ws, {
             type: 'console.system',
             message: 'Console connected.',
           });
         })
         .catch((err) => {
+          meta.panelConnectInFlight = false;
           logger.warn(
             {
               order_id: orderId,
@@ -338,6 +451,13 @@ export function attachConsoleWebSocketServer(server) {
             },
             'Failed to connect to panel console websocket'
           );
+          if (isPanelRateLimitedError(err)) {
+            sendRateLimitedNotice();
+            setTimeout(() => {
+              if (!meta.closed) connectPanel();
+            }, PANEL_RATE_LIMIT_COOLDOWN_MS);
+            return;
+          }
           scheduleReconnect();
         });
     }
