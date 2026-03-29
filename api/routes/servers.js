@@ -1465,6 +1465,20 @@ export async function provisionServer(orderId) {
       }
     }
 
+    // Impostor defaults PublicIp to 127.0.0.1 (local-only). Remote clients need your node hostname or public IP.
+    // https://github.com/Impostor/Impostor/blob/master/docs/Server-configuration.md
+    if (gameKey === 'among-us') {
+      const existing = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
+      if (!existing) {
+        const fromHost = String(
+          process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
+        ).trim();
+        if (fromHost) {
+          environment.IMPOSTOR_Server__PublicIp = fromHost;
+        }
+      }
+    }
+
     const inferContext = {
       estimatedPlayers,
       gameServerPort,
@@ -1494,6 +1508,21 @@ export async function provisionServer(orderId) {
     if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
       const boolInput = String(environment.BATTLE_EYE).toLowerCase();
       environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
+    }
+
+    // Panel Application API egg is source of truth when the fetch succeeds; MySQL ptero_eggs can be stale.
+    const startupForNormalize =
+      (panelEggStartup && String(panelEggStartup).trim()) ||
+      (egg.startup_cmd && String(egg.startup_cmd).trim()) ||
+      '';
+    const resolvedStartupCmd = normalizeStartupCommand(startupForNormalize);
+
+    let resolvedDockerImage =
+      (panelEggDockerImage && String(panelEggDockerImage).trim()) ||
+      (egg.docker_image && String(egg.docker_image).trim()) ||
+      '';
+    if (!resolvedDockerImage) {
+      resolvedDockerImage = 'ghcr.io/pterodactyl/yolks:debian';
     }
 
     // Create server in Pterodactyl
