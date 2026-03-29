@@ -3,11 +3,17 @@ import { clearTokens, getAccessToken, refreshAccessToken, setTokens } from "./au
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-function getApiBase(): string {
+/** Common deploy typo: "givrwld" instead of "givrwrld" — wrong host → 405 / broken WebSockets. */
+function fixGivrwrldHostnameTypo(url: string): string {
+  return url.replace(/givrwldservers\.com/gi, "givrwrldservers.com");
+}
+
+export function getApiBase(): string {
   // Prefer VITE_API_URL, fallback to VITE_API_BASE_URL; otherwise same-origin.
   const env = (import.meta as any)?.env;
   const v = env?.VITE_API_URL || env?.VITE_API_BASE_URL;
-  const normalized = typeof v === "string" ? v.replace(/\/$/, "") : "";
+  let normalized =
+    typeof v === "string" ? fixGivrwrldHostnameTypo(v.replace(/\/$/, "")) : "";
   const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const isLocalFrontendOrigin =
     /^https?:\/\/(localhost|127\.0\.0\.1):8080$/i.test(browserOrigin);
@@ -16,18 +22,29 @@ function getApiBase(): string {
   const isRelativeApiBase = normalized.startsWith("/");
 
   // Hard guard: when app is served from local frontend port, always talk to local API.
-  // This prevents accidental same-origin `/api/*` calls hitting Vite and returning 404.
   if (isLocalFrontendOrigin && (!normalized || pointsToLocalFrontend || isRelativeApiBase)) {
     return "http://localhost:3001";
   }
 
   if (env?.DEV) {
-    // Guard against misconfigured local env that points API to the Vite dev server.
     if (
       !normalized ||
       /^(https?:\/\/)(localhost|127\.0\.0\.1):8080(\/|$)/i.test(normalized)
     ) {
       return "http://localhost:3001";
+    }
+  }
+
+  // Production: JSON API must not use the static www/apex origin (POST often returns 405 without proxy).
+  if (typeof window !== "undefined") {
+    const host = fixGivrwrldHostnameTypo(window.location.hostname || "");
+    if (/^(www\.)?givrwrldservers\.com$/i.test(host)) {
+      const scheme = window.location.protocol === "https:" ? "https" : "http";
+      const apiSubdomainBase = `${scheme}://api.givrwrldservers.com`;
+      const isWwwOrApexApi = /^https?:\/\/(www\.)?givrwrldservers\.com$/i.test(normalized);
+      if (!normalized || isWwwOrApexApi || normalized === browserOrigin) {
+        return apiSubdomainBase;
+      }
     }
   }
 
