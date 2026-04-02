@@ -11,12 +11,12 @@ import {
 } from '../utils/mysql.js';
 import {
   getOrder,
-  canProvision,
-  transitionToProvisioning,
+  claimOrderForProvisioning,
   transitionToProvisioned,
   transitionToFailed,
   startProvisionAttempt,
   recordProvisionError,
+  backfillOrderProvisionMetadata,
 } from '../services/OrderService.js';
 import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
@@ -30,6 +30,19 @@ import {
   mapPterodactylErrorToHttp,
 } from '../services/pterodactylService.js';
 import { getModProfileForOrder } from '../config/modProfiles.js';
+import {
+  getAllocationCountForEgg,
+  rankAllocationGroups,
+  applyMultiAllocationEnv,
+  syncPrimaryPortEnvVars,
+} from '../config/gamePortPolicy.js';
+import {
+  withMysqlProvisionLock,
+  buildDeterministicServerName,
+  findPanelServerByExactName,
+  verifyProvisionedServer,
+  buildProvisionMetaFromVerification,
+} from '../lib/provisionPanelHelpers.js';
 import {
   upsertPublicServerSnapshot,
   getServerPublicPageSettings,
@@ -1038,6 +1051,234 @@ router.get('/:orderId', authenticate, async (req, res) => {
 });
 
 /**
+ * Build Panel environment for one allocation trial. Primary port comes from reserved allocations when known.
+ * @param {{
+ *   order: Record<string, any>,
+ *   egg: Record<string, any>,
+ *   eggVariableDefaults: Record<string, string>,
+ *   requiredVarMeta: { key: string, rules: string }[],
+ *   selectedAllocs: { id: number, port: number | null }[],
+ *   pteroEggId: number,
+ * }} ctx
+ */
+function buildEnvironmentForAllocationGroup(ctx) {
+  const { order, egg, eggVariableDefaults, requiredVarMeta, selectedAllocs, pteroEggId } = ctx;
+  const environment = { ...eggVariableDefaults };
+  const gameKey = normalizeGameKey(order.game);
+  const estimatedPlayersRaw = Math.max(4, Math.min(64, Number(order.ram_gb || 1) * 4));
+  const estimatedPlayers =
+    gameKey === 'palworld' ? Math.min(32, estimatedPlayersRaw) : estimatedPlayersRaw;
+
+  applyMultiAllocationEnv(pteroEggId, selectedAllocs, environment);
+
+  const knownPrimary =
+    selectedAllocs[0]?.port != null && Number.isFinite(Number(selectedAllocs[0].port))
+      ? Number(selectedAllocs[0].port)
+      : null;
+  if (knownPrimary != null && knownPrimary > 0) {
+    syncPrimaryPortEnvVars(environment, knownPrimary);
+  }
+
+  const requestedPort = Number(environment.SERVER_PORT || environment.PORT || 0);
+  const gameServerPort =
+    knownPrimary != null && knownPrimary > 0
+      ? knownPrimary
+      : Number.isFinite(requestedPort) && requestedPort > 0
+        ? requestedPort
+        : 7777;
+  const queryPort =
+    selectedAllocs[1]?.port != null && Number.isFinite(Number(selectedAllocs[1].port))
+      ? Number(selectedAllocs[1].port)
+      : gameServerPort + 1;
+  const rconPort =
+    selectedAllocs[2]?.port != null && Number.isFinite(Number(selectedAllocs[2].port))
+      ? Number(selectedAllocs[2].port)
+      : gameServerPort + 2;
+
+  const arkAdminPassword =
+    environment.ARK_ADMIN_PASSWORD ||
+    environment.SERVER_ADMIN_PASSWORD ||
+    buildSafeToken('Ark', order.id, 32);
+  const steamAppIdsByGame = {
+    palworld: '2394010',
+    terraria: '105600',
+    factorio: '427520',
+    teeworlds: '380840',
+    rust: '258550',
+    ark: '376030',
+    enshrouded: '2278520',
+  };
+  const rimworldUrl =
+    process.env.RIMWORLD_SERVER_PACKAGE_URL || 'https://example.com/rimworld-server.zip';
+
+  const modProfile = getModProfileForOrder(order, gameKey);
+  if (modProfile?.env) {
+    for (const [key, value] of Object.entries(modProfile.env)) {
+      if (value !== undefined && value !== null && value !== '') {
+        environment[key] = String(value);
+      }
+    }
+  }
+  if (modProfile?.profileId && !environment.MOD_PROFILE_ID) {
+    environment.MOD_PROFILE_ID = String(modProfile.profileId);
+  }
+  if (modProfile?.label && !environment.MOD_PROFILE_LABEL) {
+    environment.MOD_PROFILE_LABEL = String(modProfile.label);
+  }
+
+  const staticDefaults = {
+    SERVER_JARFILE: 'server.jar',
+    TZ: 'UTC',
+    EULA: 'TRUE',
+    VERSION: 'latest',
+    MINECRAFT_VERSION: 'latest',
+    BUILD_NUMBER: 'latest',
+    DL_PATH: '',
+    SERVER_NAME: order.server_name || 'GIVRwrld Server',
+    HOSTNAME: order.server_name || 'GIVRwrld Server',
+    SESSION_NAME: order.server_name || 'GIVRwrld Server',
+    MAX_PLAYERS: String(estimatedPlayers),
+    AUTO_UPDATE: '1',
+    APP_ID: environment.APP_ID || steamAppIdsByGame[gameKey] || '',
+    ADDITIONAL_ARGS: '',
+    ADDITIONAL_FLAGS: '',
+    ADDITIONAL_JAVA_FLAGS: '',
+    JVM_ARGS: '',
+    WORLD_NAME: 'givrwrld',
+    SERVER_WORLD: 'world',
+    MAP: 'TheIsland',
+    SERVER_MAP: 'TheIsland',
+    ARK_ADMIN_PASSWORD: arkAdminPassword,
+    SERVER_ADMIN_PASSWORD: arkAdminPassword,
+    BATTLE_EYE: 'true',
+    DOWNLOAD_URL: inferRequiredEnvValue('DOWNLOAD_URL', 'required|url', {
+      estimatedPlayers,
+      gameServerPort,
+      queryPort,
+      rconPort,
+      order,
+      steamAppIdsByGame,
+      rimworldUrl,
+    }),
+    WORLD_SEED: '',
+    WORLD_SIZE: '3000',
+  };
+
+  for (const [key, value] of Object.entries(staticDefaults)) {
+    if (environment[key] === undefined || environment[key] === null || environment[key] === '') {
+      environment[key] = value;
+    }
+  }
+
+  if (gameKey === 'rust') {
+    const rustFramework = String(order.plan_id || '').toLowerCase().includes('oxide')
+      ? 'oxide'
+      : String(order.plan_id || '').toLowerCase().includes('carbon')
+        ? 'carbon'
+        : 'vanilla';
+    const rustDefaults = {
+      FRAMEWORK: rustFramework,
+      LEVEL: 'Procedural Map',
+      DESCRIPTION: 'Powered by GIVRwrld',
+      RCON_PASS: buildSafeToken('Rcon', order.id, 24),
+      SAVEINTERVAL: '60',
+    };
+    for (const [key, value] of Object.entries(rustDefaults)) {
+      if (environment[key] === undefined || environment[key] === null || String(environment[key]).trim() === '') {
+        environment[key] = value;
+      }
+    }
+  }
+
+  if (gameKey === 'ark') {
+    const battleEye = String(environment.BATTLE_EYE || 'false').toLowerCase();
+    environment.BATTLE_EYE = battleEye === 'true' ? 'true' : 'false';
+    environment.SERVER_MAP = String(environment.SERVER_MAP || environment.MAP || 'TheIsland');
+    environment.ARK_ADMIN_PASSWORD = String(environment.ARK_ADMIN_PASSWORD || arkAdminPassword).replace(
+      /[^a-zA-Z0-9_-]/g,
+      '',
+    );
+    if (!environment.ARK_ADMIN_PASSWORD) {
+      environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
+    }
+  }
+
+  if (gameKey === 'enshrouded') {
+    const enshroudedDefaults = {
+      WINDOWS_INSTALL: '1',
+      SRCDS_APPID: steamAppIdsByGame.enshrouded || '2278520',
+      SRV_NAME: String(order.server_name || 'GIVRwrld Enshrouded Server').slice(0, 80),
+    };
+    for (const [key, value] of Object.entries(enshroudedDefaults)) {
+      if (environment[key] === undefined || environment[key] === null || String(environment[key]).trim() === '') {
+        environment[key] = value;
+      }
+    }
+  }
+
+  if (gameKey === 'among-us') {
+    const existing = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
+    if (!existing) {
+      const fromHost = String(
+        process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
+      ).trim();
+      if (fromHost) {
+        environment.IMPOSTOR_Server__PublicIp = fromHost;
+      }
+    }
+  }
+
+  const inferContext = {
+    estimatedPlayers,
+    gameServerPort,
+    queryPort,
+    rconPort,
+    order,
+    steamAppIdsByGame,
+    rimworldUrl,
+  };
+
+  for (const { key, rules } of requiredVarMeta) {
+    if (!hasRequiredRule(rules)) continue;
+    if (environment[key] !== undefined && environment[key] !== null && String(environment[key]).trim() !== '') {
+      continue;
+    }
+    environment[key] = inferRequiredEnvValue(key, rules, inferContext);
+  }
+
+  const normalizedKeys = new Set();
+  for (const { key, rules } of requiredVarMeta) {
+    if (normalizedKeys.has(key)) continue;
+    normalizedKeys.add(key);
+    environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
+  }
+
+  if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
+    const boolInput = String(environment.BATTLE_EYE).toLowerCase();
+    environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
+  }
+
+  return { environment };
+}
+
+function needsProvisionMetadataBackfill(order) {
+  if (!order || order.ptero_server_id == null) return false;
+  const eggId = order.ptero_egg_id;
+  const need =
+    eggId != null && eggId !== '' && Number.isFinite(Number(eggId))
+      ? getAllocationCountForEgg(Number(eggId))
+      : 1;
+  const uuidMissing = !order.ptero_server_uuid || String(order.ptero_server_uuid).trim() === '';
+  const allocIdMissing = order.ptero_primary_allocation_id == null;
+  const portMissing = order.ptero_primary_port == null;
+  const idMissing = !order.ptero_identifier || String(order.ptero_identifier).trim() === '';
+  const extrasMissing =
+    need > 1 &&
+    (order.ptero_extra_ports_json == null || String(order.ptero_extra_ports_json).trim() === '');
+  return uuidMissing || allocIdMissing || portMissing || idMissing || extrasMissing;
+}
+
+/**
  * Provision server function (can be called directly or via HTTP).
  * Idempotent: does not create a second server if ptero_server_id exists or status is provisioned.
  */
@@ -1048,35 +1289,198 @@ export async function provisionServer(orderId) {
       throw new Error('order_id is required');
     }
 
-    const order = await getOrder(orderId, true);
-    if (!order) {
+    const claim = await claimOrderForProvisioning(orderId);
+    if (claim.action === 'not_found') {
       throw new Error('Order not found');
     }
+    if (claim.action === 'ineligible') {
+      throw new Error(`Order not eligible for provisioning (status: ${claim.order?.status || 'unknown'})`);
+    }
+    if (claim.action === 'already_done') {
+      let o = claim.order;
+      let backfilled = false;
+      let recovered = false;
 
-    // Idempotency guard: do not provision twice
-    if (!canProvision(order)) {
+      const aesKey = process.env.AES_KEY;
+      const panelUrl =
+        (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
+      const panelAppKey =
+        (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) ||
+        process.env.PANEL_APP_KEY;
+
+      if (panelUrl && panelAppKey) {
+        if (o.ptero_server_id == null) {
+          try {
+            const deterministicName = buildDeterministicServerName(o);
+
+            let existing = await getPanelServerByExternalId(panelUrl, panelAppKey, String(orderId));
+            if (!existing?.id) {
+              existing = await findPanelServerByExactName(
+                panelUrl,
+                panelAppKey,
+                deterministicName,
+                5,
+                String(orderId),
+              );
+            }
+
+            if (existing?.id) {
+              const allocNeeded = o.ptero_egg_id ? getAllocationCountForEgg(o.ptero_egg_id) : 1;
+              const ver = await verifyProvisionedServer(panelUrl, panelAppKey, existing.id, {
+                primaryAllocationId: 0,
+                additionalAllocationIds: [],
+                minAllocationCount: allocNeeded,
+                strictAllocationIds: false,
+              });
+
+              if (ver.ok) {
+                const baseMeta = buildProvisionMetaFromVerification(ver);
+                const { updated } = await backfillOrderProvisionMetadata(orderId, {
+                  ...(baseMeta || {}),
+                  ptero_server_id: existing.id,
+                  ptero_identifier: ver.identifier || existing.identifier || undefined,
+                });
+                backfilled = Boolean(updated);
+                recovered = true;
+
+                const reloaded = await getOrder(orderId, true);
+                if (reloaded) o = reloaded;
+
+                logger.info(
+                  {
+                    event: 'provision_trace',
+                    order_id: orderId,
+                    step: 'already_done_recover_missing_server_id',
+                    verify_ok: true,
+                    recovered_server_id: existing.id,
+                    backfill_updated: backfilled,
+                  },
+                  'provision_step',
+                );
+              } else {
+                logger.warn(
+                  {
+                    event: 'provision_trace',
+                    order_id: orderId,
+                    step: 'already_done_recover_missing_server_id',
+                    verify_ok: false,
+                    candidate_server_id: existing.id,
+                    error: ver.error,
+                  },
+                  'provision_step',
+                );
+              }
+            } else {
+              logger.warn(
+                {
+                  event: 'provision_trace',
+                  order_id: orderId,
+                  step: 'already_done_recover_missing_server_id',
+                  found_candidate: false,
+                },
+                'provision_step',
+              );
+            }
+          } catch (err) {
+            logger.warn(
+              {
+                event: 'provision_trace',
+                order_id: orderId,
+                step: 'already_done_recover_missing_server_id',
+                err: err instanceof Error ? err.message : String(err),
+              },
+              'provision_step',
+            );
+          }
+        }
+
+        if (needsProvisionMetadataBackfill(o)) {
+          try {
+            const allocNeeded = o.ptero_egg_id ? getAllocationCountForEgg(o.ptero_egg_id) : 1;
+            const ver = await verifyProvisionedServer(panelUrl, panelAppKey, o.ptero_server_id, {
+              primaryAllocationId: 0,
+              additionalAllocationIds: [],
+              minAllocationCount: allocNeeded,
+              strictAllocationIds: false,
+            });
+
+            if (ver.ok) {
+              let baseMeta = buildProvisionMetaFromVerification(ver);
+              if (baseMeta) {
+                const { updated } = await backfillOrderProvisionMetadata(orderId, {
+                  ...baseMeta,
+                  ptero_identifier: ver.identifier || undefined,
+                });
+                backfilled = backfilled || Boolean(updated);
+              }
+              logger.info(
+                {
+                  event: 'provision_trace',
+                  order_id: orderId,
+                  step: 'already_done_backfill',
+                  verify_ok: true,
+                  backfill_updated: backfilled,
+                  had_meta: Boolean(baseMeta),
+                },
+                'provision_step',
+              );
+            } else {
+              logger.warn(
+                {
+                  event: 'provision_trace',
+                  order_id: orderId,
+                  step: 'already_done_verify',
+                  verify_ok: false,
+                  error: ver.error,
+                },
+                'provision_step',
+              );
+            }
+          } catch (err) {
+            logger.warn(
+              {
+                event: 'provision_trace',
+                order_id: orderId,
+                step: 'already_done_backfill',
+                err: err instanceof Error ? err.message : String(err),
+              },
+              'provision_step',
+            );
+          }
+        }
+      }
+
+      const latest = backfilled || recovered ? (await getOrder(orderId, true)) || o : o;
       return {
         success: true,
         order_id: orderId,
-        server_id: order.ptero_server_id,
-        server_identifier: order.ptero_identifier,
-        message: 'Order already provisioned or ineligible',
+        server_id: latest.ptero_server_id ?? null,
+        server_identifier: latest.ptero_identifier ?? null,
+        message:
+          recovered && backfilled
+            ? 'Order already provisioned; server recovered and metadata backfilled from panel'
+            : recovered
+              ? 'Order already provisioned; server recovered from panel'
+              : backfilled
+                ? 'Order already provisioned; metadata backfilled from panel'
+                : 'Order already provisioned or ineligible',
       };
     }
 
-    const transitioned = await transitionToProvisioning(orderId);
-    if (!transitioned) {
-      // Another worker/request likely transitioned this order already.
-      // Exit idempotently to avoid duplicate create-server attempts.
-      const latest = await getOrder(orderId, true);
-      return {
-        success: true,
+    const order = claim.order;
+    logger.info(
+      {
+        event: 'provision_trace',
         order_id: orderId,
-        server_id: latest?.ptero_server_id ?? order.ptero_server_id ?? null,
-        server_identifier: latest?.ptero_identifier ?? order.ptero_identifier ?? null,
-        message: 'Provisioning already in progress or order not eligible for transition',
-      };
-    }
+        step: 'claim',
+        claimed_exclusive: claim.claimedExclusive,
+        status: order.status,
+        game: order.game,
+        ptero_egg_id: order.ptero_egg_id,
+      },
+      'provision_step',
+    );
+
     await startProvisionAttempt(orderId);
 
     // Capacity reservation: choose a node with available headroom and reserve RAM/disk for this order.
@@ -1163,28 +1567,61 @@ export async function provisionServer(orderId) {
       throw new Error('Pterodactyl credentials not found. Set PANEL_URL and PANEL_APP_KEY in api/.env');
     }
 
-    // Idempotency guard against duplicate panel servers across retries/workers.
-    // If a panel server already exists for this order's external_id, persist and return it.
-    const existingPanelServer = await getPanelServerByExternalId(panelUrl, panelAppKey, orderId);
-    if (existingPanelServer?.id) {
-      await transitionToProvisioned(orderId, existingPanelServer.id, existingPanelServer.identifier || null);
-      return {
-        success: true,
-        order_id: orderId,
-        server_id: existingPanelServer.id,
-        server_identifier: existingPanelServer.identifier || null,
-        message: 'Server already existed in panel; order synchronized',
-      };
-    }
+    try {
+      const provisionResult = await withMysqlProvisionLock(orderId, async () => {
+        if (!order.ptero_egg_id) {
+          await recordProvisionError(orderId, 'Plan does not have ptero_egg_id configured');
+          await transitionToFailed(orderId, 'Plan does not have ptero_egg_id configured');
+          throw new Error('Plan does not have ptero_egg_id configured');
+        }
 
-    // Validate plan has egg ID
-    if (!order.ptero_egg_id) {
-      await recordProvisionError(orderId, 'Plan does not have ptero_egg_id configured');
-      await transitionToFailed(orderId, 'Plan does not have ptero_egg_id configured');
-      throw new Error('Plan does not have ptero_egg_id configured');
-    }
+        const allocNeeded = getAllocationCountForEgg(order.ptero_egg_id);
+        const uniqueServerName = buildDeterministicServerName(order);
 
-    // Get user details
+        let existing = await getPanelServerByExternalId(panelUrl, panelAppKey, orderId);
+        if (!existing?.id) {
+          existing = await findPanelServerByExactName(panelUrl, panelAppKey, uniqueServerName, 5, orderId);
+        }
+
+        if (existing?.id) {
+          const verSync = await verifyProvisionedServer(panelUrl, panelAppKey, existing.id, {
+            primaryAllocationId: 0,
+            additionalAllocationIds: [],
+            minAllocationCount: allocNeeded,
+            strictAllocationIds: false,
+          });
+          if (!verSync.ok) {
+            throw new Error(`Reconcile verify failed: ${verSync.error}`);
+          }
+          const metaSync = buildProvisionMetaFromVerification(verSync);
+          await transitionToProvisioned(
+            orderId,
+            existing.id,
+            verSync.identifier || existing.identifier || null,
+            metaSync,
+          );
+          logger.info(
+            {
+              event: 'provision_trace',
+              order_id: orderId,
+              step: 'reconcile_existing',
+              ptero_server_id: existing.id,
+              game: order.game,
+              ptero_egg_id: order.ptero_egg_id,
+              verify_ok: true,
+            },
+            'provision_step',
+          );
+          return {
+            success: true,
+            order_id: orderId,
+            server_id: existing.id,
+            server_identifier: verSync.identifier || existing.identifier || null,
+            message: 'Server already existed in panel; order synchronized',
+          };
+        }
+
+        // Get user details
     const [users] = await pool.execute(
       `SELECT id, email, display_name FROM users WHERE id = ?`,
       [order.user_id]
@@ -1232,6 +1669,7 @@ export async function provisionServer(orderId) {
     // If the app key cannot list allocations, we do NOT guess allocation IDs.
     // Provisioning must fail fast unless explicit safe allocation IDs are configured.
     const allocationCandidates = [];
+    const freeAllocationsSorted = [];
     let allocationListUnauthorized = false;
     let allocationListFailed = false;
     const pushCandidate = (value) => {
@@ -1257,10 +1695,19 @@ export async function provisionServer(orderId) {
       );
       if (allocRes.ok) {
         const allocData = await allocRes.json();
-        (allocData?.data || [])
+        const rows = (allocData?.data || [])
           .map((r) => r?.attributes || {})
           .filter((a) => a && (a.assigned === false || a.server === null || a.server === undefined))
-          .forEach((a) => pushCandidate(a.id));
+          .map((a) => ({
+            id: Number(a.id),
+            port: Number(a.port),
+          }))
+          .filter((a) => a.id > 0 && Number.isFinite(a.port));
+        rows.sort((x, y) => x.port - y.port);
+        for (const a of rows) {
+          freeAllocationsSorted.push(a);
+          pushCandidate(a.id);
+        }
       } else if (allocRes.status === 401 || allocRes.status === 403) {
         allocationListUnauthorized = true;
       } else {
@@ -1288,10 +1735,34 @@ export async function provisionServer(orderId) {
       );
     }
 
-    // Build environment variables:
+    let allocationTrialGroups;
+
+    if (allocNeeded > 1) {
+      if (allocationListUnauthorized || allocationListFailed) {
+        throw new Error(
+          `Egg ${order.ptero_egg_id} requires ${allocNeeded} allocations on node ${node.ptero_node_id}; ` +
+          `listing allocations via the Panel API must succeed. Grant the app key node read access or fix connectivity.`
+        );
+      }
+      if (freeAllocationsSorted.length < allocNeeded) {
+        throw new Error(
+          `Egg ${order.ptero_egg_id} needs ${allocNeeded} free allocations on node ${node.ptero_node_id}; ` +
+          `panel reported ${freeAllocationsSorted.length} free. Add ports or free existing allocations.`
+        );
+      }
+      allocationTrialGroups = rankAllocationGroups(freeAllocationsSorted, allocNeeded);
+      if (!allocationTrialGroups.length) {
+        throw new Error(`Could not build an allocation set of ${allocNeeded} for node ${node.ptero_node_id}.`);
+      }
+    } else {
+      const idToPort = new Map(freeAllocationsSorted.map((a) => [a.id, a.port]));
+      allocationTrialGroups = allocationCandidates.map((id) => [{ id, port: idToPort.get(id) ?? null }]);
+    }
+
+    // Build environment variable defaults from Panel egg metadata (per-allocation fill happens at create time).
     // 1) hydrate required defaults from panel egg variables
     // 2) apply sane overrides for commonly-used keys
-    const environment = {};
+    const eggVariableDefaults = {};
     const requiredVarMeta = [];
     /** Prefer Panel egg startup/docker over app DB — MySQL catalog rows can be wrong (e.g. cloned egg IDs). */
     let panelEggStartup = null;
@@ -1317,204 +1788,22 @@ export async function provisionServer(orderId) {
             panelEggDockerImage = rawDi.replace(/\\\//g, '/');
           }
           const variableRows = attrs.relationships?.variables?.data || [];
-                  for (const row of variableRows) {
+          for (const row of variableRows) {
             const attr = row?.attributes || {};
             const key = String(attr?.env_variable || '').trim();
             if (!key) continue;
-                    requiredVarMeta.push({
-                      key,
-                      rules: String(attr?.rules || ''),
-                    });
-            environment[key] = String(attr?.default_value ?? '');
+            requiredVarMeta.push({
+              key,
+              rules: String(attr?.rules || ''),
+            });
+            eggVariableDefaults[key] = String(attr?.default_value ?? '');
           }
         }
       }
     } catch {
-      // Fallback to static defaults below.
+      // Fallback handled in buildEnvironmentForAllocationGroup.
     }
 
-    const gameKey = normalizeGameKey(order.game);
-    const estimatedPlayersRaw = Math.max(4, Math.min(64, Number(order.ram_gb || 1) * 4));
-    const estimatedPlayers = gameKey === 'palworld'
-      ? Math.min(32, estimatedPlayersRaw)
-      : estimatedPlayersRaw;
-    const requestedPort = Number(environment.SERVER_PORT || environment.PORT || 0);
-    const gameServerPort = Number.isFinite(requestedPort) && requestedPort > 0 ? requestedPort : 7777;
-    const queryPort = gameServerPort + 1;
-    const rconPort = gameServerPort + 2;
-    const arkAdminPassword =
-      environment.ARK_ADMIN_PASSWORD ||
-      environment.SERVER_ADMIN_PASSWORD ||
-      buildSafeToken('Ark', order.id, 32);
-    const steamAppIdsByGame = {
-      palworld: '2394010',
-      terraria: '105600',
-      factorio: '427520',
-      teeworlds: '380840',
-      rust: '258550',
-      ark: '376030',
-      enshrouded: '2278520',
-    };
-    const rimworldUrl =
-      process.env.RIMWORLD_SERVER_PACKAGE_URL ||
-      'https://example.com/rimworld-server.zip';
-
-    // Attach mod profile metadata (if configured) based on game + plan/variant.
-    const modProfile = getModProfileForOrder(order, gameKey);
-    if (modProfile?.env) {
-      for (const [key, value] of Object.entries(modProfile.env)) {
-        if (value !== undefined && value !== null && value !== '') {
-          environment[key] = String(value);
-        }
-      }
-    }
-    if (modProfile?.profileId && !environment.MOD_PROFILE_ID) {
-      environment.MOD_PROFILE_ID = String(modProfile.profileId);
-    }
-    if (modProfile?.label && !environment.MOD_PROFILE_LABEL) {
-      environment.MOD_PROFILE_LABEL = String(modProfile.label);
-    }
-
-    const staticDefaults = {
-      SERVER_JARFILE: 'server.jar',
-      TZ: 'UTC',
-      EULA: 'TRUE',
-      VERSION: 'latest',
-      MINECRAFT_VERSION: 'latest',
-      BUILD_NUMBER: 'latest',
-      DL_PATH: '',
-      SERVER_NAME: order.server_name || 'GIVRwrld Server',
-      HOSTNAME: order.server_name || 'GIVRwrld Server',
-      SESSION_NAME: order.server_name || 'GIVRwrld Server',
-      MAX_PLAYERS: String(estimatedPlayers),
-      AUTO_UPDATE: '1',
-      APP_ID: environment.APP_ID || steamAppIdsByGame[gameKey] || '',
-      ADDITIONAL_ARGS: '',
-      ADDITIONAL_FLAGS: '',
-      ADDITIONAL_JAVA_FLAGS: '',
-      JVM_ARGS: '',
-      WORLD_NAME: 'givrwrld',
-      SERVER_WORLD: 'world',
-      MAP: 'TheIsland',
-      SERVER_MAP: 'TheIsland',
-      ARK_ADMIN_PASSWORD: arkAdminPassword,
-      SERVER_ADMIN_PASSWORD: arkAdminPassword,
-      QUERY_PORT: String(queryPort),
-      RCON_PORT: String(rconPort),
-      BATTLE_EYE: 'true',
-      DOWNLOAD_URL: inferRequiredEnvValue('DOWNLOAD_URL', 'required|url', {
-        estimatedPlayers,
-        gameServerPort,
-        queryPort,
-        rconPort,
-        order,
-        steamAppIdsByGame,
-        rimworldUrl,
-      }),
-      WORLD_SEED: '',
-      WORLD_SIZE: '3000',
-    };
-
-    for (const [key, value] of Object.entries(staticDefaults)) {
-      if (environment[key] === undefined || environment[key] === null || environment[key] === '') {
-        environment[key] = value;
-      }
-    }
-
-    // Game-specific required defaults to survive egg metadata fetch instability.
-    if (gameKey === 'rust') {
-      const rustFramework = String(order.plan_id || '').toLowerCase().includes('oxide')
-        ? 'oxide'
-        : String(order.plan_id || '').toLowerCase().includes('carbon')
-          ? 'carbon'
-          : 'vanilla';
-      const rustDefaults = {
-        FRAMEWORK: rustFramework,
-        LEVEL: 'Procedural Map',
-        DESCRIPTION: 'Powered by GIVRwrld',
-        RCON_PASS: buildSafeToken('Rcon', order.id, 24),
-        SAVEINTERVAL: '60',
-        APP_PORT: String(gameServerPort),
-        QUERY_PORT: String(queryPort),
-        RCON_PORT: String(rconPort),
-      };
-      for (const [key, value] of Object.entries(rustDefaults)) {
-        if (environment[key] === undefined || environment[key] === null || String(environment[key]).trim() === '') {
-          environment[key] = value;
-        }
-      }
-    }
-
-    if (gameKey === 'ark') {
-      const battleEye = String(environment.BATTLE_EYE || 'false').toLowerCase();
-      environment.BATTLE_EYE = battleEye === 'true' ? 'true' : 'false';
-      environment.SERVER_MAP = String(environment.SERVER_MAP || environment.MAP || 'TheIsland');
-      environment.ARK_ADMIN_PASSWORD = String(environment.ARK_ADMIN_PASSWORD || arkAdminPassword).replace(/[^a-zA-Z0-9_-]/g, '');
-      if (!environment.ARK_ADMIN_PASSWORD) {
-        environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
-      }
-    }
-
-    // Enshrouded (and variant eggs): Panel may not return variables for cloned eggs; set required env explicitly.
-    if (gameKey === 'enshrouded') {
-      const enshroudedDefaults = {
-        WINDOWS_INSTALL: '1',
-        SRCDS_APPID: steamAppIdsByGame.enshrouded || '2278520',
-        SRV_NAME: String(order.server_name || 'GIVRwrld Enshrouded Server').slice(0, 80),
-      };
-      for (const [key, value] of Object.entries(enshroudedDefaults)) {
-        if (environment[key] === undefined || environment[key] === null || String(environment[key]).trim() === '') {
-          environment[key] = value;
-        }
-      }
-    }
-
-    // Impostor defaults PublicIp to 127.0.0.1 (local-only). Remote clients need your node hostname or public IP.
-    // https://github.com/Impostor/Impostor/blob/master/docs/Server-configuration.md
-    if (gameKey === 'among-us') {
-      const existing = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
-      if (!existing) {
-        const fromHost = String(
-          process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
-        ).trim();
-        if (fromHost) {
-          environment.IMPOSTOR_Server__PublicIp = fromHost;
-        }
-      }
-    }
-
-    const inferContext = {
-      estimatedPlayers,
-      gameServerPort,
-      queryPort,
-      rconPort,
-      order,
-      steamAppIdsByGame,
-      rimworldUrl,
-    };
-
-    // Guarantee all "required" egg variables receive values so create-server validation does not fail.
-    for (const { key, rules } of requiredVarMeta) {
-      if (!hasRequiredRule(rules)) continue;
-      if (environment[key] !== undefined && environment[key] !== null && String(environment[key]).trim() !== '') {
-        continue;
-      }
-      environment[key] = inferRequiredEnvValue(key, rules, inferContext);
-    }
-
-    // Normalize values against egg rules to avoid validation mismatches (boolean/alpha_dash/etc).
-    const normalizedKeys = new Set();
-    for (const { key, rules } of requiredVarMeta) {
-      if (normalizedKeys.has(key)) continue;
-      normalizedKeys.add(key);
-      environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
-    }
-    if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
-      const boolInput = String(environment.BATTLE_EYE).toLowerCase();
-      environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
-    }
-
-    // Panel Application API egg is source of truth when the fetch succeeds; MySQL ptero_eggs can be stale.
     const startupForNormalize =
       (panelEggStartup && String(panelEggStartup).trim()) ||
       (egg.startup_cmd && String(egg.startup_cmd).trim()) ||
@@ -1529,26 +1818,33 @@ export async function provisionServer(orderId) {
       resolvedDockerImage = 'ghcr.io/pterodactyl/yolks:debian';
     }
 
-    // Create server in Pterodactyl
-    let lastCreateError = null;
-    try {
-      let serverData = null;
-      const maxDaemonAttempts = Math.max(1, Number(process.env.PTERO_DAEMON_RETRY_ATTEMPTS || 4));
-      for (let attempt = 1; attempt <= maxDaemonAttempts && !serverData; attempt += 1) {
-        for (const allocationId of allocationCandidates) {
-          // Pterodactyl enforces uniqueness on its generated `identifier` (derived from `name`).
-          // When provisioning retries, reusing the same `name` can cause UniqueConstraintViolationException.
-          // We make the Panel server name deterministic + unique per order id.
-          const uniqueSuffix = String(order.id || '')
-            .replace(/-/g, '')
-            .slice(0, 8);
-          const maxBaseLen = Math.max(0, 80 - (uniqueSuffix.length + 1));
-          const baseName = String(order.server_name || 'GIVRwrld Server').slice(0, maxBaseLen);
-          const uniqueServerName = `${baseName}-${uniqueSuffix}`;
+        // Create server in Pterodactyl
+        let lastCreateError = null;
+        let serverData = null;
+        const maxDaemonAttempts = Math.max(1, Number(process.env.PTERO_DAEMON_RETRY_ATTEMPTS || 4));
 
-          // Eggs often use /mnt/server first; our node layout can make /mnt read-only. Stripping
-          // that wrapper and running from /home/container matches how files are mounted here.
+        let winningAllocationGroup = null;
+
+      for (let attempt = 1; attempt <= maxDaemonAttempts && !serverData; attempt += 1) {
+        for (const allocationGroup of allocationTrialGroups) {
+          const primary = allocationGroup[0];
+          if (!primary?.id) continue;
+
+          const { environment } = buildEnvironmentForAllocationGroup({
+            order,
+            egg,
+            eggVariableDefaults,
+            requiredVarMeta,
+            selectedAllocs: allocationGroup,
+            pteroEggId: order.ptero_egg_id,
+          });
+
           const startupCmd = resolvedStartupCmd;
+          const additionalIds = allocationGroup.slice(1).map((a) => a.id).filter((id) => Number(id) > 0);
+          const allocationPayload =
+            additionalIds.length > 0
+              ? { default: primary.id, additional: additionalIds }
+              : { default: primary.id };
 
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
@@ -1576,11 +1872,9 @@ export async function provisionServer(orderId) {
               feature_limits: {
                 databases: 1,
                 backups: 5,
-                allocations: 1,
+                allocations: allocNeeded,
               },
-              allocation: {
-                default: allocationId,
-              },
+              allocation: allocationPayload,
               start_on_completion: true,
               skip_scripts: false,
             }),
@@ -1588,19 +1882,19 @@ export async function provisionServer(orderId) {
 
           if (serverResponse.ok) {
             serverData = await serverResponse.json();
+            winningAllocationGroup = allocationGroup;
             break;
           }
 
           const errorText = await serverResponse.text();
-          lastCreateError = `Failed allocation ${allocationId}: ${errorText}`;
+          const allocLabel = allocationGroup.map((a) => a.id).join('+');
+          lastCreateError = `Failed allocations [${allocLabel}]: ${errorText}`;
           if (isAllocationValidationError(errorText)) {
             continue;
           }
           if (isRetryableDaemonError(errorText)) {
-            break; // move to delayed next attempt cycle
+            break;
           }
-          // If create failed because this external_id already exists (possible retry race),
-          // fetch that server and continue idempotently.
           if (String(errorText).toLowerCase().includes('external_id')) {
             const existingByExternalId = await getPanelServerByExternalId(panelUrl, panelAppKey, orderId);
             if (existingByExternalId?.id) {
@@ -1608,7 +1902,6 @@ export async function provisionServer(orderId) {
               break;
             }
           }
-          // Non-allocation, non-retryable validation errors should fail fast.
           throw new Error(`Failed to create server in Pterodactyl: ${errorText}`);
         }
         if (!serverData && attempt < maxDaemonAttempts && isRetryableDaemonError(lastCreateError)) {
@@ -1616,33 +1909,82 @@ export async function provisionServer(orderId) {
         }
       }
 
-      if (!serverData) {
-        throw new Error(lastCreateError || 'Failed to create server in Pterodactyl: all allocations rejected');
-      }
-      const pteroServerId = serverData.attributes?.id;
-      const pteroIdentifier = serverData.attributes?.identifier;
+        if (!serverData) {
+          throw new Error(lastCreateError || 'Failed to create server in Pterodactyl: all allocations rejected');
+        }
+        const pteroServerId = serverData.attributes?.id;
+        const pteroIdentifier = serverData.attributes?.identifier;
 
-      await transitionToProvisioned(orderId, pteroServerId, pteroIdentifier);
+        let verifyExpected;
+        if (winningAllocationGroup?.length) {
+          verifyExpected = {
+            primaryAllocationId: winningAllocationGroup[0].id,
+            additionalAllocationIds: winningAllocationGroup.slice(1).map((a) => a.id),
+            minAllocationCount: allocNeeded,
+            strictAllocationIds: true,
+          };
+        } else {
+          verifyExpected = {
+            primaryAllocationId: 0,
+            additionalAllocationIds: [],
+            minAllocationCount: allocNeeded,
+            strictAllocationIds: false,
+          };
+        }
+
+        const verCreate = await verifyProvisionedServer(panelUrl, panelAppKey, pteroServerId, verifyExpected);
+        if (!verCreate.ok) {
+          throw new Error(`Post-create verification failed: ${verCreate.error}`);
+        }
+        const provisionMeta = buildProvisionMetaFromVerification(verCreate);
+        await transitionToProvisioned(
+          orderId,
+          pteroServerId,
+          verCreate.identifier || pteroIdentifier,
+          provisionMeta,
+        );
+
+        logger.info(
+          {
+            event: 'provision_trace',
+            order_id: orderId,
+            step: 'create_verified',
+            ptero_server_id: pteroServerId,
+            game: order.game,
+            ptero_egg_id: order.ptero_egg_id,
+            allocation_ids: winningAllocationGroup?.map((a) => a.id) ?? null,
+            ports: winningAllocationGroup?.map((a) => a.port) ?? null,
+            verify_ok: true,
+            create_summary: {
+              egg: order.ptero_egg_id,
+              feature_allocations: allocNeeded,
+              server_name: uniqueServerName,
+            },
+          },
+          'provision_step',
+        );
+
+        return {
+          success: true,
+          order_id: orderId,
+          server_id: pteroServerId,
+          server_identifier: verCreate.identifier || pteroIdentifier,
+          message: 'Server provisioned successfully',
+        };
+      });
 
       const durationMs = Date.now() - startedAt;
       recordProvisionSuccess(durationMs);
       logger.info(
         {
           order_id: orderId,
-          ptero_server_id: pteroServerId,
-          ptero_identifier: pteroIdentifier,
+          ...provisionResult,
           provisioning_duration_ms: durationMs,
         },
         'Server provisioned',
       );
 
-      return {
-        success: true,
-        order_id: orderId,
-        server_id: pteroServerId,
-        server_identifier: pteroIdentifier,
-        message: 'Server provisioned successfully',
-      };
+      return provisionResult;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await recordProvisionError(orderId, errorMessage);

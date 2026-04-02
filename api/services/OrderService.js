@@ -109,6 +109,79 @@ export async function transitionToPaid(orderId, paypalSubscriptionId = null, pay
 }
 
 /**
+ * Lock the order row and move paid/error/failed → provisioning, or allow retry while already provisioning.
+ * Prevents duplicate checkout/webhook paths from both believing they "won" a fresh paid→provisioning transition.
+ * Does not hold the lock across Panel HTTP calls — pair with MySQL GET_LOCK in the provisioner for create-time safety.
+ *
+ * @returns {Promise<
+ *   | { action: 'not_found' }
+ *   | { action: 'already_done', order: Record<string, any> }
+ *   | { action: 'ineligible', order: Record<string, any> }
+ *   | { action: 'proceed', order: Record<string, any>, claimedExclusive: boolean }
+ * >}
+ */
+export async function claimOrderForProvisioning(orderId) {
+  const conn = await pool.getConnection();
+  await conn.beginTransaction();
+  try {
+    const [rows] = await conn.execute(
+      `SELECT o.*, p.game, p.ptero_egg_id, p.ram_gb, p.vcores, p.ssd_gb
+       FROM orders o
+       LEFT JOIN plans p ON p.id = o.plan_id
+       WHERE o.id = ?
+       FOR UPDATE`,
+      [orderId],
+    );
+    const locked = rows[0];
+    if (!locked) {
+      await conn.rollback();
+      conn.release();
+      return { action: 'not_found' };
+    }
+
+    if (locked.ptero_server_id != null || normalizeStatus(locked.status) === ORDER_STATUS.PROVISIONED) {
+      await conn.commit();
+      conn.release();
+      return { action: 'already_done', order: locked };
+    }
+
+    const st = normalizeStatus(locked.status);
+    if (![ORDER_STATUS.PAID, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED, ORDER_STATUS.PROVISIONING].includes(st)) {
+      await conn.commit();
+      conn.release();
+      return { action: 'ineligible', order: locked };
+    }
+
+    let claimedExclusive = false;
+    if (st === ORDER_STATUS.PAID || st === ORDER_STATUS.ERROR || st === ORDER_STATUS.FAILED) {
+      const [upd] = await conn.execute(
+        `UPDATE orders
+         SET status = 'provisioning',
+             updated_at = NOW()
+         WHERE id = ?
+           AND status IN ('paid', 'error', 'failed')`,
+        [orderId],
+      );
+      claimedExclusive = upd.affectedRows > 0;
+    }
+
+    await conn.commit();
+    conn.release();
+
+    const order = (await getOrder(orderId, true)) || locked;
+    return { action: 'proceed', order, claimedExclusive };
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      // ignore
+    }
+    conn.release();
+    throw err;
+  }
+}
+
+/**
  * Transition order to provisioning (idempotent: only if paid or already provisioning).
  */
 export async function transitionToProvisioning(orderId) {
@@ -138,8 +211,17 @@ export async function transitionToProvisioning(orderId) {
 
 /**
  * Transition to provisioned and set ptero ids.
+ * @param {string} orderId
+ * @param {number|null|undefined} pteroServerId
+ * @param {string|null|undefined} pteroIdentifier
+ * @param {{
+ *   ptero_server_uuid?: string|null,
+ *   ptero_primary_allocation_id?: number|null,
+ *   ptero_primary_port?: number|null,
+ *   ptero_extra_ports_json?: string|null,
+ * } | null} [meta]
  */
-export async function transitionToProvisioned(orderId, pteroServerId, pteroIdentifier) {
+export async function transitionToProvisioned(orderId, pteroServerId, pteroIdentifier, meta = null) {
   const order = await getOrder(orderId);
   const currentStatus = normalizeStatus(order?.status);
   if (!order || !VALID_STATUSES.includes(currentStatus)) {
@@ -160,22 +242,108 @@ export async function transitionToProvisioned(orderId, pteroServerId, pteroIdent
     return false;
   }
 
+  const setParts = [
+    `status = 'provisioned'`,
+    `ptero_server_id = COALESCE(?, ptero_server_id)`,
+    `ptero_identifier = COALESCE(?, ptero_identifier)`,
+    `error_message = NULL`,
+    `last_provision_error = NULL`,
+    `updated_at = NOW()`,
+  ];
+  const args = [pteroServerId, pteroIdentifier];
+
+  if (meta && typeof meta === 'object') {
+    if (meta.ptero_server_uuid != null && meta.ptero_server_uuid !== undefined) {
+      setParts.push(`ptero_server_uuid = COALESCE(?, ptero_server_uuid)`);
+      args.push(meta.ptero_server_uuid);
+    }
+    if (meta.ptero_primary_allocation_id != null && meta.ptero_primary_allocation_id !== undefined) {
+      setParts.push(`ptero_primary_allocation_id = COALESCE(?, ptero_primary_allocation_id)`);
+      args.push(meta.ptero_primary_allocation_id);
+    }
+    if (meta.ptero_primary_port != null && meta.ptero_primary_port !== undefined) {
+      setParts.push(`ptero_primary_port = COALESCE(?, ptero_primary_port)`);
+      args.push(meta.ptero_primary_port);
+    }
+    if (meta.ptero_extra_ports_json != null && meta.ptero_extra_ports_json !== undefined) {
+      setParts.push(`ptero_extra_ports_json = COALESCE(?, ptero_extra_ports_json)`);
+      args.push(meta.ptero_extra_ports_json);
+    }
+  }
+
+  args.push(orderId, currentStatus);
+
   const [result] = await pool.execute(
-    `UPDATE orders
-     SET status = 'provisioned',
-         ptero_server_id = COALESCE(?, ptero_server_id),
-         ptero_identifier = COALESCE(?, ptero_identifier),
-         error_message = NULL,
-         last_provision_error = NULL,
-         updated_at = NOW()
-     WHERE id = ? AND status = ?`,
-    [pteroServerId, pteroIdentifier, orderId, currentStatus]
+    `UPDATE orders SET ${setParts.join(', ')} WHERE id = ? AND status = ?`,
+    args
   );
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
     return true;
   }
   return false;
+}
+
+/**
+ * Fill NULL (or empty ptero_identifier) columns from Panel-derived metadata.
+ * Does not overwrite existing non-null values.
+ *
+ * @param {string} orderId
+ * @param {{
+ *   ptero_server_id?: number|null,
+ *   ptero_identifier?: string|null,
+ *   ptero_server_uuid?: string|null,
+ *   ptero_primary_allocation_id?: number|null,
+ *   ptero_primary_port?: number|null,
+ *   ptero_extra_ports_json?: string|null,
+ * }} meta
+ */
+export async function backfillOrderProvisionMetadata(orderId, meta) {
+  if (!meta || typeof meta !== 'object') {
+    return { updated: false };
+  }
+
+  const setParts = [];
+  const args = [];
+
+  if (meta.ptero_server_id != null && Number.isFinite(Number(meta.ptero_server_id))) {
+    setParts.push(`ptero_server_id = COALESCE(ptero_server_id, ?)`);
+    args.push(Number(meta.ptero_server_id));
+  }
+  if (meta.ptero_identifier != null && String(meta.ptero_identifier).trim() !== '') {
+    setParts.push(`ptero_identifier = COALESCE(NULLIF(TRIM(ptero_identifier), ''), ?)`);
+    args.push(String(meta.ptero_identifier).trim());
+  }
+  if (meta.ptero_server_uuid != null && String(meta.ptero_server_uuid).trim() !== '') {
+    setParts.push(`ptero_server_uuid = COALESCE(ptero_server_uuid, ?)`);
+    args.push(String(meta.ptero_server_uuid).trim());
+  }
+  if (meta.ptero_primary_allocation_id != null && Number.isFinite(Number(meta.ptero_primary_allocation_id))) {
+    setParts.push(`ptero_primary_allocation_id = COALESCE(ptero_primary_allocation_id, ?)`);
+    args.push(Number(meta.ptero_primary_allocation_id));
+  }
+  if (meta.ptero_primary_port != null && Number.isFinite(Number(meta.ptero_primary_port))) {
+    setParts.push(`ptero_primary_port = COALESCE(ptero_primary_port, ?)`);
+    args.push(Number(meta.ptero_primary_port));
+  }
+  if (meta.ptero_extra_ports_json != null && String(meta.ptero_extra_ports_json).trim() !== '') {
+    setParts.push(`ptero_extra_ports_json = COALESCE(ptero_extra_ports_json, ?)`);
+    args.push(String(meta.ptero_extra_ports_json));
+  }
+
+  if (!setParts.length) {
+    return { updated: false };
+  }
+
+  args.push(orderId);
+  const [result] = await pool.execute(
+    `UPDATE orders SET ${setParts.join(', ')}, updated_at = NOW() WHERE id = ?`,
+    args,
+  );
+  if (result.affectedRows > 0) {
+    log.info({ order_id: orderId }, 'order_provision_metadata_backfill');
+  }
+  return { updated: result.affectedRows > 0 };
 }
 
 /**

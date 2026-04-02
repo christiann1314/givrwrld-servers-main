@@ -3,6 +3,19 @@ import { api } from '@/lib/api';
 import { useAuth } from './useAuth';
 import { ENV } from '@/config/env';
 
+/** Rough defaults for join hints only; real port is the Panel allocation. */
+function defaultJoinPortForGame(game: string | undefined): string {
+  const g = String(game || '').toLowerCase();
+  if (g === 'terraria') return '7777';
+  if (g === 'minecraft') return '25565';
+  if (g === 'palworld') return '8211';
+  if (g === 'rust') return '28015';
+  if (g === 'ark') return '7777';
+  if (g === 'factorio') return '34197';
+  if (g === 'enshrouded') return '15636';
+  return '';
+}
+
 interface ServerSpec {
   id: string;
   name: string;
@@ -86,7 +99,11 @@ export const useUserServers = (userEmail?: string) => {
         disk: order.ssd_gb ? `${order.ssd_gb}GB NVMe` : 'Unknown',
         location: order.region,
         ip: order.ptero_identifier ? `server-${order.ptero_identifier}.givrwrldservers.com` : '',
-        port: order.ptero_identifier ? '25565' : '',
+        port: order.ptero_identifier
+          ? order.ptero_primary_port != null && order.ptero_primary_port !== ''
+            ? String(order.ptero_primary_port)
+            : defaultJoinPortForGame(order.game)
+          : '',
         pterodactylUrl: order.ptero_identifier ? `${panelBase}/server/${order.ptero_identifier}` : panelBase,
         pterodactyl_url: order.ptero_identifier ? `${panelBase}/server/${order.ptero_identifier}` : panelBase,
         pterodactyl_server_id: order.ptero_server_id,
