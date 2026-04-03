@@ -1220,11 +1220,15 @@ function buildEnvironmentForAllocationGroup(ctx) {
   if (gameKey === 'among-us') {
     const existing = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
     if (!existing) {
-      const fromHost = String(
+      const primaryAlloc = selectedAllocs[0];
+      const fromEnv = String(
         process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
       ).trim();
-      if (fromHost) {
-        environment.IMPOSTOR_Server__PublicIp = fromHost;
+      const fromAlias = primaryAlloc ? String(primaryAlloc.alias || '').trim() : '';
+      const fromAllocIp = primaryAlloc ? String(primaryAlloc.ip || '').trim() : '';
+      const resolved = fromEnv || fromAlias || fromAllocIp;
+      if (resolved) {
+        environment.IMPOSTOR_Server__PublicIp = resolved;
       }
     }
   }
@@ -1702,6 +1706,8 @@ export async function provisionServer(orderId) {
           .map((a) => ({
             id: Number(a.id),
             port: Number(a.port),
+            ip: a.ip != null ? String(a.ip).trim() : '',
+            alias: a.alias != null ? String(a.alias).trim() : '',
           }))
           .filter((a) => a.id > 0 && Number.isFinite(a.port));
         rows.sort((x, y) => x.port - y.port);
@@ -1756,8 +1762,18 @@ export async function provisionServer(orderId) {
         throw new Error(`Could not build an allocation set of ${allocNeeded} for node ${node.ptero_node_id}.`);
       }
     } else {
-      const idToPort = new Map(freeAllocationsSorted.map((a) => [a.id, a.port]));
-      allocationTrialGroups = allocationCandidates.map((id) => [{ id, port: idToPort.get(id) ?? null }]);
+      const idToAlloc = new Map(freeAllocationsSorted.map((a) => [a.id, a]));
+      allocationTrialGroups = allocationCandidates.map((id) => {
+        const meta = idToAlloc.get(id);
+        return [
+          meta ?? {
+            id,
+            port: null,
+            ip: '',
+            alias: '',
+          },
+        ];
+      });
     }
 
     // Build environment variable defaults from Panel egg metadata (per-allocation fill happens at create time).
