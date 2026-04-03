@@ -79,21 +79,35 @@ function extractAllocationsFromServerPayload(body) {
   const root = body?.data != null ? body.data : body;
   const attrs = root?.attributes || {};
   const included = Array.isArray(body?.included) ? body.included : [];
-  const rel = root?.relationships?.allocations?.data;
+  // Pterodactyl 1.x often nests allocation relationships under attributes.relationships;
+  // older/docs examples use top-level data.relationships.
+  const rel =
+    root?.relationships?.allocations?.data ?? attrs.relationships?.allocations?.data;
 
   // Some Panel responses embed the default allocation on attributes.allocation only.
   const directAlloc = attrs.allocation;
-  if ((!Array.isArray(rel) || rel.length === 0) && directAlloc && directAlloc.id != null) {
-    const id = Number(directAlloc.id);
-    const port = Number(directAlloc.port);
-    if (Number.isFinite(id) && id > 0) {
+  if ((!Array.isArray(rel) || rel.length === 0) && directAlloc != null) {
+    if (typeof directAlloc === 'number' && Number.isFinite(directAlloc) && directAlloc > 0) {
       return [
         {
-          id,
-          port: Number.isFinite(port) ? port : null,
+          id: Number(directAlloc),
+          port: null,
           is_default: true,
         },
       ];
+    }
+    if (directAlloc && typeof directAlloc === 'object' && directAlloc.id != null) {
+      const id = Number(directAlloc.id);
+      const port = Number(directAlloc.port);
+      if (Number.isFinite(id) && id > 0) {
+        return [
+          {
+            id,
+            port: Number.isFinite(port) ? port : null,
+            is_default: true,
+          },
+        ];
+      }
     }
   }
 
@@ -127,7 +141,15 @@ function extractAllocationsFromServerPayload(body) {
   return out;
 }
 
+const VERIFY_ALLOC_RETRY_ATTEMPTS = 12;
+const VERIFY_ALLOC_RETRY_MS = 1000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
+ * Single GET /servers/:id?include=allocations — no retry.
  * @param {string} panelUrl
  * @param {string} panelAppKey
  * @param {number} serverId
@@ -138,7 +160,7 @@ function extractAllocationsFromServerPayload(body) {
  *   strictAllocationIds: boolean,
  * }} expected
  */
-export async function verifyProvisionedServer(panelUrl, panelAppKey, serverId, expected) {
+async function verifyProvisionedServerOnce(panelUrl, panelAppKey, serverId, expected) {
   const base = String(panelUrl).replace(/\/+$/, '');
   const res = await fetch(`${base}/api/application/servers/${serverId}?include=allocations`, {
     headers: {
@@ -199,9 +221,36 @@ export async function verifyProvisionedServer(panelUrl, panelAppKey, serverId, e
     primaryPort: primary.port != null && Number.isFinite(primary.port) ? Number(primary.port) : null,
     extraAllocations: additional.map((a) => ({
       allocation_id: a.id,
-      port: a.port != null && Number.isFinite(a.port) ? a.port : null,
+      port: a.port != null && Number.isFinite(a.port) ? Number(a.port) : null,
     })),
   };
+}
+
+/**
+ * @param {string} panelUrl
+ * @param {string} panelAppKey
+ * @param {number} serverId
+ * @param {{
+ *   primaryAllocationId: number,
+ *   additionalAllocationIds: number[],
+ *   minAllocationCount: number,
+ *   strictAllocationIds: boolean,
+ * }} expected
+ */
+export async function verifyProvisionedServer(panelUrl, panelAppKey, serverId, expected) {
+  let last = await verifyProvisionedServerOnce(panelUrl, panelAppKey, serverId, expected);
+
+  for (let attempt = 2; attempt <= VERIFY_ALLOC_RETRY_ATTEMPTS; attempt++) {
+    if (last.ok) return last;
+    const needRetry =
+      expected.minAllocationCount > 0 &&
+      String(last.error || '').includes('allocations, panel has');
+    if (!needRetry) return last;
+    await sleep(VERIFY_ALLOC_RETRY_MS);
+    last = await verifyProvisionedServerOnce(panelUrl, panelAppKey, serverId, expected);
+  }
+
+  return last;
 }
 
 export function buildProvisionMetaFromVerification(verify) {
