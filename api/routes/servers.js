@@ -1218,18 +1218,22 @@ function buildEnvironmentForAllocationGroup(ctx) {
   }
 
   if (gameKey === 'among-us') {
-    const existing = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
-    if (!existing) {
+    const existingIp = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
+    if (!existingIp) {
       const primaryAlloc = selectedAllocs[0];
       const fromEnv = String(
         process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
       ).trim();
       const fromAlias = primaryAlloc ? String(primaryAlloc.alias || '').trim() : '';
       const fromAllocIp = primaryAlloc ? String(primaryAlloc.ip || '').trim() : '';
-      const resolved = fromEnv || fromAlias || fromAllocIp;
-      if (resolved) {
-        environment.IMPOSTOR_Server__PublicIp = resolved;
+      const resolvedIp = fromEnv || fromAlias || fromAllocIp;
+      if (resolvedIp) {
+        environment.IMPOSTOR_Server__PublicIp = resolvedIp;
       }
+    }
+    const existingPublicPort = String(environment.IMPOSTOR_Server__PublicPort || '').trim();
+    if (!existingPublicPort && Number.isFinite(gameServerPort) && gameServerPort > 0) {
+      environment.IMPOSTOR_Server__PublicPort = String(gameServerPort);
     }
   }
 

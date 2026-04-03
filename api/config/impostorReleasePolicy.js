@@ -5,8 +5,8 @@
  * using strategy `latest`.
  *
  * Env (api/.env):
- *   GAME_SERVER_PUBLIC_HOST or IMPOSTOR_SERVER_PUBLIC_HOST — address Impostor advertises (else provision
- *     uses primary allocation alias, then IP)
+ *   GAME_SERVER_PUBLIC_HOST or IMPOSTOR_SERVER_PUBLIC_HOST — Impostor Server:PublicIp (else provision uses
+ *     allocation alias, then IP). PublicPort is set from the primary game port unless the egg overrides it.
  *   IMPOSTOR_DOWNLOAD_URL       — full URL override (wins)
  *   IMPOSTOR_RELEASE_STRATEGY   — "latest" | "pinned" (default: latest)
  *   IMPOSTOR_RELEASE_TAG        — Git tag when pinned (default: v1.8.4, pre–.NET 8 / .NET 7 era)
