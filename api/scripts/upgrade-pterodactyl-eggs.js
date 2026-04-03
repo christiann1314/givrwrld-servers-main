@@ -3,10 +3,13 @@ import { spawnSync } from 'node:child_process';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { getImpostorLinuxDownloadUrl } from '../config/impostorReleasePolicy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
+
+const impostorDefaultDownloadUrl = getImpostorLinuxDownloadUrl();
 
 const panelDbContainer = process.env.PANEL_DB_CONTAINER || 'pterodactyl-mariadb-1';
 const targetNestName = 'GIVRwrld Games';
@@ -215,6 +218,7 @@ EOF`,
       ['Auto Update', 'Auto update on install', 'AUTO_UPDATE', '1', 1, 1, 'required|boolean'],
       ['World Name', 'Terraria world name', 'WORLD_NAME', 'GIVRwrldWorld', 1, 1, 'required|string|max:48'],
       ['Max Players', 'Maximum player slots', 'MAX_PLAYERS', '16', 1, 1, 'required|integer|min:1|max:128'],
+      ['Server Port', 'Game port (Terraria default 7777; do not use 25565)', 'SERVER_PORT', '7777', 1, 1, 'required|numeric'],
     ],
   },
   'Factorio': {
@@ -356,12 +360,16 @@ apt -y install curl wget unzip
 mkdir -p /mnt/server
 cd /mnt/server
 if [[ -z "\${DOWNLOAD_URL}" ]]; then
-  DOWNLOAD_URL="https://github.com/Impostor/Impostor/releases/latest/download/Impostor-linux-x64.zip"
+  DOWNLOAD_URL="${impostorDefaultDownloadUrl}"
 fi
-curl -L "\${DOWNLOAD_URL}" -o /tmp/impostor.zip
-unzip -o /tmp/impostor.zip -d /mnt/server`,
+curl -fsSL "\${DOWNLOAD_URL}" -o /tmp/impostor.pkg
+if unzip -tq /tmp/impostor.pkg >/dev/null 2>&1; then
+  unzip -o /tmp/impostor.pkg -d /mnt/server
+else
+  tar -xzf /tmp/impostor.pkg -C /mnt/server
+fi`,
     variables: [
-      ['Download URL', 'Impostor server package URL', 'DOWNLOAD_URL', 'https://github.com/Impostor/Impostor/releases/latest/download/Impostor-linux-x64.zip', 1, 1, 'required|url'],
+      ['Download URL', 'Impostor server package URL', 'DOWNLOAD_URL', impostorDefaultDownloadUrl, 1, 1, 'required|url'],
       ['Additional Args', 'Extra startup args', 'ADDITIONAL_ARGS', '', 1, 1, 'nullable|string|max:512'],
     ],
   },

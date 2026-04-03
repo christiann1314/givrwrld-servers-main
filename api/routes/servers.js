@@ -36,6 +36,7 @@ import {
   applyMultiAllocationEnv,
   syncPrimaryPortEnvVars,
 } from '../config/gamePortPolicy.js';
+import { getImpostorLinuxDownloadUrl } from '../config/impostorReleasePolicy.js';
 import {
   withMysqlProvisionLock,
   buildDeterministicServerName,
@@ -229,7 +230,7 @@ function inferRequiredEnvValue(key, rules, context) {
     const game = gameKey;
     if (game === 'mindustry') return 'https://github.com/Anuken/Mindustry/releases/latest/download/server-release.jar';
     if (game === 'vintage-story') return 'https://cdn.vintagestory.at/gamefiles/stable/vs_server_linux-x64_latest.tar.gz';
-    if (game === 'among-us') return 'https://github.com/Impostor/Impostor/releases/latest/download/Impostor-linux-x64.zip';
+    if (game === 'among-us') return getImpostorLinuxDownloadUrl();
     if (game === 'veloren') return 'https://download.veloren.net/latest/linux/veloren-server-cli-linux-x86_64.tar.xz';
     if (game === 'rimworld') return rimworldUrl;
   }
