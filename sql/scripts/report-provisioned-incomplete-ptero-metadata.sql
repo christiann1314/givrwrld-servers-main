@@ -2,7 +2,7 @@
 -- Use after migration 20260327140000_orders_provision_allocation_ports.sql (adds ptero_server_uuid, etc.).
 -- Re-queue provision or run provision API for these order ids to drain via already_done backfill/recovery.
 --
--- Multi-port egg ids must stay aligned with api/config/gamePortPolicy.js (getAllocationCountForEgg).
+-- Multi-port egg ids must stay aligned with api/config/gameRuntimePolicy.js (getAllocationsNeededForEgg).
 --
 -- Age columns use existing orders timestamps (no provisioned_at column until you add one via migration).
 -- last_provision_attempt_at / provision_attempt_count come from migrations/20260220000000_phase1_order_idempotency.sql
@@ -50,7 +50,7 @@ SELECT
     WHEN o.ptero_server_uuid IS NULL OR TRIM(o.ptero_server_uuid) = '' THEN 'missing_ptero_server_uuid'
     WHEN o.ptero_primary_allocation_id IS NULL THEN 'missing_ptero_primary_allocation_id'
     WHEN o.ptero_primary_port IS NULL THEN 'missing_ptero_primary_port'
-    WHEN p.ptero_egg_id IN (65, 66, 70, 75)
+    WHEN p.ptero_egg_id IN (65, 66, 70, 74, 75)
       AND (
         o.ptero_extra_ports_json IS NULL
         OR TRIM(o.ptero_extra_ports_json) = ''
@@ -73,7 +73,7 @@ WHERE o.item_type = 'game'
     OR o.ptero_primary_allocation_id IS NULL
     OR o.ptero_primary_port IS NULL
     OR (
-      p.ptero_egg_id IN (65, 66, 70, 75)
+      p.ptero_egg_id IN (65, 66, 70, 74, 75)
       AND (
         o.ptero_extra_ports_json IS NULL
         OR TRIM(o.ptero_extra_ports_json) = ''

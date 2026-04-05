@@ -1,6 +1,6 @@
 /**
  * Order State Machine — single service layer for order status transitions.
- * Statuses: pending | paid | provisioning | provisioned | failed (and legacy error, canceled).
+ * Statuses: pending | paid | provisioning | provisioned | configuring | verifying | playable | failed (and legacy error, canceled).
  */
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
@@ -12,6 +12,9 @@ export const ORDER_STATUS = Object.freeze({
   PAID: 'paid',
   PROVISIONING: 'provisioning',
   PROVISIONED: 'provisioned',
+  CONFIGURING: 'configuring',
+  VERIFYING: 'verifying',
+  PLAYABLE: 'playable',
   ERROR: 'error',
   FAILED: 'failed',
   CANCELED: 'canceled',
@@ -23,7 +26,10 @@ const ORDER_TRANSITION_GRAPH = Object.freeze({
   [ORDER_STATUS.PENDING]: new Set([ORDER_STATUS.PAID, ORDER_STATUS.CANCELED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
   [ORDER_STATUS.PAID]: new Set([ORDER_STATUS.PROVISIONING, ORDER_STATUS.CANCELED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
   [ORDER_STATUS.PROVISIONING]: new Set([ORDER_STATUS.PROVISIONED, ORDER_STATUS.ERROR, ORDER_STATUS.FAILED]),
-  [ORDER_STATUS.PROVISIONED]: new Set([]),
+  [ORDER_STATUS.PROVISIONED]: new Set([ORDER_STATUS.CONFIGURING, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.CONFIGURING]: new Set([ORDER_STATUS.VERIFYING, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.VERIFYING]: new Set([ORDER_STATUS.PLAYABLE, ORDER_STATUS.FAILED]),
+  [ORDER_STATUS.PLAYABLE]: new Set([]),
   [ORDER_STATUS.ERROR]: new Set([ORDER_STATUS.PROVISIONING, ORDER_STATUS.FAILED]),
   [ORDER_STATUS.FAILED]: new Set([ORDER_STATUS.PROVISIONING]),
   [ORDER_STATUS.CANCELED]: new Set([]),
@@ -139,7 +145,16 @@ export async function claimOrderForProvisioning(orderId) {
       return { action: 'not_found' };
     }
 
-    if (locked.ptero_server_id != null || normalizeStatus(locked.status) === ORDER_STATUS.PROVISIONED) {
+    const stPre = normalizeStatus(locked.status);
+    if (
+      locked.ptero_server_id != null ||
+      [
+        ORDER_STATUS.PROVISIONED,
+        ORDER_STATUS.CONFIGURING,
+        ORDER_STATUS.VERIFYING,
+        ORDER_STATUS.PLAYABLE,
+      ].includes(stPre)
+    ) {
       await conn.commit();
       conn.release();
       return { action: 'already_done', order: locked };
@@ -282,6 +297,101 @@ export async function transitionToProvisioned(orderId, pteroServerId, pteroIdent
     return true;
   }
   return false;
+}
+
+/**
+ * Post-provision worker: provisioned → configuring.
+ */
+export async function transitionProvisionedToConfiguring(orderId) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) return false;
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.CONFIGURING)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.CONFIGURING);
+    return false;
+  }
+  const [result] = await pool.execute(
+    `UPDATE orders SET status = 'configuring', updated_at = NOW() WHERE id = ? AND status = 'provisioned'`,
+    [orderId],
+  );
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.CONFIGURING);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Post-provision worker: configuring → verifying.
+ */
+export async function transitionConfiguringToVerifying(orderId) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) return false;
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.VERIFYING)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.VERIFYING);
+    return false;
+  }
+  const [result] = await pool.execute(
+    `UPDATE orders SET status = 'verifying', updated_at = NOW() WHERE id = ? AND status = 'configuring'`,
+    [orderId],
+  );
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.VERIFYING);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Post-provision worker: verifying → playable.
+ */
+export async function transitionVerifyingToPlayable(orderId) {
+  const order = await getOrder(orderId);
+  const currentStatus = normalizeStatus(order?.status);
+  if (!order || !VALID_STATUSES.includes(currentStatus)) return false;
+  if (!isAllowedStatusTransition(currentStatus, ORDER_STATUS.PLAYABLE)) {
+    logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PLAYABLE);
+    return false;
+  }
+  const [result] = await pool.execute(
+    `UPDATE orders SET status = 'playable', updated_at = NOW() WHERE id = ? AND status = 'verifying'`,
+    [orderId],
+  );
+  if (result.affectedRows > 0) {
+    logTransition(orderId, currentStatus, ORDER_STATUS.PLAYABLE);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Persist worker-computed join hints (columns added in 20260402130000_orders_game_reachability_display.sql).
+ * @param {string} orderId
+ * @param {{ hostname?: string | null, displayAddress?: string | null }} display
+ */
+export async function updateGameReachabilityDisplay(orderId, display) {
+  if (!display || typeof display !== 'object') return { updated: false };
+  const hostname = display.hostname != null ? String(display.hostname).slice(0, 255) : null;
+  const displayAddress = display.displayAddress != null ? String(display.displayAddress).slice(0, 512) : null;
+  if (!hostname && !displayAddress) return { updated: false };
+
+  const setParts = [];
+  const args = [];
+  if (hostname) {
+    setParts.push('game_brand_hostname = ?');
+    args.push(hostname);
+  }
+  if (displayAddress) {
+    setParts.push('game_display_address = ?');
+    args.push(displayAddress);
+  }
+  args.push(orderId);
+  const [result] = await pool.execute(
+    `UPDATE orders SET ${setParts.join(', ')}, updated_at = NOW() WHERE id = ?`,
+    args,
+  );
+  return { updated: result.affectedRows > 0 };
 }
 
 /**
@@ -438,8 +548,9 @@ export async function recordProvisionError(orderId, errorMessage) {
 export function canProvision(order) {
   if (!order) return false;
   if (order.ptero_server_id != null) return false;
-  if (String(order.status) === 'provisioned') return false;
-  return ['paid', 'provisioning', 'error', 'failed'].includes(String(order.status));
+  const st = String(order.status);
+  if (['provisioned', 'playable', 'configuring', 'verifying'].includes(st)) return false;
+  return ['paid', 'provisioning', 'error', 'failed'].includes(st);
 }
 
 /**

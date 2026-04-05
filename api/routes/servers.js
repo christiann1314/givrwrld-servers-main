@@ -18,6 +18,7 @@ import {
   recordProvisionError,
   backfillOrderProvisionMetadata,
 } from '../services/OrderService.js';
+import { schedulePostProvisionFollowup } from '../queues/postProvisionQueue.js';
 import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
@@ -36,6 +37,10 @@ import {
   applyMultiAllocationEnv,
   syncPrimaryPortEnvVars,
 } from '../config/gamePortPolicy.js';
+import { getEggRuntimePolicy } from '../config/gameRuntimePolicy.js';
+import { buildProvisionPlan } from '../lib/buildProvisionPlan.js';
+import { validateProvisionPlan } from '../lib/validateProvisionPlan.js';
+import { validateEggRuntimeForProvision } from '../lib/validateEggRuntime.js';
 import { getImpostorLinuxDownloadUrl } from '../config/impostorReleasePolicy.js';
 import {
   withMysqlProvisionLock,
@@ -52,6 +57,7 @@ import {
   upsertServerPublicPageSettings,
   isOrderEligibleForPublicPage,
 } from '../lib/publicServerPages.js';
+import { normalizeGameKey } from '../lib/normalizeGameKey.js';
 
 const logger = getLogger();
 const router = express.Router();
@@ -169,21 +175,6 @@ function hasRequiredRule(rules) {
 function buildSafeToken(prefix, orderId, length = 24) {
   const raw = `${prefix}${String(orderId || '').replace(/-/g, '')}${crypto.randomBytes(8).toString('hex')}`;
   return raw.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, length);
-}
-
-function normalizeGameKey(value) {
-  const slug = String(value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/_/g, '-');
-  const aliases = {
-    amongus: 'among-us',
-    'among-us': 'among-us',
-    among: 'among-us',
-    vintagestory: 'vintage-story',
-  };
-  return aliases[slug] || slug;
 }
 
 function inferRequiredEnvValue(key, rules, context) {
@@ -1460,6 +1451,17 @@ export async function provisionServer(orderId) {
       }
 
       const latest = backfilled || recovered ? (await getOrder(orderId, true)) || o : o;
+      try {
+        await schedulePostProvisionFollowup(orderId);
+      } catch (schedErr) {
+        logger.warn(
+          {
+            order_id: orderId,
+            err: schedErr instanceof Error ? schedErr.message : String(schedErr),
+          },
+          'post_provision_schedule_skipped',
+        );
+      }
       return {
         success: true,
         order_id: orderId,
@@ -1609,6 +1611,17 @@ export async function provisionServer(orderId) {
             verSync.identifier || existing.identifier || null,
             metaSync,
           );
+          try {
+            await schedulePostProvisionFollowup(orderId);
+          } catch (schedErr) {
+            logger.warn(
+              {
+                order_id: orderId,
+                err: schedErr instanceof Error ? schedErr.message : String(schedErr),
+              },
+              'post_provision_schedule_skipped',
+            );
+          }
           logger.info(
             {
               event: 'provision_trace',
@@ -1839,6 +1852,58 @@ export async function provisionServer(orderId) {
       resolvedDockerImage = 'ghcr.io/pterodactyl/yolks:debian';
     }
 
+    const runtimePolicy = getEggRuntimePolicy(order.ptero_egg_id);
+    if (runtimePolicy?.requiredDockerImage) {
+      if (!egg.ptero_nest_id) {
+        await recordProvisionError(orderId, `Egg ${order.ptero_egg_id} missing ptero_nest_id; cannot validate docker image`);
+        await transitionToFailed(orderId, 'Egg catalog incomplete (nest id)');
+        throw new Error(`Egg ${order.ptero_egg_id} missing ptero_nest_id in catalog`);
+      }
+      try {
+        await validateEggRuntimeForProvision({
+          panelUrl,
+          panelAppKey,
+          nestId: Number(egg.ptero_nest_id),
+          eggId: Number(order.ptero_egg_id),
+          resolvedDockerImage,
+          requiredDockerImage: runtimePolicy.requiredDockerImage,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await recordProvisionError(orderId, msg);
+        await transitionToFailed(orderId, msg);
+        throw err;
+      }
+    }
+
+    const firstTrialGroup = allocationTrialGroups[0];
+    if (firstTrialGroup && firstTrialGroup.length > 0) {
+      const provisionPlanPreview = buildProvisionPlan({
+        order,
+        gameKey: normalizeGameKey(order.game),
+        allocations: firstTrialGroup,
+      });
+      try {
+        validateProvisionPlan(provisionPlanPreview);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await recordProvisionError(orderId, msg);
+        await transitionToFailed(orderId, msg);
+        throw err;
+      }
+      if (provisionPlanPreview.httpsProxyRegistration) {
+        logger.info(
+          {
+            event: 'provision_plan_https',
+            order_id: orderId,
+            hostname: provisionPlanPreview.httpsProxyRegistration.hostname,
+            upstream_port: provisionPlanPreview.httpsProxyRegistration.upstreamPort,
+          },
+          'Class C game: ensure DNS + TLS + nginx on node (metadata only from API)',
+        );
+      }
+    }
+
         // Create server in Pterodactyl
         let lastCreateError = null;
         let serverData = null;
@@ -1964,6 +2029,18 @@ export async function provisionServer(orderId) {
           verCreate.identifier || pteroIdentifier,
           provisionMeta,
         );
+
+        try {
+          await schedulePostProvisionFollowup(orderId);
+        } catch (schedErr) {
+          logger.warn(
+            {
+              order_id: orderId,
+              err: schedErr instanceof Error ? schedErr.message : String(schedErr),
+            },
+            'post_provision_schedule_skipped',
+          );
+        }
 
         logger.info(
           {

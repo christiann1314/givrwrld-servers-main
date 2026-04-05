@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getLogger } from '../lib/logger.js';
+import { getBullmqRedisConnection } from '../lib/bullmqRedis.js';
 import { provisionServer } from '../routes/servers.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,19 +16,7 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const logger = getLogger();
 
-function getRedisConnection() {
-  const url = process.env.REDIS_URL;
-  if (url && url.trim().length > 0) {
-    return { url };
-  }
-  return {
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: Number(process.env.REDIS_PORT || 6379),
-    db: Number(process.env.REDIS_DB || 0),
-  };
-}
-
-const connection = getRedisConnection();
+const connection = getBullmqRedisConnection();
 
 logger.info({ connection }, 'provision_worker_starting');
 

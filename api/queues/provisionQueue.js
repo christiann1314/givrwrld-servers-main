@@ -1,27 +1,15 @@
 import bullmq from 'bullmq';
 const { Queue } = bullmq;
 import { getLogger } from '../lib/logger.js';
+import { getBullmqRedisConnection } from '../lib/bullmqRedis.js';
 
 const logger = getLogger();
 
 let queue;
 
-function getRedisConnection() {
-  const url = process.env.REDIS_URL;
-  if (url && url.trim().length > 0) {
-    return { url };
-  }
-  return {
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: Number(process.env.REDIS_PORT || 6379),
-    db: Number(process.env.REDIS_DB || 0),
-  };
-}
-
 export function getProvisionQueue() {
   if (!queue) {
-    const connection = getRedisConnection();
-    queue = new Queue('provisioning', { connection });
+    queue = new Queue('provisioning', { connection: getBullmqRedisConnection() });
   }
   return queue;
 }

@@ -1,15 +1,12 @@
 /**
  * Pterodactyl allocation policy: reserved panel ports are the source of truth for game/query/rcon/etc.
- * Egg IDs must match plans / panel (see sql/migrations sync_plans_to_panel_egg_ids).
+ * Per-egg counts: api/config/gameRuntimePolicy.js (EGG_RUNTIME_POLICY).
  */
 
+import { getAllocationsNeededForEgg } from './gameRuntimePolicy.js';
+
 export function getAllocationCountForEgg(eggId) {
-  const n = Number(eggId);
-  if (n === 65) return 3;
-  if (n === 66) return 3;
-  if (n === 70) return 2;
-  if (n === 75) return 2;
-  return 1;
+  return getAllocationsNeededForEgg(eggId);
 }
 
 /**
