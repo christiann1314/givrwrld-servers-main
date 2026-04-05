@@ -23,7 +23,7 @@
     "agents:dev": "cd api && npm run agents:dev",
     "agents:start": "cd api && npm run agents:start",
     "pm2:start": "pm2 start ecosystem.config.cjs",
-    "pm2:stop": "pm2 stop givrwrld-api givrwrld-agents givrwrld-marketing-agent givrwrld-marketing-schedule",
+    "pm2:stop": "pm2 stop givrwrld-api givrwrld-agents givrwrld-provisioner givr-provisioning-worker givrwrld-marketing-agent givrwrld-marketing-schedule",
     "pm2:logs": "pm2 logs",
     "ops:config:check": "node scripts/config-check.js",
     "verify:phase1": "node api/scripts/verify-phase1-local.js",

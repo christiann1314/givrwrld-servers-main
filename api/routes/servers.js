@@ -19,6 +19,7 @@ import {
   backfillOrderProvisionMetadata,
 } from '../services/OrderService.js';
 import { schedulePostProvisionFollowup } from '../queues/postProvisionQueue.js';
+import { serializeProvisionPlanForJob } from '../lib/serializeProvisionPlanForJob.js';
 import { authenticate } from '../middleware/auth.js';
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
@@ -36,6 +37,7 @@ import {
   rankAllocationGroups,
   applyMultiAllocationEnv,
   syncPrimaryPortEnvVars,
+  buildPanelAllocationPayload,
 } from '../config/gamePortPolicy.js';
 import { getEggRuntimePolicy } from '../config/gameRuntimePolicy.js';
 import { buildProvisionPlan } from '../lib/buildProvisionPlan.js';
@@ -1926,11 +1928,20 @@ export async function provisionServer(orderId) {
           });
 
           const startupCmd = resolvedStartupCmd;
-          const additionalIds = allocationGroup.slice(1).map((a) => a.id).filter((id) => Number(id) > 0);
-          const allocationPayload =
-            additionalIds.length > 0
-              ? { default: primary.id, additional: additionalIds }
-              : { default: primary.id };
+          const allocationPayload = buildPanelAllocationPayload(allocationGroup, allocNeeded);
+
+          logger.info(
+            {
+              event: 'provision_trace',
+              order_id: orderId,
+              step: 'panel_create_allocation_payload',
+              egg_id: order.ptero_egg_id,
+              alloc_needed: allocNeeded,
+              default_allocation_id: allocationPayload.default,
+              additional_allocation_ids: allocationPayload.additional ?? [],
+            },
+            'provision_step',
+          );
 
           const serverResponse = await fetch(`${panelUrl}/api/application/servers`, {
             method: 'POST',
@@ -2030,8 +2041,22 @@ export async function provisionServer(orderId) {
           provisionMeta,
         );
 
+        const provisionPlanForQueue =
+          winningAllocationGroup?.length > 0
+            ? serializeProvisionPlanForJob(
+                buildProvisionPlan({
+                  order,
+                  gameKey: normalizeGameKey(order.game),
+                  allocations: winningAllocationGroup,
+                }),
+              )
+            : null;
+
         try {
-          await schedulePostProvisionFollowup(orderId);
+          await schedulePostProvisionFollowup(orderId, {
+            serverId: pteroServerId,
+            provisionPlan: provisionPlanForQueue,
+          });
         } catch (schedErr) {
           logger.warn(
             {

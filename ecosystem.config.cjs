@@ -51,9 +51,9 @@ module.exports = {
       watch: false,
     },
     {
-      name: 'givrwrld-post-provision',
+      name: 'givr-provisioning-worker',
       cwd: './api',
-      script: 'workers/postProvisionWorker.js',
+      script: 'workers/provisioningWorker.js',
       instances: 1,
       exec_mode: 'fork',
       env: { NODE_ENV: 'production' },

@@ -10,6 +10,33 @@ export function getAllocationCountForEgg(eggId) {
 }
 
 /**
+ * Build Pterodactyl Application API `allocation` object for POST /servers.
+ * Omits `additional` when there is only one port (single-allocation games).
+ *
+ * @param {{ id?: number | null }[]} allocationGroup — ordered: primary first, then extras
+ * @param {number} allocRequired — from runtime policy (e.g. Among Us = 2)
+ * @returns {{ default: number, additional?: number[] }}
+ */
+export function buildPanelAllocationPayload(allocationGroup, allocRequired) {
+  const n = Math.max(1, Number(allocRequired) || 1);
+  const group = Array.isArray(allocationGroup) ? allocationGroup.slice(0, n) : [];
+  const ids = group
+    .map((a) => Number(a?.id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+  if (ids.length < n) {
+    throw new Error(
+      `Insufficient allocations for Panel create: policy requires ${n}, found ${ids.length} valid allocation id(s) (group length ${group.length})`,
+    );
+  }
+  const primaryAllocationId = ids[0];
+  const extraAllocationIds = ids.slice(1);
+  if (extraAllocationIds.length > 0) {
+    return { default: primaryAllocationId, additional: extraAllocationIds };
+  }
+  return { default: primaryAllocationId };
+}
+
+/**
  * Prefer N consecutive ports; fall back to first N free (sorted by port).
  * @param {{ id: number, port: number }[]} freeSorted
  * @param {number} count

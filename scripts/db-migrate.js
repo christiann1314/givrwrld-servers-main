@@ -41,6 +41,8 @@ async function main() {
     await connection.query(schemaSql);
     console.log('[db-migrate] Base schema applied.');
 
+    // Migrations are applied on every run (no schema_migrations ledger yet). Each file must be
+    // safe to re-run (idempotent ADD INDEX / ADD COLUMN / ENUM widen, CREATE IF NOT EXISTS, etc.).
     const migrationsDir = path.join(__dirname, '../sql/migrations');
     let files = [];
     try {
