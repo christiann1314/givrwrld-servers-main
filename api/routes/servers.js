@@ -246,6 +246,10 @@ function normalizeEnvValue(key, rawValue, rules, context) {
   }
 
   if (lowerRules.includes('alpha_dash')) {
+    // Egg rules often tag Impostor PublicIp as alpha_dash; stripping breaks hostnames and IPv4.
+    if (key === 'IMPOSTOR_Server__PublicIp' && value.length > 0) {
+      return value;
+    }
     const cleaned = value.replace(/[^a-zA-Z0-9_-]/g, '');
     if (cleaned.length > 0) return cleaned;
     return inferRequiredEnvValue(key, rules, context);
@@ -1210,6 +1214,36 @@ function buildEnvironmentForAllocationGroup(ctx) {
     }
   }
 
+  const inferContext = {
+    estimatedPlayers,
+    gameServerPort,
+    queryPort,
+    rconPort,
+    order,
+    steamAppIdsByGame,
+    rimworldUrl,
+  };
+
+  for (const { key, rules } of requiredVarMeta) {
+    if (!hasRequiredRule(rules)) continue;
+    if (environment[key] !== undefined && environment[key] !== null && String(environment[key]).trim() !== '') {
+      continue;
+    }
+    environment[key] = inferRequiredEnvValue(key, rules, inferContext);
+  }
+
+  const normalizedKeys = new Set();
+  for (const { key, rules } of requiredVarMeta) {
+    if (normalizedKeys.has(key)) continue;
+    normalizedKeys.add(key);
+    environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
+  }
+
+  if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
+    const boolInput = String(environment.BATTLE_EYE).toLowerCase();
+    environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
+  }
+
   if (gameKey === 'among-us') {
     const fromEnv = String(
       process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
@@ -1241,36 +1275,6 @@ function buildEnvironmentForAllocationGroup(ctx) {
     if (!existingPublicPort && Number.isFinite(gameServerPort) && gameServerPort > 0) {
       environment.IMPOSTOR_Server__PublicPort = String(gameServerPort);
     }
-  }
-
-  const inferContext = {
-    estimatedPlayers,
-    gameServerPort,
-    queryPort,
-    rconPort,
-    order,
-    steamAppIdsByGame,
-    rimworldUrl,
-  };
-
-  for (const { key, rules } of requiredVarMeta) {
-    if (!hasRequiredRule(rules)) continue;
-    if (environment[key] !== undefined && environment[key] !== null && String(environment[key]).trim() !== '') {
-      continue;
-    }
-    environment[key] = inferRequiredEnvValue(key, rules, inferContext);
-  }
-
-  const normalizedKeys = new Set();
-  for (const { key, rules } of requiredVarMeta) {
-    if (normalizedKeys.has(key)) continue;
-    normalizedKeys.add(key);
-    environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
-  }
-
-  if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
-    const boolInput = String(environment.BATTLE_EYE).toLowerCase();
-    environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
   }
 
   return { environment };
