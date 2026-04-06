@@ -1211,16 +1211,29 @@ function buildEnvironmentForAllocationGroup(ctx) {
   }
 
   if (gameKey === 'among-us') {
+    const fromEnv = String(
+      process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
+    ).trim();
     const existingIp = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
-    if (!existingIp) {
+    const isLoopbackOrEmpty =
+      !existingIp ||
+      existingIp === '127.0.0.1' ||
+      existingIp === '::1' ||
+      /^localhost$/i.test(existingIp);
+
+    if (fromEnv) {
+      environment.IMPOSTOR_Server__PublicIp = fromEnv;
+    } else if (isLoopbackOrEmpty) {
       const primaryAlloc = selectedAllocs[0];
-      const fromEnv = String(
-        process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
-      ).trim();
       const fromAlias = primaryAlloc ? String(primaryAlloc.alias || '').trim() : '';
       const fromAllocIp = primaryAlloc ? String(primaryAlloc.ip || '').trim() : '';
-      const resolvedIp = fromEnv || fromAlias || fromAllocIp;
-      if (resolvedIp) {
+      const resolvedIp = fromAlias || fromAllocIp;
+      if (
+        resolvedIp &&
+        resolvedIp !== '127.0.0.1' &&
+        resolvedIp !== '::1' &&
+        !/^localhost$/i.test(resolvedIp)
+      ) {
         environment.IMPOSTOR_Server__PublicIp = resolvedIp;
       }
     }
