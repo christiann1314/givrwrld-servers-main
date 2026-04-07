@@ -213,7 +213,10 @@ async function handlePayPalWebhook(req, res) {
     if (insertErr.code === 'ER_DUP_ENTRY' || insertErr.errno === 1062) {
       return res.status(200).send();
     }
-    throw insertErr;
+    req.log?.error?.(
+      { err: insertErr, paypal_event_id: eventId, event_type: eventType },
+      'Webhook logging failed (non-blocking)',
+    );
   }
 
   if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED') {
