@@ -31,12 +31,18 @@ export async function enqueueProvisionJob(orderId, source = 'unknown') {
       if (state === 'failed') {
         await existing.remove();
         logger.info({ order_id: jobId, source }, 'provision_job_removed_failed_for_retry');
+      } else if (['active', 'waiting', 'delayed', 'paused'].includes(state)) {
+        logger.info(
+          { order_id: jobId, source, bullmq_state: state },
+          'provision_job_skip_already_in_queue',
+        );
+        return;
       }
     }
   } catch (e) {
     logger.warn({ order_id: jobId, source, err: e }, 'provision_job_existing_cleanup_skipped');
   }
-  await q.add(
+  const job = await q.add(
     'provision',
     { orderId: jobId, source },
     {
@@ -50,6 +56,7 @@ export async function enqueueProvisionJob(orderId, source = 'unknown') {
       removeOnFail: 1000,
     },
   );
-  logger.info({ order_id: jobId, source }, 'provision_job_enqueued');
+  const bullmqState = job ? await job.getState() : null;
+  logger.info({ order_id: jobId, source, bullmq_state: bullmqState }, 'provision_job_enqueued');
 }
 
