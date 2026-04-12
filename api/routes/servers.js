@@ -1136,7 +1136,7 @@ function buildEnvironmentForAllocationGroup(ctx) {
     HOSTNAME: order.server_name || 'GIVRwrld Server',
     SESSION_NAME: order.server_name || 'GIVRwrld Server',
     MAX_PLAYERS: String(estimatedPlayers),
-    AUTO_UPDATE: 'true',
+    AUTO_UPDATE: true,
     APP_ID: environment.APP_ID || steamAppIdsByGame[gameKey] || '',
     ADDITIONAL_ARGS: '',
     ADDITIONAL_FLAGS: '',
@@ -1239,13 +1239,12 @@ function buildEnvironmentForAllocationGroup(ctx) {
     environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
   }
 
-  // Egg defaults often use "1"/"0" for booleans; Panel still validates AUTO_UPDATE as true/false even
-  // when variable `rules` omits the word "boolean", so normalize here unconditionally.
+  // Egg defaults often use "1"/"0"; Panel validates AUTO_UPDATE as boolean in JSON (not the strings "true"/"false").
+  // Match BATTLE_EYE below: send actual JSON booleans in the Application API payload.
   if (environment.AUTO_UPDATE !== undefined && environment.AUTO_UPDATE !== null) {
     const au = String(environment.AUTO_UPDATE).trim().toLowerCase();
-    if (au !== '') {
-      environment.AUTO_UPDATE = ['1', 'true', 'on', 'yes'].includes(au) ? 'true' : 'false';
-    }
+    environment.AUTO_UPDATE =
+      au === '' || ['1', 'true', 'on', 'yes'].includes(au);
   }
 
   if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
