@@ -38,6 +38,15 @@ validateEnv();
 const require = createRequire(import.meta.url);
 const pkg = require('./package.json');
 const logger = createLogger();
+// Linux /proc/$pid/environ shows the exec-time env from PM2; Node's process.env after loadEnv can differ.
+logger.info(
+  {
+    event: 'paypal_env_effective',
+    paypal_sandbox: String(process.env.PAYPAL_SANDBOX ?? ''),
+    paypal_client_id_prefix: String(process.env.PAYPAL_CLIENT_ID || '').slice(0, 8),
+  },
+  'PayPal mode after loadEnv (trust this, not /proc/environ)',
+);
 const app = express();
 // Behind nginx / reverse proxy: restores client IP and keeps express-rate-limit happy (X-Forwarded-For).
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
