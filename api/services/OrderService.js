@@ -31,7 +31,8 @@ const ORDER_TRANSITION_GRAPH = Object.freeze({
   [ORDER_STATUS.VERIFYING]: new Set([ORDER_STATUS.PLAYABLE, ORDER_STATUS.FAILED]),
   [ORDER_STATUS.PLAYABLE]: new Set([]),
   [ORDER_STATUS.ERROR]: new Set([ORDER_STATUS.PROVISIONING, ORDER_STATUS.FAILED]),
-  [ORDER_STATUS.FAILED]: new Set([ORDER_STATUS.PROVISIONING]),
+  // Allow paid re-ack after a provision failure (finalize-order / webhook once subscription is ACTIVE).
+  [ORDER_STATUS.FAILED]: new Set([ORDER_STATUS.PAID, ORDER_STATUS.PROVISIONING]),
   [ORDER_STATUS.CANCELED]: new Set([]),
 });
 
@@ -85,7 +86,7 @@ export async function getOrder(orderId, withPlan = false) {
 }
 
 /**
- * Transition order to paid (idempotent: only if pending).
+ * Transition order to paid (typically from pending; also allowed from failed after PayPal confirms ACTIVE).
  */
 export async function transitionToPaid(orderId, paypalSubscriptionId = null, paypalPayerId = null) {
   const order = await getOrder(orderId);
