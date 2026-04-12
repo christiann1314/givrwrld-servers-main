@@ -1239,6 +1239,15 @@ function buildEnvironmentForAllocationGroup(ctx) {
     environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
   }
 
+  // Egg defaults often use "1"/"0" for booleans; Panel still validates AUTO_UPDATE as true/false even
+  // when variable `rules` omits the word "boolean", so normalize here unconditionally.
+  if (environment.AUTO_UPDATE !== undefined && environment.AUTO_UPDATE !== null) {
+    const au = String(environment.AUTO_UPDATE).trim().toLowerCase();
+    if (au !== '') {
+      environment.AUTO_UPDATE = ['1', 'true', 'on', 'yes'].includes(au) ? 'true' : 'false';
+    }
+  }
+
   if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
     const boolInput = String(environment.BATTLE_EYE).toLowerCase();
     environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
