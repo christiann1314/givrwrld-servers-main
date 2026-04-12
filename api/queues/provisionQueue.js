@@ -24,6 +24,18 @@ export async function enqueueProvisionJob(orderId, source = 'unknown') {
   }
   const q = getProvisionQueue();
   const jobId = String(orderId);
+  try {
+    const existing = await q.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') {
+        await existing.remove();
+        logger.info({ order_id: jobId, source }, 'provision_job_removed_failed_for_retry');
+      }
+    }
+  } catch (e) {
+    logger.warn({ order_id: jobId, source, err: e }, 'provision_job_existing_cleanup_skipped');
+  }
   await q.add(
     'provision',
     { orderId: jobId, source },

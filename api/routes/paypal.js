@@ -25,6 +25,21 @@ const router = express.Router();
 
 const SANDBOX = process.env.PAYPAL_SANDBOX !== 'false';
 
+/** PayPal fields are often ISO-8601 strings; older code passed them into FROM_UNIXTIME(?/1000) and broke MySQL. */
+function parsePayPalTimeToUnixSeconds(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1e12 ? Math.floor(value / 1000) : Math.floor(value);
+  }
+  const s = String(value).trim();
+  const asNum = Number(s);
+  if (s !== '' && Number.isFinite(asNum) && /^-?\d+(\.\d+)?$/.test(s)) {
+    return asNum > 1e12 ? Math.floor(asNum / 1000) : Math.floor(asNum);
+  }
+  const ms = Date.parse(s);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+}
+
 function isAllowedReturnBase(url) {
   if (typeof url !== 'string' || !url) return false;
   if (url.startsWith('https://')) return true;
@@ -311,12 +326,20 @@ async function handlePayPalWebhook(req, res) {
     const resource = body?.resource;
     const subscriptionId = resource?.billing_agreement_id;
     if (subscriptionId) {
-      await pool.execute(
-        `UPDATE paypal_subscriptions 
-         SET current_period_end = COALESCE(FROM_UNIXTIME(?/1000), current_period_end), updated_at = NOW() 
-         WHERE paypal_sub_id = ?`,
-        [resource?.update_time || 0, subscriptionId]
-      );
+      const unixSec = parsePayPalTimeToUnixSeconds(resource?.update_time);
+      if (unixSec != null) {
+        await pool.execute(
+          `UPDATE paypal_subscriptions 
+           SET current_period_end = FROM_UNIXTIME(?), updated_at = NOW() 
+           WHERE paypal_sub_id = ?`,
+          [unixSec, subscriptionId]
+        );
+      } else {
+        await pool.execute(
+          `UPDATE paypal_subscriptions SET updated_at = NOW() WHERE paypal_sub_id = ?`,
+          [subscriptionId]
+        );
+      }
     }
   }
 
