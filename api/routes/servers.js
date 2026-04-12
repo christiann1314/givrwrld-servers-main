@@ -195,7 +195,7 @@ function inferRequiredEnvValue(key, rules, context) {
   const gameKey = normalizeGameKey(order.game);
   if (upper === 'APP_ID') return steamAppIdsByGame[gameKey] || '1';
   if (upper === 'SRCDS_APPID') return steamAppIdsByGame[gameKey] || '1';
-  if (upper === 'AUTO_UPDATE') return '1';
+  if (upper === 'AUTO_UPDATE') return 'true';
   if (upper === 'MAX_PLAYERS') return String(estimatedPlayers);
   if (upper === 'SERVER_NAME' || upper === 'HOSTNAME' || upper === 'SESSION_NAME' || upper === 'SRV_NAME') {
     return String(order.server_name || 'GIVRwrld Server').slice(0, 80);
@@ -228,7 +228,7 @@ function inferRequiredEnvValue(key, rules, context) {
     if (game === 'rimworld') return rimworldUrl;
   }
 
-  if (lowerRules.includes('boolean')) return '1';
+  if (lowerRules.includes('boolean')) return 'true';
   if (lowerRules.includes('numeric') || lowerRules.includes('integer')) return '1';
   if (lowerRules.includes('url')) return 'https://example.com';
   return 'default';
@@ -1136,7 +1136,7 @@ function buildEnvironmentForAllocationGroup(ctx) {
     HOSTNAME: order.server_name || 'GIVRwrld Server',
     SESSION_NAME: order.server_name || 'GIVRwrld Server',
     MAX_PLAYERS: String(estimatedPlayers),
-    AUTO_UPDATE: '1',
+    AUTO_UPDATE: 'true',
     APP_ID: environment.APP_ID || steamAppIdsByGame[gameKey] || '',
     ADDITIONAL_ARGS: '',
     ADDITIONAL_FLAGS: '',
