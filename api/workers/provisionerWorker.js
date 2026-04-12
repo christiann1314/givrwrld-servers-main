@@ -1,18 +1,10 @@
 #!/usr/bin/env node
 
+import '../config/loadEnv.js';
 import { Worker } from 'bullmq';
-import dotenv from 'dotenv';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getLogger } from '../lib/logger.js';
 import { getBullmqRedisConnection } from '../lib/bullmqRedis.js';
 import { provisionServer } from '../routes/servers.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load env from api/.env when running standalone
-dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const logger = getLogger();
 

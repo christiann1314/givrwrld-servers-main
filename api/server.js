@@ -1,10 +1,10 @@
 // GIVRwrld API Server
 // Self-hosted API for local/production deployments
 
+import './config/loadEnv.js';
 import express from 'express';
 import http from 'node:http';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -33,7 +33,6 @@ import pool from './config/database.js';
 import { log as sharedLog } from './lib/sharedLogger.js';
 import { attachConsoleWebSocketServer } from './ws/consoleGateway.js';
 
-dotenv.config();
 validateEnv();
 
 const require = createRequire(import.meta.url);

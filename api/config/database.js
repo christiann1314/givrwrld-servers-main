@@ -7,7 +7,7 @@ import path from 'node:path';
 // Always load api/.env regardless of cwd so scripts and the API agree on DB config.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../.env'), override: true });
 
 // Create connection pool
 const pool = mysql.createPool({

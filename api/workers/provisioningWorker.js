@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
+import '../config/loadEnv.js';
 import { Worker } from 'bullmq';
-import dotenv from 'dotenv';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { getBullmqRedisConnection } from '../lib/bullmqRedis.js';
 import { resolvePostProvisionPayload } from '../lib/resolvePostProvisionPayload.js';
@@ -21,11 +19,6 @@ import { buildNginxSiteConfig, writeNginxSite, testNginxConfig, reloadNginx } fr
 import { obtainCertificateNginx } from './lib/certs.js';
 import { getLogger } from './lib/logger.js';
 import { QUEUE_NAME } from '../queue/provisioningQueue.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const logger = getLogger();
 const connection = getBullmqRedisConnection();
