@@ -60,6 +60,22 @@ async function main() {
   console.log('plan_display_name:', order.plan_display_name);
 
   const eggId = order.ptero_egg_id;
+  const [[statusCol]] = await pool.execute(
+    `SELECT COLUMN_TYPE AS orders_status_column_type
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'status'`,
+  );
+  const colType = String(statusCol?.orders_status_column_type || '');
+  console.log('\n--- orders.status column (MySQL) ---');
+  console.log('COLUMN_TYPE:', colType || '(unknown)');
+  if (colType && !colType.includes('configuring')) {
+    console.log(
+      '⚠ Post-provision needs configuring/verifying/playable in ENUM. If you see ' +
+        '"Data truncated for column status" in post_provision_worker logs, apply migration:',
+    );
+    console.log('   sql/migrations/20260402120000_order_status_reachability.sql');
+  }
+
   if (eggId != null) {
     const [eggRows] = await pool.execute(
       `SELECT ptero_egg_id, ptero_nest_id, name, docker_image
@@ -83,8 +99,9 @@ async function main() {
 
   console.log('\n--- Where to look for logs ---');
   console.log('1. API/worker logs: provision_worker_job_error / provision_worker_job_failed with order_id:', orderId);
-  console.log('2. api/logs/app.log (if logger writes to file)');
+  console.log('2. Production: api/logs/api.log (pino when NODE_ENV=production)');
   console.log('3. PM2: pm2 logs givrwrld-provisioner');
+  console.log('4. Post-provision: post_provision_worker_job_failed in api/logs/api.log');
   console.log('');
 }
 
