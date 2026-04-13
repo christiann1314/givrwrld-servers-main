@@ -7,6 +7,26 @@ import { getLogger } from '../lib/logger.js';
 
 const log = getLogger();
 
+/**
+ * MySQL strict mode: assigning configuring/verifying/playable to an ENUM that was never widened
+ * yields ER_TRUNCATED_WRONG_VALUE_FOR_FIELD / "Data truncated for column 'status'".
+ */
+function rethrowIfStaleOrdersStatusEnum(err, nextStatus) {
+  const msg = String(err?.sqlMessage || err?.message || '');
+  const errno = Number(err?.errno);
+  const truncated =
+    msg.includes("Data truncated for column 'status'") ||
+    msg.includes('Incorrect enum value') ||
+    errno === 1265 ||
+    errno === 1366;
+  if (!truncated) return;
+  throw new Error(
+    `orders.status ENUM does not allow "${nextStatus}". Apply sql/migrations/20260402120000_order_status_reachability.sql ` +
+      `or run from repo root: npm run db:migrate (loads api/.env). Underlying: ${msg}`,
+    { cause: err },
+  );
+}
+
 export const ORDER_STATUS = Object.freeze({
   PENDING: 'pending',
   PAID: 'paid',
@@ -311,10 +331,16 @@ export async function transitionProvisionedToConfiguring(orderId) {
     logIllegalTransition(orderId, currentStatus, ORDER_STATUS.CONFIGURING);
     return false;
   }
-  const [result] = await pool.execute(
-    `UPDATE orders SET status = 'configuring', updated_at = NOW() WHERE id = ? AND status = 'provisioned'`,
-    [orderId],
-  );
+  let result;
+  try {
+    [result] = await pool.execute(
+      `UPDATE orders SET status = 'configuring', updated_at = NOW() WHERE id = ? AND status = 'provisioned'`,
+      [orderId],
+    );
+  } catch (e) {
+    rethrowIfStaleOrdersStatusEnum(e, 'configuring');
+    throw e;
+  }
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.CONFIGURING);
     return true;
@@ -333,10 +359,16 @@ export async function transitionConfiguringToVerifying(orderId) {
     logIllegalTransition(orderId, currentStatus, ORDER_STATUS.VERIFYING);
     return false;
   }
-  const [result] = await pool.execute(
-    `UPDATE orders SET status = 'verifying', updated_at = NOW() WHERE id = ? AND status = 'configuring'`,
-    [orderId],
-  );
+  let result;
+  try {
+    [result] = await pool.execute(
+      `UPDATE orders SET status = 'verifying', updated_at = NOW() WHERE id = ? AND status = 'configuring'`,
+      [orderId],
+    );
+  } catch (e) {
+    rethrowIfStaleOrdersStatusEnum(e, 'verifying');
+    throw e;
+  }
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.VERIFYING);
     return true;
@@ -355,10 +387,16 @@ export async function transitionVerifyingToPlayable(orderId) {
     logIllegalTransition(orderId, currentStatus, ORDER_STATUS.PLAYABLE);
     return false;
   }
-  const [result] = await pool.execute(
-    `UPDATE orders SET status = 'playable', updated_at = NOW() WHERE id = ? AND status = 'verifying'`,
-    [orderId],
-  );
+  let result;
+  try {
+    [result] = await pool.execute(
+      `UPDATE orders SET status = 'playable', updated_at = NOW() WHERE id = ? AND status = 'verifying'`,
+      [orderId],
+    );
+  } catch (e) {
+    rethrowIfStaleOrdersStatusEnum(e, 'playable');
+    throw e;
+  }
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.PLAYABLE);
     return true;
