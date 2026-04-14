@@ -34,6 +34,11 @@ const Auth = () => {
     const verifyToken = params.get('verify_token');
     if (verifyToken) {
       navigate(`/verify-email?verify_token=${encodeURIComponent(verifyToken)}`, { replace: true });
+      return;
+    }
+    const mode = params.get('mode');
+    if (mode === 'signup') {
+      setIsLogin(false);
     }
   }, [location.search, navigate]);
 
@@ -357,9 +362,9 @@ const Auth = () => {
 
           {isLogin && (
             <div className="mt-4 text-center">
-              <a href="#" className="text-emerald-400 hover:text-emerald-300 transition-colors text-sm">
+              <Link to="/forgot-password" className="text-emerald-400 hover:text-emerald-300 transition-colors text-sm">
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           )}
         </div>

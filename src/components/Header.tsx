@@ -125,7 +125,7 @@ const Header = () => {
                         <span>Sign In</span>
                       </Link>
                       <Link
-                        to="/auth"
+                        to="/auth?mode=signup"
                         onClick={() => setIsAccountOpen(false)}
                         className="flex items-center space-x-2 px-4 py-2 text-gray-100 hover:text-white hover:bg-emerald-500/10 transition-colors text-base"
                       >

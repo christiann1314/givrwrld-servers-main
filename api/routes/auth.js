@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import pool from '../config/database.js';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { authenticate } from '../middleware/auth.js';
-import { sendVerificationEmail } from '../services/email.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 import { getDecryptedSecret, getOrCreatePterodactylUser } from '../utils/mysql.js';
 
 const router = express.Router();
@@ -504,6 +504,160 @@ router.post('/resend-verification', async (req, res) => {
     console.error('Resend verification error:', error);
     return res.status(500).json({
       error: 'Failed to resend verification email',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password
+ * Send a password-reset link to the user's email.
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const [users] = await pool.execute(
+      `SELECT id, is_email_verified FROM users WHERE email = ?`,
+      [normalizedEmail]
+    );
+
+    // Always return success to prevent email enumeration
+    if (users.length === 0 || Number(users[0].is_email_verified) !== 1) {
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      });
+    }
+
+    const user = users[0];
+
+    // Rate-limit: max 3 active reset tokens per hour
+    const [recent] = await pool.execute(
+      `SELECT COUNT(*) AS cnt FROM password_reset_tokens
+       WHERE user_id = ? AND used_at IS NULL AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
+      [user.id]
+    );
+    if (recent[0].cnt >= 3) {
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    // Ensure table exists (idempotent)
+    await pool.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      user_id CHAR(36) NOT NULL,
+      token_hash CHAR(64) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_token_hash (token_hash),
+      INDEX idx_password_reset_user_id (user_id),
+      INDEX idx_password_reset_expires_at (expires_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+
+    await pool.execute(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))`,
+      [user.id, tokenHash]
+    );
+
+    const frontendBase = process.env.PUBLIC_SITE_URL
+      || process.env.FRONTEND_URL?.split(',')[0]?.trim()
+      || 'http://localhost:8080';
+    const resetUrl = `${frontendBase}/reset-password?token=${rawToken}`;
+
+    try {
+      await sendPasswordResetEmail({ toEmail: normalizedEmail, resetUrl });
+    } catch (mailErr) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('Password reset email error:', mailErr);
+      } else {
+        console.warn('Password reset email fallback (dev):', mailErr.message);
+        console.log('Dev reset URL:', resetUrl);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent.',
+      ...(process.env.NODE_ENV !== 'production' ? { devResetUrl: resetUrl } : {})
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({
+      error: 'Failed to process request',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password using a valid token from the forgot-password email.
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
+    const [rows] = await pool.execute(
+      `SELECT user_id
+       FROM password_reset_tokens
+       WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    const userId = rows?.[0]?.user_id;
+    if (!userId) {
+      return res.status(400).json({
+        error: 'Invalid or expired token',
+        message: 'This password reset link is invalid or has expired. Please request a new one.'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await pool.execute(
+      `UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?`,
+      [passwordHash, userId]
+    );
+
+    // Mark token as used
+    await pool.execute(
+      `UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = ?`,
+      [tokenHash]
+    );
+
+    // Invalidate all other unused reset tokens for this user
+    await pool.execute(
+      `UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL`,
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully. You can now sign in with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({
+      error: 'Failed to reset password',
       message: error.message
     });
   }

@@ -157,9 +157,9 @@ export function useGamePlanCatalog(
             pteroEggName: p.ptero_egg_name || null,
             pricing: {
               monthly: Number(p.price_monthly || 0),
-              quarterly: Number(p.price_quarterly || p.price_monthly || 0),
-              semiannual: Number(p.price_semiannual || p.price_monthly || 0),
-              yearly: Number(p.price_yearly || p.price_monthly || 0),
+              quarterly: Number(p.price_quarterly) || Number((Number(p.price_monthly || 0) * 3 * 0.95).toFixed(2)),
+              semiannual: Number(p.price_semiannual) || Number((Number(p.price_monthly || 0) * 6 * 0.90).toFixed(2)),
+              yearly: Number(p.price_yearly) || Number((Number(p.price_monthly || 0) * 12 * 0.80).toFixed(2)),
             },
           };
         });
@@ -209,9 +209,9 @@ export function useGamePlanCatalog(
       if (!plan) return 0;
       const prices = plan.pricing || {
         monthly: plan.price,
-        quarterly: plan.price * 3,
-        semiannual: plan.price * 6,
-        yearly: plan.price * 12,
+        quarterly: Number((plan.price * 3 * 0.95).toFixed(2)),
+        semiannual: Number((plan.price * 6 * 0.90).toFixed(2)),
+        yearly: Number((plan.price * 12 * 0.80).toFixed(2)),
       };
       switch (String(term || 'monthly').toLowerCase()) {
         case 'quarterly':

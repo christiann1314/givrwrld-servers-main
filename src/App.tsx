@@ -53,6 +53,8 @@ import GivrwrldEssentials from "@/pages/GivrwrldEssentials";
 import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import PurchaseConfirmed from "@/pages/PurchaseConfirmed";
 import VerifyEmail from "@/pages/VerifyEmail";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import AdminGuard from "@/components/AdminGuard";
 import DashboardAdmin from "@/pages/DashboardAdmin";
 import DashboardAdminOverview from "@/pages/DashboardAdminOverview";
@@ -82,6 +84,8 @@ const App = () => (
                 <Route path="/login" element={<Navigate to="/auth" replace />} />
                 <Route path="/signup" element={<Navigate to="/auth" replace />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 {/* Checkout routes removed - using configure pages instead */}
                 <Route path="/success" element={<Success />} />
                 <Route path="/status" element={<Status />} />

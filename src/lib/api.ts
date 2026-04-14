@@ -301,6 +301,22 @@ export const api = {
     });
   },
 
+  async forgotPassword(email: string) {
+    return await http<any>("/api/auth/forgot-password", {
+      method: "POST",
+      body: { email },
+      retryOnAuthFail: false,
+    });
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    return await http<any>("/api/auth/reset-password", {
+      method: "POST",
+      body: { token, newPassword },
+      retryOnAuthFail: false,
+    });
+  },
+
   async finalizePayPalOrder(orderId: string) {
     return await http<any>("/api/paypal/finalize-order", {
       method: "POST",

@@ -22,13 +22,32 @@ export function getBillingTermSpec(termRaw) {
   }
 }
 
+const TERM_DISCOUNTS = {
+  monthly:    { months: 1,  discount: 0    },
+  quarterly:  { months: 3,  discount: 0.05 },
+  semiannual: { months: 6,  discount: 0.10 },
+  yearly:     { months: 12, discount: 0.20 },
+};
+
 export function getPlanPriceForTerm(plan, termRaw) {
   const spec = getBillingTermSpec(termRaw);
-  const raw = Number(plan?.[spec.priceField] ?? plan?.price_monthly ?? 0);
-  if (!Number.isFinite(raw) || raw <= 0) {
+  const explicit = Number(plan?.[spec.priceField]);
+  const monthly = Number(plan?.price_monthly ?? 0);
+
+  let price;
+  if (Number.isFinite(explicit) && explicit > 0) {
+    price = explicit;
+  } else if (Number.isFinite(monthly) && monthly > 0) {
+    const td = TERM_DISCOUNTS[spec.term] || TERM_DISCOUNTS.monthly;
+    price = Number((monthly * td.months * (1 - td.discount)).toFixed(2));
+  } else {
+    price = 0;
+  }
+
+  if (!Number.isFinite(price) || price <= 0) {
     throw new Error(`Invalid price for term "${spec.term}" on plan "${plan?.id}"`);
   }
-  return { ...spec, price: raw };
+  return { ...spec, price };
 }
 
 export async function ensurePayPalPlanTermTable() {

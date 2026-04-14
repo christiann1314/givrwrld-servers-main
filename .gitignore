@@ -43,7 +43,9 @@ AES_KEY.txt
 PASSWORDS.txt
 *KEYS*.md
 *CREDENTIALS*.md
-*PASSWORD*
+*PASSWORD*.txt
+*PASSWORD*.md
+*PASSWORD*.env
 
 # Removed from repo (legacy / one-off)
 migrations-archive/

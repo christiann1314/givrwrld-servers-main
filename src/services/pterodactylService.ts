@@ -161,7 +161,7 @@ export class PterodactylService {
       }
 
       const status = stats
-        ? stats.state === 'running'
+        ? (stats.state === 'running' || stats.state === 'online')
           ? 'online'
           : stats.state === 'starting'
             ? 'starting'
