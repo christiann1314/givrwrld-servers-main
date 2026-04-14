@@ -42,6 +42,8 @@ const CommunityPack = () => {
   const packageData = {
     name: 'Community Pack',
     price: '$4.99/mo',
+    planId: 'upgrade-community-pack',
+    itemType: 'vps' as const,
     features: benefits
   };
 

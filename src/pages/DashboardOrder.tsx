@@ -96,8 +96,10 @@ const DashboardOrder = () => {
   const upgradePackages = [
     {
       id: 'givrwrld-essentials',
+      planId: 'upgrade-givrwrld-essentials',
       name: 'GIVRwrld Essentials',
       price: '$6.99',
+      priceLabel: '$6.99/mo',
       description: 'per month',
       features: [
         'Complete server management toolkit',
@@ -112,8 +114,10 @@ const DashboardOrder = () => {
     },
     {
       id: 'game-expansion',
+      planId: 'upgrade-game-expansion-pack',
       name: 'Game Expansion Pack',
       price: '$14.99',
+      priceLabel: '$14.99/mo',
       description: 'per month',
       features: [
         'Cross-deploy to multiple game types',
@@ -129,8 +133,10 @@ const DashboardOrder = () => {
     },
     {
       id: 'community-pack',
+      planId: 'upgrade-community-pack',
       name: 'Community Pack',
       price: '$4.99',
+      priceLabel: '$4.99/mo',
       description: 'per month',
       features: [
         'Connect with creators',
@@ -411,8 +417,17 @@ const DashboardOrder = () => {
                           ))}
                         </div>
 
-                        <Link 
-                          to={pkg.link}
+                        <button
+                          onClick={() => {
+                            setSelectedPackage({
+                              name: pkg.name,
+                              price: pkg.priceLabel,
+                              planId: pkg.planId,
+                              itemType: 'vps',
+                              features: pkg.features
+                            });
+                            setPaymentModalOpen(true);
+                          }}
                           className={`block w-full text-center font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
                             pkg.buttonColor === 'emerald' 
                               ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-emerald-500/25'
@@ -422,7 +437,7 @@ const DashboardOrder = () => {
                           }`}
                         >
                           Add Upgrade
-                        </Link>
+                        </button>
                       </div>
                     ))}
                   </div>

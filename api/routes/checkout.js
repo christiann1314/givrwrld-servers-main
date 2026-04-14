@@ -22,6 +22,26 @@ const router = express.Router();
 const SANDBOX = process.env.PAYPAL_SANDBOX !== 'false';
 
 const ADDON_PLAN_CATALOG = [
+  // Upgrade packages
+  {
+    id: 'upgrade-givrwrld-essentials',
+    display_name: 'GIVRwrld Essentials',
+    description: 'Complete server management toolkit with backups, analytics, and priority support.',
+    price: 6.99,
+  },
+  {
+    id: 'upgrade-game-expansion-pack',
+    display_name: 'Game Expansion Pack',
+    description: 'Cross-deploy to multiple game types with shared resources and load balancing.',
+    price: 14.99,
+  },
+  {
+    id: 'upgrade-community-pack',
+    display_name: 'Community Pack',
+    description: 'Connect with creators, get spotlights, dev blog access, and beta features.',
+    price: 4.99,
+  },
+  // Add-ons
   {
     id: 'addon-enhanced-backup-retention',
     display_name: 'Enhanced Backup Retention',

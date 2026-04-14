@@ -43,6 +43,8 @@ const GameExpansionPack = () => {
   const packageData = {
     name: 'Game Expansion Pack',
     price: '$14.99/mo',
+    planId: 'upgrade-game-expansion-pack',
+    itemType: 'vps' as const,
     features: benefits
   };
 
