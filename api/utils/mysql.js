@@ -1,5 +1,6 @@
 // MySQL Utility Functions
 import pool from '../config/database.js';
+import { DASHBOARD_ACTIVE_GAME_STATUSES } from '../lib/gameOrderDashboardStatuses.js';
 import crypto from 'crypto';
 
 /**
@@ -163,6 +164,7 @@ export async function getUserOrders(userId) {
  */
 export async function getUserServers(userId) {
   try {
+    const st = DASHBOARD_ACTIVE_GAME_STATUSES.map(() => '?').join(', ');
     const [rows] = await pool.execute(
       `SELECT 
         o.*,
@@ -175,9 +177,9 @@ export async function getUserServers(userId) {
        LEFT JOIN plans p ON p.id = o.plan_id
        WHERE o.user_id = ?
          AND o.item_type = 'game'
-         AND o.status IN ('paid', 'provisioning', 'provisioned', 'active')
+         AND o.status IN (${st})
        ORDER BY o.created_at DESC`,
-      [userId]
+      [userId, ...DASHBOARD_ACTIVE_GAME_STATUSES]
     );
     return rows;
   } catch (error) {

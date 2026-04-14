@@ -40,11 +40,20 @@ export const useUserStats = (userEmail?: string) => {
 
       if (ordersResponse?.success) {
         const orders = ordersResponse?.orders || [];
-        activeServers = orders.filter((o: any) => 
-          o.item_type === 'game' && ['paid', 'provisioned', 'active'].includes(o.status)
+        const gameLive = new Set([
+          'paid',
+          'provisioning',
+          'provisioned',
+          'configuring',
+          'verifying',
+          'playable',
+          'active',
+        ]);
+        activeServers = orders.filter(
+          (o: any) => o.item_type === 'game' && gameLive.has(String(o.status || '').toLowerCase()),
         ).length;
         totalSpentNum = orders
-          .filter((order: any) => ['paid', 'provisioning', 'provisioned', 'active'].includes(String(order.status || '').toLowerCase()))
+          .filter((order: any) => gameLive.has(String(order.status || '').toLowerCase()))
           .reduce((sum: number, order: any) => {
             return sum + Number(order.billed_amount ?? order.total_amount ?? 0);
           }, 0);

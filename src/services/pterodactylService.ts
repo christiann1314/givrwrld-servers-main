@@ -120,14 +120,20 @@ export class PterodactylService {
       return `${ramText} • ${cpuText} • ${diskText}`;
     };
 
+    const panelReadyStatus = (status: string) => {
+      const s = String(status || '').toLowerCase();
+      if (s === 'active' || s === 'playable') return 'online';
+      if (['provisioned', 'configuring', 'verifying'].includes(s)) return 'starting';
+      return 'offline';
+    };
+
     for (const order of orders) {
       if (!order.ptero_identifier) {
         enhancedServers.push({
           id: order.id,
           name: order.server_name,
           game: deriveGame(order),
-          status: order.status === 'active' ? 'online' : 
-                 order.status === 'provisioned' ? 'starting' : 'offline',
+          status: panelReadyStatus(order.status),
           players: 0,
           maxPlayers: 20,
           uptime: '99.9%',
@@ -154,12 +160,15 @@ export class PterodactylService {
         stats = await this.getServerStats(order.ptero_identifier);
       }
 
-      const status = stats ?
-        (stats.state === 'running' ? 'online' :
-         stats.state === 'starting' ? 'starting' :
-         stats.state === 'stopping' ? 'stopping' : 'offline') :
-        (order.status === 'active' ? 'online' :
-         order.status === 'provisioned' ? 'starting' : 'offline');
+      const status = stats
+        ? stats.state === 'running'
+          ? 'online'
+          : stats.state === 'starting'
+            ? 'starting'
+            : stats.state === 'stopping'
+              ? 'stopping'
+              : 'offline'
+        : panelReadyStatus(order.status);
 
       const uptime = stats ?
         `${((stats.uptime_ms / (1000 * 60 * 60 * 24)) * 100).toFixed(1)}%` :

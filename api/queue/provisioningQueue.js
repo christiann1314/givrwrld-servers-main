@@ -54,6 +54,24 @@ export async function enqueueConfigureServerJob({ orderId, serverId = null, prov
     data.provisionPlan = provisionPlan;
   }
   try {
+    const existing = await q.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') {
+        await existing.remove();
+        logger.info({ order_id: orderId, job_id: jobId }, 'post_provision_job_removed_failed_for_retry');
+      } else if (['active', 'waiting', 'delayed', 'paused', 'completed'].includes(state)) {
+        logger.info(
+          { order_id: orderId, job_id: jobId, bullmq_state: state },
+          'post_provision_job_skip_already_in_queue',
+        );
+        return { enqueued: false, reason: 'already_in_queue', state };
+      }
+    }
+  } catch (e) {
+    logger.warn({ order_id: orderId, job_id: jobId, err: e }, 'post_provision_job_existing_cleanup_skipped');
+  }
+  try {
     await q.add('configure-server', data, {
       jobId,
       ...defaultJobOpts(),

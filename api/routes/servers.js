@@ -44,6 +44,7 @@ import { buildProvisionPlan } from '../lib/buildProvisionPlan.js';
 import { validateProvisionPlan } from '../lib/validateProvisionPlan.js';
 import { validateEggRuntimeForProvision } from '../lib/validateEggRuntime.js';
 import { getImpostorLinuxDownloadUrl } from '../config/impostorReleasePolicy.js';
+import { DASHBOARD_ACTIVE_GAME_STATUSES } from '../lib/gameOrderDashboardStatuses.js';
 import {
   withMysqlProvisionLock,
   buildDeterministicServerName,
@@ -566,6 +567,7 @@ router.get('/stats', authenticate, async (req, res) => {
 router.get('/metrics/live', authenticate, async (req, res) => {
   try {
     await ensureMetricsTables();
+    const st = DASHBOARD_ACTIVE_GAME_STATUSES.map(() => '?').join(', ');
     const [orders] = await pool.execute(
       `SELECT
          o.id,
@@ -577,9 +579,9 @@ router.get('/metrics/live', authenticate, async (req, res) => {
        LEFT JOIN plans p ON p.id = o.plan_id
        WHERE o.user_id = ?
          AND o.item_type = 'game'
-         AND o.status IN ('paid', 'provisioning', 'provisioned', 'active')
+         AND o.status IN (${st})
        ORDER BY o.created_at DESC`,
-      [req.userId]
+      [req.userId, ...DASHBOARD_ACTIVE_GAME_STATUSES]
     );
 
     const metrics = {};
@@ -1254,7 +1256,10 @@ function buildEnvironmentForAllocationGroup(ctx) {
 
   if (gameKey === 'among-us') {
     const fromEnv = String(
-      process.env.GAME_SERVER_PUBLIC_HOST || process.env.IMPOSTOR_SERVER_PUBLIC_HOST || '',
+      process.env.GAME_SERVER_PUBLIC_HOST ||
+        process.env.IMPOSTOR_SERVER_PUBLIC_HOST ||
+        process.env.PTERO_EXTERNAL_GAME_HOST ||
+        '',
     ).trim();
     const existingIp = String(environment.IMPOSTOR_Server__PublicIp || '').trim();
     const isLoopbackOrEmpty =
@@ -1262,6 +1267,12 @@ function buildEnvironmentForAllocationGroup(ctx) {
       existingIp === '127.0.0.1' ||
       existingIp === '::1' ||
       /^localhost$/i.test(existingIp);
+    const isUnusablePublic = (ip) =>
+      !ip ||
+      ip === '127.0.0.1' ||
+      ip === '::1' ||
+      ip === '0.0.0.0' ||
+      /^localhost$/i.test(ip);
 
     if (fromEnv) {
       environment.IMPOSTOR_Server__PublicIp = fromEnv;
@@ -1269,13 +1280,11 @@ function buildEnvironmentForAllocationGroup(ctx) {
       const primaryAlloc = selectedAllocs[0];
       const fromAlias = primaryAlloc ? String(primaryAlloc.alias || '').trim() : '';
       const fromAllocIp = primaryAlloc ? String(primaryAlloc.ip || '').trim() : '';
-      const resolvedIp = fromAlias || fromAllocIp;
-      if (
-        resolvedIp &&
-        resolvedIp !== '127.0.0.1' &&
-        resolvedIp !== '::1' &&
-        !/^localhost$/i.test(resolvedIp)
-      ) {
+      let resolvedIp = fromAlias || fromAllocIp;
+      if (isUnusablePublic(resolvedIp)) {
+        resolvedIp = '';
+      }
+      if (resolvedIp) {
         environment.IMPOSTOR_Server__PublicIp = resolvedIp;
       }
     }
@@ -1692,6 +1701,27 @@ export async function provisionServer(orderId) {
       panelUrl,
       panelAppKey
     );
+    logger.info(
+      {
+        event: 'provision_trace',
+        order_id: orderId,
+        step: 'panel_user',
+        mysql_user_id: user.id,
+        buyer_email: user.email,
+        ptero_application_user_id: pteroUserId,
+      },
+      'provision_step',
+    );
+    const forbid = String(process.env.PTERO_FORBID_OWNER_USER_IDS || '')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => n > 0);
+    if (forbid.length && forbid.includes(Number(pteroUserId))) {
+      throw new Error(
+        `Refusing to create server: Panel user id ${pteroUserId} is in PTERO_FORBID_OWNER_USER_IDS. ` +
+          `Fix users.pterodactyl_user_id for this customer (likely points at admin).`,
+      );
+    }
 
     // Get egg details from MySQL
     const [eggs] = await pool.execute(
@@ -2011,6 +2041,21 @@ export async function provisionServer(orderId) {
           const errorText = await serverResponse.text();
           const allocLabel = allocationGroup.map((a) => a.id).join('+');
           lastCreateError = `Failed allocations [${allocLabel}]: ${errorText}`;
+          logger.error(
+            {
+              event: 'ptero_create_server_rejected',
+              order_id: orderId,
+              node_id: node.ptero_node_id,
+              egg_id: order.ptero_egg_id,
+              game: order.game,
+              alloc_needed: allocNeeded,
+              allocation_payload: allocationPayload,
+              http_status: serverResponse.status,
+              error_text:
+                errorText.length > 12_000 ? `${errorText.slice(0, 12_000)}…(truncated)` : errorText,
+            },
+            'Pterodactyl create server rejected',
+          );
           if (isAllocationValidationError(errorText)) {
             continue;
           }

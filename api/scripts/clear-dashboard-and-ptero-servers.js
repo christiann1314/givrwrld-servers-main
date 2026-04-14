@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
  * 1) Delete ALL servers from Pterodactyl panel.
- * 2) Cancel all game orders that appear on "Your Active Servers" (paid/provisioning/provisioned)
- *    so the GIVRwrld dashboard shows no servers.
+ * 2) Cancel game orders in paid→playable (and error/failed), clear Panel columns — empties dashboard.
  *
  * Usage:
  *   node api/scripts/clear-dashboard-and-ptero-servers.js           # dry run
@@ -14,6 +13,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import pool from '../config/database.js';
+import { RESETTABLE_GAME_ORDER_STATUSES } from '../lib/gameOrderDashboardStatuses.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -71,13 +71,14 @@ async function main() {
     }
   }
 
-  // Step 2: Cancel all game orders that show on dashboard (paid, provisioning, provisioned, active)
+  const st = RESETTABLE_GAME_ORDER_STATUSES.map(() => '?').join(', ');
   const [orders] = await pool.execute(
     `SELECT id, user_id, status, ptero_server_id FROM orders
-     WHERE item_type = 'game' AND status IN ('paid', 'provisioning', 'provisioned', 'active')
-     ORDER BY created_at DESC`
+     WHERE item_type = 'game' AND status IN (${st})
+     ORDER BY created_at DESC`,
+    [...RESETTABLE_GAME_ORDER_STATUSES]
   );
-  console.log(`\nDashboard orders (active servers): ${orders.length} order(s).`);
+  console.log(`\nGame orders to reset (dashboard + stuck): ${orders.length} order(s).`);
   if (orders.length > 0) {
     for (const o of orders) {
       console.log(`  - ${o.id}  status=${o.status}  ptero_server_id=${o.ptero_server_id ?? 'null'}`);
@@ -87,7 +88,20 @@ async function main() {
   if (APPLY && orders.length > 0) {
     const orderIds = orders.map((o) => o.id);
     await pool.execute(
-      `UPDATE orders SET status = 'canceled', ptero_server_id = NULL, ptero_identifier = NULL, updated_at = NOW()
+      `UPDATE orders SET
+         status = 'canceled',
+         ptero_server_id = NULL,
+         ptero_identifier = NULL,
+         ptero_server_uuid = NULL,
+         ptero_primary_allocation_id = NULL,
+         ptero_primary_port = NULL,
+         ptero_extra_ports_json = NULL,
+         ptero_node_id = NULL,
+         game_brand_hostname = NULL,
+         game_display_address = NULL,
+         error_message = NULL,
+         last_provision_error = NULL,
+         updated_at = NOW()
        WHERE id IN (${orderIds.map(() => '?').join(',')})`,
       orderIds
     );

@@ -52,7 +52,15 @@ export const useLiveBillingData = (refreshInterval: number = 60000) => {
       const userOrders = response?.orders || [];
 
       // Process billing data from orders + plan pricing join.
-      const successfulStatuses = new Set(['paid', 'provisioning', 'provisioned', 'active']);
+      const successfulStatuses = new Set([
+        'paid',
+        'provisioning',
+        'provisioned',
+        'configuring',
+        'verifying',
+        'playable',
+        'active',
+      ]);
       const toAmount = (order: any) => Number(order?.billed_amount ?? order?.total_amount ?? 0);
 
       const successfulOrders = (userOrders || [])

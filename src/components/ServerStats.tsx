@@ -31,6 +31,14 @@ interface Order {
   created_at: string;
 }
 
+const PANEL_STATS_ORDER_STATUSES = new Set([
+  'provisioned',
+  'configuring',
+  'verifying',
+  'playable',
+  'active',
+]);
+
 const ServerStats = ({ order }: { order: Order }) => {
   const { user } = useAuth();
   const [stats, setStats] = React.useState<ServerStats | null>(null);
@@ -57,7 +65,10 @@ const ServerStats = ({ order }: { order: Order }) => {
 
   // Poll for stats every 5 seconds
   React.useEffect(() => {
-    if (order.status === 'provisioned' && order.pterodactyl_server_identifier) {
+    if (
+      PANEL_STATS_ORDER_STATUSES.has(String(order.status || '').toLowerCase()) &&
+      order.pterodactyl_server_identifier
+    ) {
       fetchStats();
       const interval = setInterval(fetchStats, 5000);
       return () => clearInterval(interval);
@@ -114,7 +125,10 @@ const ServerStats = ({ order }: { order: Order }) => {
     }
   };
 
-  if (order.status !== 'provisioned' || !order.pterodactyl_server_identifier) {
+  if (
+    !PANEL_STATS_ORDER_STATUSES.has(String(order.status || '').toLowerCase()) ||
+    !order.pterodactyl_server_identifier
+  ) {
     return (
       <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-6">

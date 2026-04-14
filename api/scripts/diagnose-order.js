@@ -21,8 +21,8 @@ async function main() {
   }
 
   const [orderRows] = await pool.execute(
-    `SELECT o.id, o.plan_id, o.status, o.region, o.server_name,
-            o.ptero_server_id, o.ptero_node_id,
+    `SELECT o.id, o.user_id, o.plan_id, o.status, o.region, o.server_name,
+            o.ptero_server_id, o.ptero_identifier, o.ptero_node_id,
             o.provision_attempt_count, o.last_provision_attempt_at,
             o.last_provision_error, o.error_message, o.created_at,
             p.game, p.ptero_egg_id, p.ram_gb, p.ssd_gb, p.display_name AS plan_display_name
@@ -40,11 +40,13 @@ async function main() {
   const order = orderRows[0];
   console.log('\n--- Order ---');
   console.log('id:', order.id);
+  console.log('user_id (dashboard / JWT must match this):', order.user_id);
   console.log('plan_id:', order.plan_id);
   console.log('status:', order.status);
   console.log('region:', order.region);
   console.log('server_name:', order.server_name);
   console.log('ptero_server_id:', order.ptero_server_id);
+  console.log('ptero_identifier:', order.ptero_identifier ?? '(null)');
   console.log('ptero_node_id:', order.ptero_node_id);
   console.log('provision_attempt_count:', order.provision_attempt_count);
   console.log('last_provision_attempt_at:', order.last_provision_attempt_at);
@@ -58,6 +60,37 @@ async function main() {
   console.log('ram_gb:', order.ram_gb);
   console.log('ssd_gb:', order.ssd_gb);
   console.log('plan_display_name:', order.plan_display_name);
+
+  const [buyerRows] = await pool.execute(
+    `SELECT id, email, display_name, pterodactyl_user_id FROM users WHERE id = ? LIMIT 1`,
+    [order.user_id],
+  );
+  const buyer = buyerRows[0];
+  if (buyer) {
+    console.log('\n--- Buyer (users row) ---');
+    console.log('email:', buyer.email);
+    console.log('pterodactyl_user_id:', buyer.pterodactyl_user_id ?? '(null — will be created on provision)');
+    if (Number(buyer.pterodactyl_user_id) === 1) {
+      console.log(
+        'WARNING: pterodactyl_user_id is 1 (often Panel admin). New servers will be owned by admin in Pterodactyl.',
+      );
+      console.log(
+        '  Fix: set users.pterodactyl_user_id to the Application API user id for this email, or NULL to recreate.',
+      );
+    }
+  } else {
+    console.log('\n--- Buyer ---');
+    console.log('WARNING: No users row for order.user_id — provisioning should have failed.');
+  }
+
+  if (String(order.game || '').toLowerCase().includes('among') || order.ptero_egg_id === 74) {
+    console.log('\n--- Among Us / Impostor ---');
+    console.log(
+      'If Impostor logs show PublicIP 127.0.0.1, set in api/.env a reachable host or IP for clients:',
+    );
+    console.log('  GAME_SERVER_PUBLIC_HOST=<node public IP or game hostname>');
+    console.log('  (aliases: IMPOSTOR_SERVER_PUBLIC_HOST, PTERO_EXTERNAL_GAME_HOST)');
+  }
 
   const eggId = order.ptero_egg_id;
   const [[statusCol]] = await pool.execute(

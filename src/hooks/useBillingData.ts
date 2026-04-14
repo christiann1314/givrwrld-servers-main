@@ -71,7 +71,15 @@ export const useBillingData = (userEmail?: string) => {
       }
 
        const orders = response?.orders || [];
-       const activeStatuses = new Set(['paid', 'provisioning', 'provisioned', 'active']);
+       const activeStatuses = new Set([
+         'paid',
+         'provisioning',
+         'provisioned',
+         'configuring',
+         'verifying',
+         'playable',
+         'active',
+       ]);
        const toAmount = (order: any) => Number(order?.billed_amount ?? order?.total_amount ?? 0);
 
       // Calculate stats from real data
