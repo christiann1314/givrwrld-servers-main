@@ -288,14 +288,20 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-6 lg:gap-8 shrink-0">
                   <div className="text-center lg:text-right">
-                    <div className="text-2xl font-bold text-emerald-400">{liveServerData?.onlineServers ?? servers.length}</div>
+                    <div className="text-2xl font-bold text-emerald-400">
+                      {liveServerData?.onlineServers ?? servers.filter((s: any) => s.status === 'online').length}
+                    </div>
                     <div className="text-gray-400 text-sm">Online Servers</div>
                   </div>
                   <div className="text-center lg:text-right">
                     <div className="text-2xl font-bold text-blue-400">
-                      {!billingLoading && liveBillingData && !billingError
-                        ? `$${liveBillingData.totalRevenue.toFixed(2)}`
-                        : userStats?.totalSpent || '$0.00'}
+                      {(() => {
+                        if (!billingLoading && liveBillingData && !billingError && liveBillingData.totalRevenue > 0) {
+                          return `$${liveBillingData.totalRevenue.toFixed(2)}`;
+                        }
+                        const fallback = userStats?.totalSpent;
+                        return fallback && fallback !== '$0.00' ? fallback : (billingLoading ? '...' : '$0.00');
+                      })()}
                     </div>
                     <div className="text-gray-400 text-sm">Total Spent</div>
                   </div>
@@ -347,10 +353,26 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-4 justify-between sm:justify-end">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                        server.status === 'online'
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                          : server.status === 'starting' || server.status === 'stopping'
+                            ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                            : 'bg-red-500/20 text-red-400 border-red-500/30'
+                      }`}>
                         {server.status}
                       </span>
                       <div className="flex items-center space-x-2">
+                        {server.pterodactylUrl && (server.status === 'online' || server.status === 'offline' || server.status === 'starting' || server.status === 'stopping') && (
+                          <a
+                            href={server.pterodactylUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-emerald-500/30"
+                          >
+                            Manage
+                          </a>
+                        )}
                         <Link
                           to={`/success?order_id=${encodeURIComponent(server.id)}`}
                           className="bg-gray-600/40 hover:bg-gray-600/60 text-gray-200 hover:text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-gray-500/50"
