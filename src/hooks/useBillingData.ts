@@ -80,7 +80,10 @@ export const useBillingData = (userEmail?: string) => {
          'playable',
          'active',
        ]);
-       const toAmount = (order: any) => Number(order?.billed_amount ?? order?.total_amount ?? 0);
+       const toAmount = (order: any) => {
+         const n = Number(order?.billed_amount ?? order?.total_amount ?? order?.price_monthly ?? 0);
+         return Number.isFinite(n) ? n : 0;
+       };
 
       // Calculate stats from real data
        const thisMonthSpent = orders.filter((o: any) => {

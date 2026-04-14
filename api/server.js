@@ -67,7 +67,7 @@ app.use((req, res, next) => {
       { service: 'api', req_id: req.id },
       res.statusCode >= 500 ? 'error' : 'info',
       'request',
-      { method: req.method, path: req.path, status: res.statusCode }
+      { method: req.method, path: req.originalUrl, status: res.statusCode }
     );
   });
   next();

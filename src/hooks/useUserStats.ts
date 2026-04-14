@@ -55,7 +55,8 @@ export const useUserStats = (userEmail?: string) => {
         totalSpentNum = orders
           .filter((order: any) => gameLive.has(String(order.status || '').toLowerCase()))
           .reduce((sum: number, order: any) => {
-            return sum + Number(order.billed_amount ?? order.total_amount ?? 0);
+            const n = Number(order.billed_amount ?? order.total_amount ?? order.price_monthly ?? 0);
+            return sum + (Number.isFinite(n) ? n : 0);
           }, 0);
       }
 

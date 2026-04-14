@@ -86,7 +86,12 @@ const Dashboard = () => {
   const { serversData } = useUserServers(userEmail);
   const { userStats } = useUserStats(userEmail);
   const { data: liveServerData, refresh: refreshServers } = useLiveServerData(30000);
-  const { data: liveBillingData, refresh: refreshBilling } = useLiveBillingData(60000);
+  const {
+    data: liveBillingData,
+    loading: billingLoading,
+    error: billingError,
+    refresh: refreshBilling,
+  } = useLiveBillingData(60000);
 
   // Show loading state when no user email
   if (!userEmail) {
@@ -288,9 +293,9 @@ const Dashboard = () => {
                   </div>
                   <div className="text-center lg:text-right">
                     <div className="text-2xl font-bold text-blue-400">
-                      {liveBillingData?.totalRevenue !== undefined
+                      {!billingLoading && liveBillingData && !billingError
                         ? `$${liveBillingData.totalRevenue.toFixed(2)}`
-                        : (userStats?.totalSpent || '$0.00')}
+                        : userStats?.totalSpent || '$0.00'}
                     </div>
                     <div className="text-gray-400 text-sm">Total Spent</div>
                   </div>

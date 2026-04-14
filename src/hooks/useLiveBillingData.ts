@@ -60,28 +60,33 @@ export const useLiveBillingData = (refreshInterval: number = 60000) => {
         'verifying',
         'playable',
         'active',
-      ]);
-      const toAmount = (order: any) => Number(order?.billed_amount ?? order?.total_amount ?? 0);
+           ]);
 
-      const successfulOrders = (userOrders || [])
-        .filter((o: any) => successfulStatuses.has(String(o?.status || '').toLowerCase()))
-      const payments: Payment[] = successfulOrders
-        .slice(0, 10)
-        .map((order: any) => ({
-          id: order.id,
-          amount: toAmount(order),
-          currency: 'USD',
-          status: 'succeeded' as Payment['status'],
-          description: `${order.server_name} - ${order.plan_id} - ${order.term}`,
-          date: order.created_at,
-          paymentMethod: 'paypal'
-        }));
+      const successfulOrders = (userOrders || []).filter((o: any) =>
+        successfulStatuses.has(String(o?.status || '').toLowerCase()),
+      );
 
-        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-        
-        const monthlyRevenue = payments
-          .filter(p => new Date(p.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-          .reduce((sum, p) => sum + p.amount, 0);
+      const toAmountSafe = (order: any) => {
+        const n = Number(order?.billed_amount ?? order?.total_amount ?? order?.price_monthly ?? 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const totalRevenue = successfulOrders.reduce((sum, o) => sum + toAmountSafe(o), 0);
+
+      const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const monthlyRevenue = successfulOrders
+        .filter((o) => new Date(o.created_at).getTime() > monthAgo)
+        .reduce((sum, o) => sum + toAmountSafe(o), 0);
+
+      const payments: Payment[] = successfulOrders.slice(0, 10).map((order: any) => ({
+        id: order.id,
+        amount: toAmountSafe(order),
+        currency: 'USD',
+        status: 'succeeded' as Payment['status'],
+        description: `${order.server_name} - ${order.plan_id} - ${order.term}`,
+        date: order.created_at,
+        paymentMethod: 'paypal',
+      }));
 
          setData({
            totalRevenue,

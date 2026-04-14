@@ -487,16 +487,17 @@ export async function getServerDetails(pteroServerId) {
  *   measuredAt: string, // ISO timestamp
  * }
  */
-export async function getServerResources(pteroServerId) {
-  if (!pteroServerId && pteroServerId !== 0) {
+export async function getServerResources(pteroIdentifier) {
+  if (pteroIdentifier == null || String(pteroIdentifier).trim() === '') {
     throw new PterodactylError(
       PTERO_ERROR_CODES.BAD_REQUEST,
-      'pteroServerId is required',
+      'pteroIdentifier is required',
       { httpStatus: 400 }
     );
   }
 
-  const body = await requestApplicationApi(`/servers/${pteroServerId}/resources`);
+  const id = encodeURIComponent(String(pteroIdentifier).trim());
+  const body = await requestClientApi(`/servers/${id}/resources`);
   const data = body?.data != null ? body.data : body;
   const attrs = data?.attributes || {};
 

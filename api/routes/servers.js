@@ -352,7 +352,7 @@ async function ensureMetricsTables() {
       sampled_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_snapshots_order_time (order_id, sampled_at),
       INDEX idx_snapshots_sampled_at (sampled_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
   );
 }
 
@@ -383,40 +383,25 @@ async function resolvePanelStatsForOrder(order) {
     uptime_seconds: 0,
   };
 
-  const aesKey = process.env.AES_KEY;
-  const panelUrl = (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
-  const panelAppKey = (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) || process.env.PANEL_APP_KEY;
-  if (!panelUrl || !panelAppKey || !order.ptero_server_id) {
+  if (!order.ptero_identifier) {
     return stats;
   }
 
   try {
-    const panelRes = await fetch(`${String(panelUrl).replace(/\/+$/, '')}/api/application/servers/${order.ptero_server_id}/resources`, {
-      headers: {
-        Authorization: `Bearer ${panelAppKey}`,
-        Accept: 'Application/vnd.pterodactyl.v1+json',
-      },
-    });
-
-    if (!panelRes.ok) {
-      return stats;
-    }
-
-    const payload = await panelRes.json();
-    const resources = payload?.attributes?.resources || payload?.attributes || {};
-    const memoryBytes = Number(resources.memory_bytes || 0);
+    const resources = await getPterodactylResources(order.ptero_identifier);
     const memoryLimitMb = Number(order.ram_gb || 0) * 1024;
     const memoryLimitBytes = memoryLimitMb > 0 ? memoryLimitMb * 1024 * 1024 : 0;
 
-    stats.state = normalizeState(order.status, resources.current_state);
-    stats.cpu_percent = toPercent(resources.cpu_absolute || resources.cpu_percent || 0);
-    stats.ram_percent = memoryLimitBytes > 0 ? toPercent((memoryBytes / memoryLimitBytes) * 100) : 0;
-    stats.uptime_seconds = Math.max(0, Math.floor(Number(resources.uptime || resources.uptime_ms || 0) / 1000));
-
-    // Player counts are game-dependent and often unavailable from panel resources.
-    // Keep cached/default values here; historical summaries still capture this signal.
-    stats.players_online = Number(resources.players_online || 0) || 0;
-    stats.players_max = Number(resources.players_max || 0) || 0;
+    stats.state = resources.state === 'online' ? 'online'
+      : resources.state === 'offline' ? 'offline'
+      : normalizeState(order.status, resources.state);
+    stats.cpu_percent = toPercent(resources.cpuPercent || 0);
+    stats.ram_percent = memoryLimitBytes > 0
+      ? toPercent((resources.memoryBytes / memoryLimitBytes) * 100)
+      : 0;
+    stats.uptime_seconds = resources.uptimeSeconds ?? 0;
+    stats.players_online = resources.playersOnline ?? 0;
+    stats.players_max = resources.playersMax ?? 0;
   } catch {
     return stats;
   }
@@ -518,7 +503,7 @@ router.get('/stats', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'order_id required' });
     }
     const [rows] = await pool.execute(
-      `SELECT o.id, o.status, o.ptero_server_id, o.plan_id, p.ram_gb
+      `SELECT o.id, o.status, o.ptero_server_id, o.ptero_identifier, o.plan_id, p.ram_gb
        FROM orders o
        LEFT JOIN plans p ON p.id = o.plan_id
        WHERE o.id = ? AND o.user_id = ? AND o.item_type = 'game'
@@ -573,6 +558,7 @@ router.get('/metrics/live', authenticate, async (req, res) => {
          o.id,
          o.status,
          o.ptero_server_id,
+         o.ptero_identifier,
          o.plan_id,
          p.ram_gb
        FROM orders o
@@ -625,7 +611,7 @@ router.get('/metrics/summary', authenticate, async (req, res) => {
       `SELECT order_id, state, cpu_percent, players_online, uptime_seconds, sampled_at
        FROM server_stats_snapshots
        WHERE sampled_at >= (NOW() - INTERVAL ? DAY)
-         AND order_id IN (
+         AND order_id COLLATE utf8mb4_unicode_ci IN (
            SELECT id FROM orders
            WHERE user_id = ?
              AND item_type = 'game'
@@ -816,8 +802,7 @@ router.get('/:orderId/resources', authenticate, async (req, res) => {
       return res.json(cached);
     }
 
-    // If the server is not yet provisioned, return a synthetic "provisioning" snapshot.
-    if (order.ptero_server_id == null) {
+    if (order.ptero_server_id == null || !order.ptero_identifier) {
       const measuredAt = new Date().toISOString();
       const memoryLimitBytes =
         order.ram_gb != null ? Number(order.ram_gb) * 1024 * 1024 * 1024 : null;
@@ -838,7 +823,7 @@ router.get('/:orderId/resources', authenticate, async (req, res) => {
     }
 
     try {
-      const resources = await getPterodactylResources(order.ptero_server_id);
+      const resources = await getPterodactylResources(order.ptero_identifier);
       const payload = {
         state: resources.state,
         cpu_percent: resources.cpuPercent,

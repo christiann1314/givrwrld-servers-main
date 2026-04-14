@@ -19,6 +19,37 @@ const PANEL_RATE_LIMIT_COOLDOWN_MS = 120000;
 const PANEL_OPEN_TIMEOUT_MS = 20000;
 /** Browser→API pings so nginx/proxies do not treat the console stream as idle and RST it. */
 const CLIENT_WS_PING_MS = 25000;
+/**
+ * Reuse Panel websocket credentials for a short window so reconnects (and duplicate tabs) do not
+ * hammer GET /api/client/servers/:id/websocket (Panel throttles this heavily → 429).
+ * Invalidate sooner when the Panel emits token expiring/expired.
+ */
+const WS_CRED_CACHE_MS = Math.max(
+  5000,
+  Number.parseInt(String(process.env.PTERO_WS_TOKEN_CACHE_MS || '45000'), 10) || 45000
+);
+
+const wsCredCache = new Map(); // ptero_identifier -> { token, socketUrl, expiresAt }
+
+function peekCachedWsCreds(identifier) {
+  const id = String(identifier);
+  const row = wsCredCache.get(id);
+  if (!row || row.expiresAt <= Date.now()) return null;
+  return { token: row.token, socketUrl: row.socketUrl };
+}
+
+function setCachedWsCreds(identifier, token, socketUrl) {
+  const id = String(identifier);
+  wsCredCache.set(id, {
+    token,
+    socketUrl,
+    expiresAt: Date.now() + WS_CRED_CACHE_MS,
+  });
+}
+
+function invalidateWsCredCache(identifier) {
+  wsCredCache.delete(String(identifier));
+}
 
 /** Serialize panel token HTTP calls per server so tabs/users don't stampede the Panel rate limiter. */
 const panelTokenMutexByIdentifier = new Map();
@@ -116,8 +147,14 @@ async function getUserOrder(orderId, userId) {
 
 async function fetchPanelWebsocketCredentials(order) {
   const id = String(order.ptero_identifier);
+  const cached = peekCachedWsCreds(id);
+  if (cached) return cached;
+
   const run = getPanelTokenMutex(id);
   return run(async () => {
+    const hit = peekCachedWsCreds(id);
+    if (hit) return hit;
+
     const until = panelTokenBackoffUntil.get(id) || 0;
     const delayMs = until - Date.now();
     if (delayMs > 0) {
@@ -140,6 +177,7 @@ async function fetchPanelWebsocketCredentials(order) {
       if (isPanelRateLimitedStatus(res.status, text)) {
         panelTokenBackoffUntil.set(id, Date.now() + PANEL_RATE_LIMIT_COOLDOWN_MS);
       }
+      invalidateWsCredCache(id);
       throw new Error(`Failed to obtain panel websocket token (${res.status}): ${text}`);
     }
 
@@ -147,13 +185,16 @@ async function fetchPanelWebsocketCredentials(order) {
     try {
       body = JSON.parse(text);
     } catch {
+      invalidateWsCredCache(id);
       throw new Error('Panel websocket response was not valid JSON');
     }
     const token = body?.data?.token || body?.token;
     const socketUrl = body?.data?.socket || body?.socket;
     if (!token || !socketUrl) {
+      invalidateWsCredCache(id);
       throw new Error('Panel websocket response missing token or socket URL');
     }
+    setCachedWsCreds(id, token, socketUrl);
     return { token, socketUrl };
   });
 }
@@ -356,6 +397,7 @@ export function attachConsoleWebSocketServer(server) {
             ts: new Date().toISOString(),
           });
         } else if (parsed?.event === 'token expiring' || parsed?.event === 'token expired') {
+          invalidateWsCredCache(order.ptero_identifier);
           safeSend(ws, {
             type: 'console.system',
             message: 'Panel console token is expiring; stream may reconnect shortly.',
