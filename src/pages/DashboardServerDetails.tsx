@@ -409,6 +409,25 @@ const DashboardServerDetails: React.FC = () => {
       reconnectAttemptsRef.current = 0;
       setConsoleStatus("connected");
       appendConsoleLine("[console] Connected.");
+
+      if (details) {
+        const p = details.plan;
+        const cpu = p.vcores ? `${p.vcores} vCPU` : "—";
+        const ram = p.ram_gb ? `${p.ram_gb} GB` : "—";
+        const disk = p.ssd_gb ? `${p.ssd_gb} GB NVMe` : "—";
+        const name = details.server_name || "—";
+        const game = details.game ? details.game.charAt(0).toUpperCase() + details.game.slice(1) : "—";
+        const region = details.region || "—";
+        const addr =
+          details.panel?.allocations.primaryIp && details.panel.allocations.primaryPort
+            ? `${details.panel.allocations.primaryIp}:${details.panel.allocations.primaryPort}`
+            : null;
+        appendConsoleLine("─── Server Specs ───────────────────────────────");
+        appendConsoleLine(`  Name: ${name}  •  Game: ${game}  •  Region: ${region}`);
+        appendConsoleLine(`  CPU: ${cpu}  •  RAM: ${ram}  •  Disk: ${disk}`);
+        if (addr) appendConsoleLine(`  Address: ${addr}`);
+        appendConsoleLine("────────────────────────────────────────────────");
+      }
     };
 
     ws.onmessage = (event) => {
