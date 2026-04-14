@@ -35,7 +35,7 @@ const TwitchEmbedPlayer: React.FC<TwitchEmbedPlayerProps> = ({ channel, title = 
         channel,
         width: "100%",
         height: "100%",
-        layout: "video-with-chat",
+        layout: "video",
         autoplay: true,
         muted: true,
         parent: parents,

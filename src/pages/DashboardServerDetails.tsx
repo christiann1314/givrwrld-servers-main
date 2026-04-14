@@ -596,13 +596,28 @@ const DashboardServerDetails: React.FC = () => {
     setPublicPageErrors({});
 
     try {
+      let channel = publicForm.stream_channel.trim();
+      let url = publicForm.stream_url.trim();
+      const platform = publicForm.stream_platform;
+
+      if (channel && !url) {
+        url = platform === "twitch"
+          ? `https://www.twitch.tv/${channel}`
+          : `https://kick.com/${channel}`;
+      } else if (url && !channel) {
+        const match = platform === "twitch"
+          ? url.match(/twitch\.tv\/([^/?#]+)/i)
+          : url.match(/kick\.com\/([^/?#]+)/i);
+        if (match) channel = match[1];
+      }
+
       const payload = {
         public_page_enabled: publicForm.public_page_enabled,
         public_slug: normalizeSlugInput(publicForm.public_slug),
         streamer_name: publicForm.streamer_name.trim(),
-        stream_platform: publicForm.stream_platform,
-        stream_channel: publicForm.stream_channel.trim(),
-        stream_url: publicForm.stream_url.trim(),
+        stream_platform: platform,
+        stream_channel: channel,
+        stream_url: url,
         discord_url: publicForm.discord_url.trim(),
         server_description: publicForm.server_description.trim(),
         kick_embed_enabled: 0,
