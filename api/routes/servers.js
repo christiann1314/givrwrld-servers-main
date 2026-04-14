@@ -90,13 +90,14 @@ function setCachedResources(orderId, value) {
   });
 }
 
-async function persistPublicSnapshotBestEffort(orderId, payload, snapshotSource) {
+async function persistPublicSnapshotBestEffort(orderId, payload, snapshotSource, joinAddress) {
   try {
     await upsertPublicServerSnapshot({
       orderId,
       status: payload.state,
       playersOnline: payload.players_online,
       playersMax: payload.players_max,
+      joinAddress: joinAddress || null,
       snapshotSource,
       capturedAt: payload.measured_at || new Date(),
     });

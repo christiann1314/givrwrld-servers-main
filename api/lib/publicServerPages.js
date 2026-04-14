@@ -1,7 +1,7 @@
 import pool from '../config/database.js';
 import { ORDER_STATUS } from '../services/OrderService.js';
 
-const PUBLIC_SNAPSHOT_SOFT_STALE_MS = 2 * 60 * 1000;
+const PUBLIC_SNAPSHOT_SOFT_STALE_MS = 5 * 60 * 1000;
 const PUBLIC_SNAPSHOT_HARD_STALE_MS = 15 * 60 * 1000;
 const truthy = new Set(['1', 'true', 'yes', 'on']);
 const PUBLIC_KICK_EMBED_ENABLED = truthy.has(

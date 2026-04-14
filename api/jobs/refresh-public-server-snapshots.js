@@ -1,5 +1,5 @@
 import pool from '../config/database.js';
-import { getServerResources, PterodactylError } from '../services/pterodactylService.js';
+import { getServerResources, getServerDetails, PterodactylError } from '../services/pterodactylService.js';
 import {
   disablePublicPageForOrder,
   isOrderEligibleForPublicPage,
@@ -54,12 +54,21 @@ export async function runRefreshPublicServerSnapshots(logger) {
 
     try {
       const resources = await getServerResources(row.ptero_server_id);
+
+      let joinAddress = null;
+      try {
+        const details = await getServerDetails(row.ptero_server_id);
+        const ip = details?.allocations?.primaryIp;
+        const port = details?.allocations?.primaryPort;
+        if (ip && port) joinAddress = `${ip}:${port}`;
+      } catch { /* best-effort */ }
+
       await upsertPublicServerSnapshot({
         orderId,
         status: resources.state,
         playersOnline: resources.playersOnline ?? 0,
         playersMax: resources.playersMax ?? 0,
-        joinAddress: null,
+        joinAddress,
         snapshotSource: 'public-refresh',
         capturedAt: resources.measuredAt,
       });
