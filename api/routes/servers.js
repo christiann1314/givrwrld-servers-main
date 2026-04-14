@@ -365,11 +365,13 @@ function toPercent(value, fallback = 0) {
 function normalizeState(status, panelState) {
   const panel = String(panelState || '').toLowerCase();
   if (panel === 'running') return 'online';
+  if (panel === 'starting') return 'starting';
+  if (panel === 'stopping') return 'stopping';
   if (panel === 'stopped' || panel === 'offline') return 'offline';
   const current = String(status || '').toLowerCase();
-  if (['active', 'provisioned', 'paid'].includes(current)) return 'online';
+  if (['active', 'provisioned', 'paid', 'playable', 'configuring', 'verifying'].includes(current)) return 'online';
   if (['pending', 'provisioning'].includes(current)) return 'provisioning';
-  if (current === 'error') return 'error';
+  if (current === 'error' || current === 'failed') return 'error';
   return 'offline';
 }
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // Header and Footer are included in App.tsx
 import { Card } from '../components/ui/card';
@@ -22,11 +22,15 @@ import {
 } from 'lucide-react';
 import { usePterodactylCredentials } from '../hooks/usePterodactylCredentials';
 import { ServerIntegrationStatus } from '../components/ServerIntegrationStatus';
+import { useProfile } from '../hooks/useProfile';
 
 const DashboardSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [showPterodactylPassword, setShowPterodactylPassword] = useState(false);
+  const { profile, loading: profileLoading, updateProfile, updatePassword } = useProfile();
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const { 
     credentials: pterodactylCredentials, 
     loading: credentialsLoading, 
@@ -36,13 +40,23 @@ const DashboardSettings = () => {
     fixPterodactylCredentials
   } = usePterodactylCredentials();
   const [formData, setFormData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
+    firstName: '',
+    lastName: '',
+    email: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  useEffect(() => {
+    if (profileLoading || !profile) return;
+    setFormData((prev) => ({
+      ...prev,
+      firstName: profile.first_name ?? '',
+      lastName: profile.last_name ?? '',
+      email: profile.email ?? '',
+    }));
+  }, [profile, profileLoading]);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -70,6 +84,52 @@ const DashboardSettings = () => {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const displayName = [formData.firstName, formData.lastName].filter(Boolean).join(' ').trim();
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        email: formData.email.trim(),
+        display_name: displayName || undefined,
+      });
+      toast.success('Profile saved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (!formData.currentPassword || !formData.newPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await updatePassword(formData.currentPassword, formData.newPassword);
+      toast.success('Password updated');
+      setFormData((prev) => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -158,7 +218,7 @@ const DashboardSettings = () => {
                 {activeTab === 'profile' && (
                   <div>
                     <h2 className="text-xl font-bold text-white mb-6">Profile Information</h2>
-                    <form className="space-y-6">
+                    <form className="space-y-6" onSubmit={handleProfileSubmit}>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-gray-300 mb-2">First Name</label>
@@ -191,8 +251,12 @@ const DashboardSettings = () => {
                           className="w-full bg-gray-700/50 border border-gray-600/50 rounded-lg px-4 py-3 text-white focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
-                      <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg transition-colors">
-                        Save Changes
+                      <button
+                        type="submit"
+                        disabled={profileLoading || savingProfile || !profile}
+                        className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors"
+                      >
+                        {savingProfile ? 'Saving…' : 'Save Changes'}
                       </button>
                     </form>
                   </div>
@@ -209,7 +273,7 @@ const DashboardSettings = () => {
                     {/* Change Password */}
                     <div className="mb-8">
                       <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
-                      <form className="space-y-4">
+                      <form className="space-y-4" onSubmit={handlePasswordSubmit}>
                         <div>
                           <label className="block text-gray-300 mb-2">Current Password</label>
                           <div className="relative">
@@ -249,8 +313,12 @@ const DashboardSettings = () => {
                             className="w-full bg-gray-700/50 border border-gray-600/50 rounded-lg px-4 py-3 text-white focus:border-emerald-500 focus:outline-none"
                           />
                         </div>
-                        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg transition-colors">
-                          Update Password
+                        <button
+                          type="submit"
+                          disabled={savingPassword}
+                          className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors"
+                        >
+                          {savingPassword ? 'Updating…' : 'Update Password'}
                         </button>
                       </form>
                     </div>

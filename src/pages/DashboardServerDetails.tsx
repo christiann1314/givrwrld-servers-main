@@ -115,6 +115,52 @@ function buildPublicForm(settings: PublicPageSettingsResponse | null): PublicPag
   };
 }
 
+function PanelTabLoader({ orderId, endpoint, title, queryParams, children }: {
+  orderId: string;
+  endpoint: string;
+  title: string;
+  queryParams?: Record<string, string>;
+  children: (data: any) => React.ReactNode;
+}) {
+  const [data, setData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const base = getApiBase().replace(/\/+$/, "");
+        const qs = queryParams ? "?" + new URLSearchParams(queryParams).toString() : "";
+        const token = (await import("@/lib/auth")).getAccessToken();
+        const res = await fetch(`${base}/api/panel/${orderId}/${endpoint}${qs}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        });
+        if (!cancelled) {
+          if (!res.ok) throw new Error(`Panel returned ${res.status}`);
+          setData(await res.json());
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || "Failed to load");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [orderId, endpoint]);
+
+  return (
+    <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
+      <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
+      {loading && <div className="flex items-center gap-2 text-gray-400"><Loader2 className="animate-spin" size={16} /> Loading...</div>}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {!loading && !error && data && children(data)}
+    </div>
+  );
+}
+
 type ServerDetailsTab =
   | "console"
   | "overview"
@@ -1067,73 +1113,179 @@ const DashboardServerDetails: React.FC = () => {
               )}
 
               {activeTab === "files" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Files</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    File manager is coming soon to the Game Panel. You’ll be able to browse, upload, and edit
-                    files directly from here without opening the legacy panel.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="files/list" queryParams={{ directory: "/" }} title="Files">
+                  {(data: any) => {
+                    const files = data?.data || [];
+                    return (
+                      <div className="space-y-1">
+                        {files.length === 0 && <p className="text-gray-400 text-sm">No files found.</p>}
+                        {files.map((f: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-800/60 rounded border border-gray-700/50 text-sm">
+                            <span className="text-gray-200">{f.attributes?.is_file === false ? "\u{1F4C1}" : "\u{1F4C4}"} {f.attributes?.name}</span>
+                            <span className="text-gray-500 text-xs">
+                              {f.attributes?.is_file !== false && f.attributes?.size != null
+                                ? `${(f.attributes.size / 1024).toFixed(1)} KB`
+                                : f.attributes?.is_file === false ? "dir" : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "databases" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Databases</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Database management (create credentials and view connection info) will be available here
-                    in a future update. For now, use the legacy panel if a game requires databases.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="databases" title="Databases">
+                  {(data: any) => {
+                    const dbs = data?.data || [];
+                    return dbs.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No databases created yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {dbs.map((db: any, i: number) => (
+                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+                            <div className="font-medium text-white">{db.attributes?.name || "Database"}</div>
+                            <div className="text-xs text-gray-400 mt-1">Host: {db.attributes?.host?.address || "N/A"}:{db.attributes?.host?.port || 3306}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "schedules" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Schedules</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Scheduled tasks (auto-restarts, backups, commands) will appear here once scheduling is
-                    wired into the Game Panel.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="schedules" title="Schedules">
+                  {(data: any) => {
+                    const schedules = data?.data || [];
+                    return schedules.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No schedules configured.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {schedules.map((s: any, i: number) => (
+                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-white">{s.attributes?.name || "Schedule"}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${s.attributes?.is_active ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                                {s.attributes?.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "users" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Users</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Team and sub-user access controls are planned for this section so you can share server
-                    management safely.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="users" title="Sub-Users">
+                  {(data: any) => {
+                    const users = data?.data || [];
+                    return users.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No sub-users added yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {users.map((u: any, i: number) => (
+                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50 flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-white">{u.attributes?.email || "User"}</div>
+                              <div className="text-xs text-gray-400 mt-1">{(u.attributes?.permissions || []).length} permissions</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "backups" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Backups</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Backup creation and restore tools will be exposed here, mirroring the backups tab in the
-                    legacy panel with a GIVRwrld-native experience.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="backups" title="Backups">
+                  {(data: any) => {
+                    const backups = data?.data || [];
+                    return backups.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No backups yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {backups.map((b: any, i: number) => (
+                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-white">{b.attributes?.name || "Backup"}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${b.attributes?.is_successful ? "bg-emerald-500/20 text-emerald-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                                {b.attributes?.is_successful ? "Complete" : "In Progress"}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {b.attributes?.bytes != null ? `${(b.attributes.bytes / 1024 / 1024).toFixed(1)} MB` : ""}
+                              {b.attributes?.created_at ? ` - ${new Date(b.attributes.created_at).toLocaleString()}` : ""}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "network" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Network</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Future updates will surface allocated ports, DDoS-protection status, and connection
-                    helpers here.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="network" title="Network / Allocations">
+                  {(data: any) => {
+                    const allocs = data?.data || [];
+                    return allocs.length === 0 ? (
+                      <p className="text-gray-400 text-sm">No network allocations found.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {allocs.map((a: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-800/60 rounded-lg border border-gray-700/50">
+                            <span className="text-white font-mono text-sm">{a.attributes?.ip_alias || a.attributes?.ip || "0.0.0.0"}:{a.attributes?.port}</span>
+                            {a.attributes?.is_default && <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Primary</span>}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "startup" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Startup</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    Environment variables and startup arguments for this server will move here as part of the
-                    native configuration experience.
-                  </p>
-                </div>
+                <PanelTabLoader orderId={orderId!} endpoint="startup" title="Startup Configuration">
+                  {(data: any) => {
+                    const vars = data?.data || [];
+                    const startup = data?.meta?.startup_command || "";
+                    const dockerImg = data?.meta?.docker_image || "";
+                    return (
+                      <div className="space-y-4">
+                        {startup && (
+                          <div className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+                            <div className="text-xs text-gray-400 mb-1">Startup Command</div>
+                            <code className="text-sm text-emerald-300 break-all">{startup}</code>
+                          </div>
+                        )}
+                        {dockerImg && (
+                          <div className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+                            <div className="text-xs text-gray-400 mb-1">Docker Image</div>
+                            <code className="text-sm text-blue-300 break-all">{dockerImg}</code>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-400 uppercase tracking-wide">Environment Variables</div>
+                          {vars.length === 0 && <p className="text-gray-500 text-sm">No startup variables.</p>}
+                          {vars.map((v: any, i: number) => (
+                            <div key={i} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/50">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-white">{v.attributes?.name || v.attributes?.env_variable}</span>
+                                <span className="text-xs text-gray-500 font-mono">{v.attributes?.env_variable}</span>
+                              </div>
+                              <div className="mt-1 text-sm text-emerald-300 font-mono">{v.attributes?.server_value ?? v.attributes?.default_value ?? ""}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }}
+                </PanelTabLoader>
               )}
 
               {activeTab === "settings" && (

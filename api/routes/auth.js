@@ -280,6 +280,65 @@ router.get('/me', authenticate, async (req, res) => {
 });
 
 /**
+ * PUT /api/auth/profile
+ * Update profile (display_name, first/last for future use).
+ */
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { display_name, first_name, last_name, email } = req.body || {};
+    const name = display_name || [first_name, last_name].filter(Boolean).join(' ').trim();
+    if (!name) {
+      return res.status(400).json({ error: 'display_name is required' });
+    }
+    await pool.execute(
+      `UPDATE users SET display_name = ? WHERE id = ?`,
+      [name.slice(0, 128), req.userId],
+    );
+    const [rows] = await pool.execute(
+      `SELECT id, email, display_name, is_email_verified, created_at FROM users WHERE id = ?`,
+      [req.userId],
+    );
+    res.json({ success: true, user: rows[0] || {} });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+/**
+ * PUT /api/auth/password
+ * Change password (requires current password).
+ */
+router.put('/password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+    const [users] = await pool.execute(
+      `SELECT password_hash FROM users WHERE id = ?`,
+      [req.userId],
+    );
+    if (!users.length) return res.status(404).json({ error: 'User not found' });
+
+    const bcrypt = await import('bcrypt');
+    const valid = await bcrypt.default.compare(currentPassword, users[0].password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    const hash = await bcrypt.default.hash(newPassword, 12);
+    await pool.execute(`UPDATE users SET password_hash = ? WHERE id = ?`, [hash, req.userId]);
+    res.json({ success: true, message: 'Password updated' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+/**
  * POST /api/auth/logout
  * Logout (client should remove token)
  */

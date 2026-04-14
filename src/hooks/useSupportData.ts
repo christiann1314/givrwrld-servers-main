@@ -18,6 +18,19 @@ interface SupportData {
   loading: boolean;
 }
 
+function mapApiTicketRow(row: any): SupportTicket {
+  return {
+    id: String(row.id),
+    subject: row.subject ?? '',
+    category: row.category ?? 'general',
+    priority: row.priority === 'normal' ? 'medium' : String(row.priority ?? 'medium'),
+    status: String(row.status ?? 'open'),
+    created: row.created_at ? new Date(row.created_at).toLocaleDateString() : '',
+    updated: row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '',
+    responses: typeof row.message_count === 'number' ? row.message_count : 0,
+  };
+}
+
 export const useSupportData = (userEmail?: string) => {
   const [supportData, setSupportData] = useState<SupportData>({
     tickets: [],
@@ -27,40 +40,58 @@ export const useSupportData = (userEmail?: string) => {
 
   const fetchSupportData = async () => {
     if (!userEmail) return;
-    
-    setSupportData(prev => ({ ...prev, loading: true }));
-    
-    try {
-      const response = await api.getOrders();
-      const orders = response?.success ? (response?.orders || []) : [];
-      const issueOrders = orders.filter((o: any) => o.status === 'error' || o.status === 'provisioning');
 
-      const tickets: SupportTicket[] = issueOrders.map((order: any) => ({
-        id: String(order.id),
-        subject: `Provisioning issue: ${order.server_name || order.plan_id}`,
-        category: 'technical',
-        priority: order.status === 'error' ? 'high' : 'medium',
-        status: order.status === 'error' ? 'open' : 'pending',
-        created: new Date(order.created_at).toLocaleDateString(),
-        updated: new Date(order.updated_at || order.created_at).toLocaleDateString(),
-        responses: 0,
-      }));
+    setSupportData((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const [ticketsResult, ordersResult] = await Promise.allSettled([
+        api.http<{ success?: boolean; tickets?: any[] }>('/api/tickets', { method: 'GET' }),
+        api.getOrders(),
+      ]);
+
+      let apiTickets: SupportTicket[] = [];
+      if (ticketsResult.status === 'fulfilled') {
+        const raw = ticketsResult.value;
+        if (raw?.success && Array.isArray(raw.tickets)) {
+          apiTickets = raw.tickets.map(mapApiTicketRow);
+        }
+      } else {
+        console.error('Failed to fetch tickets:', ticketsResult.reason);
+      }
+
+      let orderTickets: SupportTicket[] = [];
+      if (ordersResult.status === 'fulfilled') {
+        const response = ordersResult.value;
+        const orders = response?.success ? response?.orders || [] : [];
+        const issueOrders = orders.filter((o: any) => o.status === 'error' || o.status === 'provisioning');
+        orderTickets = issueOrders.map((order: any) => ({
+          id: String(order.id),
+          subject: `Provisioning issue: ${order.server_name || order.plan_id}`,
+          category: 'technical',
+          priority: order.status === 'error' ? 'high' : 'medium',
+          status: order.status === 'error' ? 'open' : 'pending',
+          created: new Date(order.created_at).toLocaleDateString(),
+          updated: new Date(order.updated_at || order.created_at).toLocaleDateString(),
+          responses: 0,
+        }));
+      } else {
+        console.error('Failed to fetch orders for support:', ordersResult.reason);
+      }
 
       setSupportData({
-        tickets,
-        loading: false
+        tickets: [...apiTickets, ...orderTickets],
+        loading: false,
       });
     } catch (error) {
       console.error('Failed to fetch support data:', error);
-      // Fallback to mock data
       setSupportData({
         tickets: [],
-        loading: false
+        loading: false,
       });
     }
   };
 
-  const createTicket = async (_ticketData: {
+  const createTicket = async (ticketData: {
     subject: string;
     category: string;
     priority: string;
@@ -69,19 +100,37 @@ export const useSupportData = (userEmail?: string) => {
     if (!userEmail) return false;
 
     try {
-      // Support API endpoints are not implemented on local backend yet.
-      // Keep UX clear and avoid failing silently.
-      toast({
-        title: "Support endpoint not wired yet",
-        description: "Local backend does not expose ticket creation yet. Existing live issues are still shown from orders.",
+      const priorityForApi =
+        ticketData.priority === 'medium'
+          ? 'normal'
+          : ['low', 'normal', 'high'].includes(ticketData.priority)
+            ? ticketData.priority
+            : 'normal';
+
+      await api.http('/api/tickets', {
+        method: 'POST',
+        body: {
+          subject: ticketData.subject,
+          message: ticketData.description,
+          priority: priorityForApi,
+          category: ticketData.category,
+        },
       });
-      return false;
+
+      await fetchSupportData();
+      toast({
+        title: 'Ticket created',
+        description: 'Your support ticket was submitted successfully.',
+      });
+      return true;
     } catch (error) {
       console.error('Failed to create ticket:', error);
+      const description =
+        error instanceof Error ? error.message : 'Failed to create support ticket';
       toast({
-        title: "Error", 
-        description: "Failed to create support ticket",
-        variant: "destructive"
+        title: 'Error',
+        description,
+        variant: 'destructive',
       });
       return false;
     }
