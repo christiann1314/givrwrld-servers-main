@@ -36,11 +36,20 @@ export function clearTokens() {
   setTokens(null, null);
 }
 
+let _refreshPromise: Promise<{ token: string; refreshToken?: string } | null> | null = null;
+
 /**
  * Refresh access token using refreshToken.
- * Expects backend: POST /api/auth/refresh -> { success, token, refreshToken? }
+ * Deduplicates concurrent refresh calls so only one network request fires.
  */
 export async function refreshAccessToken(apiBase = ""): Promise<{ token: string; refreshToken?: string } | null> {
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = _doRefresh(apiBase).finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
+}
+
+async function _doRefresh(apiBase: string): Promise<{ token: string; refreshToken?: string } | null> {
   const rt = getRefreshToken();
   if (!rt) return null;
 

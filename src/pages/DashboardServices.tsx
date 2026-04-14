@@ -9,7 +9,7 @@ const DashboardServices = () => {
   const { user } = useAuth();
   const { serversData } = useUserServers(user?.email);
   const serverIds = React.useMemo(() => (serversData.servers || []).map((s: any) => s.id), [serversData.servers]);
-  const { liveByServer, wsConnected } = useServiceMetrics(serverIds);
+  const { liveByServer } = useServiceMetrics(serverIds);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -32,7 +32,7 @@ const DashboardServices = () => {
               Back to Dashboard
             </Link>
             <div className="text-xs text-gray-300 bg-gray-800/60 border border-gray-600/50 px-3 py-1 rounded-full">
-              {wsConnected ? 'Live Stream Connected' : 'Polling every 15s'}
+              Live · updates every 15s
             </div>
           </div>
 

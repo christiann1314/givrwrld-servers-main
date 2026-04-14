@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 
 type LiveMetric = {
@@ -17,20 +17,10 @@ type SummaryMetric = {
   restartCount: number;
 };
 
-function resolveWsUrl() {
-  const env = (import.meta as any)?.env;
-  const raw = String(env?.VITE_API_URL || env?.VITE_API_BASE_URL || 'http://localhost:3001').replace(/\/+$/, '');
-  const wsProtocol = raw.startsWith('https://') ? 'wss://' : 'ws://';
-  const host = raw.replace(/^https?:\/\//, '');
-  return `${wsProtocol}${host}/ws/servers/metrics`;
-}
-
 export function useServiceMetrics(serverIds: string[]) {
   const [liveByServer, setLiveByServer] = useState<Record<string, LiveMetric>>({});
   const [summaryByServer, setSummaryByServer] = useState<Record<string, SummaryMetric>>({});
   const [loading, setLoading] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
 
   const loadMetrics = async () => {
     if (serverIds.length === 0) {
@@ -61,36 +51,6 @@ export function useServiceMetrics(serverIds: string[]) {
     };
   }, [serverIds.join('|')]);
 
-  useEffect(() => {
-    const wsUrl = resolveWsUrl();
-    let ws: WebSocket | null = null;
-    try {
-      ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-      ws.onopen = () => setWsConnected(true);
-      ws.onclose = () => setWsConnected(false);
-      ws.onerror = () => setWsConnected(false);
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data || '{}');
-          if (payload?.type === 'server.metrics.live' && payload?.metrics) {
-            setLiveByServer((prev) => ({ ...prev, ...payload.metrics }));
-          }
-        } catch {
-          // Ignore malformed websocket events.
-        }
-      };
-    } catch {
-      setWsConnected(false);
-    }
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-    };
-  }, []);
-
   const filteredLive = useMemo(() => {
     if (serverIds.length === 0) return {};
     const next: Record<string, LiveMetric> = {};
@@ -104,7 +64,6 @@ export function useServiceMetrics(serverIds: string[]) {
     liveByServer: filteredLive,
     summaryByServer,
     loading,
-    wsConnected,
     refresh: loadMetrics,
   };
 }
