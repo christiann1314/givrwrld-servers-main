@@ -1047,10 +1047,11 @@ router.get('/:orderId', authenticate, async (req, res) => {
  *   requiredVarMeta: { key: string, rules: string }[],
  *   selectedAllocs: { id: number, port: number | null }[],
  *   pteroEggId: number,
+ *   nodeFqdn?: string,
  * }} ctx
  */
 function buildEnvironmentForAllocationGroup(ctx) {
-  const { order, egg, eggVariableDefaults, requiredVarMeta, selectedAllocs, pteroEggId } = ctx;
+  const { order, egg, eggVariableDefaults, requiredVarMeta, selectedAllocs, pteroEggId, nodeFqdn } = ctx;
   const environment = { ...eggVariableDefaults };
   const gameKey = normalizeGameKey(order.game);
   const estimatedPlayersRaw = Math.max(4, Math.min(64, Number(order.ram_gb || 1) * 4));
@@ -1271,6 +1272,9 @@ function buildEnvironmentForAllocationGroup(ctx) {
       let resolvedIp = fromAlias || fromAllocIp;
       if (isUnusablePublic(resolvedIp)) {
         resolvedIp = '';
+      }
+      if (!resolvedIp && nodeFqdn) {
+        resolvedIp = nodeFqdn;
       }
       if (resolvedIp) {
         environment.IMPOSTOR_Server__PublicIp = resolvedIp;
@@ -1838,6 +1842,21 @@ export async function provisionServer(orderId) {
       });
     }
 
+    // Resolve the node's public FQDN for games that need it (e.g. Among Us Impostor).
+    let nodeFqdn = '';
+    try {
+      const nodeRes = await fetch(
+        `${panelUrl}/api/application/nodes/${node.ptero_node_id}`,
+        { headers: { 'Authorization': `Bearer ${panelAppKey}`, 'Accept': 'Application/vnd.pterodactyl.v1+json' } },
+      );
+      if (nodeRes.ok) {
+        const nd = await nodeRes.json();
+        nodeFqdn = String(nd?.attributes?.fqdn || '').trim();
+      }
+    } catch {
+      // Non-fatal; fallback handled downstream.
+    }
+
     // Build environment variable defaults from Panel egg metadata (per-allocation fill happens at create time).
     // 1) hydrate required defaults from panel egg variables
     // 2) apply sane overrides for commonly-used keys
@@ -1984,6 +2003,7 @@ export async function provisionServer(orderId) {
             requiredVarMeta,
             selectedAllocs: allocationGroup,
             pteroEggId: order.ptero_egg_id,
+            nodeFqdn,
           });
 
           const startupCmd = resolvedStartupCmd;
