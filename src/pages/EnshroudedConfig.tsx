@@ -35,14 +35,20 @@ const EnshroudedConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'enshrouded-vanilla-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '30GB NVMe', price: 9.99, players: '4–8', description: 'Small co-op, 4–8 players' },
-    { id: 'enshrouded-vanilla-6gb', name: '6GB', ram: '6GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 14.99, players: '8–12', description: 'Recommended for 8–12 players', recommended: true },
-    { id: 'enshrouded-vanilla-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '50GB NVMe', price: 19.99, players: '12–16', description: 'Full 16 slots, mod-friendly' }
+    { id: 'enshrouded-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.99, players: '4-16', description: '', serverType: 'enshrouded' },
+    { id: 'enshrouded-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.99, players: '4-16', description: '', serverType: 'enshrouded-vanilla' },
+    { id: 'enshrouded-6gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '25 GB NVMe', price: 14.99, players: '8-32', description: '', serverType: 'enshrouded' },
+    { id: 'enshrouded-modded-6gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '25 GB NVMe', price: 16.99, players: '8-32', description: '', serverType: 'enshrouded-modded' },
+    { id: 'enshrouded-vanilla-6gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '25 GB NVMe', price: 14.99, players: '8-32', description: '', serverType: 'enshrouded-vanilla' },
+    { id: 'enshrouded-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded' },
+    { id: 'enshrouded-modded-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded-modded' },
+    { id: 'enshrouded-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded-vanilla' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'enshrouded', name: 'Vanilla', description: 'Official Enshrouded dedicated server. Survival, crafting, and action RPG for up to 16 players.' },
-    { id: 'enshrouded-modded', name: 'Modded', description: 'Enshrouded server with mod support. Add quality-of-life and content mods via the panel.' }
+    { id: 'enshrouded', name: 'Enshrouded', description: 'From $9.99/mo' },
+    { id: 'enshrouded-vanilla', name: 'Enshrouded Vanilla', description: 'From $9.99/mo' },
+    { id: 'enshrouded-modded', name: 'Enshrouded Modded', description: 'From $16.99/mo' },
   ];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('enshrouded', fallbackPlans, fallbackGameTypes);

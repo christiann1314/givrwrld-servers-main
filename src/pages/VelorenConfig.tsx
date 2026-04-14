@@ -12,8 +12,8 @@ const VelorenConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('veloren-4gb');
-  const [gameType, setGameType] = useState('veloren');
+  const [planId, setPlanId] = useState('veloren-vanilla-8gb');
+  const [gameType, setGameType] = useState('veloren-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,17 @@ const VelorenConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'veloren-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 4.99, players: '2-4', description: 'Small voxel RPG servers, 2-4 players' },
-    { id: 'veloren-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 7.99, players: '4-8', description: 'Medium voxel RPG servers, 4-8 players', recommended: true },
-    { id: 'veloren-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 12.99, players: '8-16', description: 'Large voxel RPG servers, 8-16 players' }
+    { id: 'veloren-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', serverType: 'veloren' },
+    { id: 'veloren-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', serverType: 'veloren-vanilla' },
+    { id: 'veloren-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'veloren' },
+    { id: 'veloren-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'veloren-vanilla' },
+    { id: 'veloren-rp-realm-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.49, players: '8-32', description: '', recommended: true, serverType: 'veloren-rp-realm' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'veloren', name: 'Veloren', description: 'Multiplayer voxel RPG written in Rust, inspired by Cube World and Minecraft' }
+    { id: 'veloren', name: 'Veloren', description: 'From $10.99/mo' },
+    { id: 'veloren-vanilla', name: 'Veloren Vanilla', description: 'From $10.99/mo' },
+    { id: 'veloren-rp-realm', name: 'Veloren RP Realm', description: 'From $21.49/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('veloren', fallbackPlans, fallbackGameTypes);
 

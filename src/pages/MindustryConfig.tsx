@@ -13,7 +13,7 @@ const MindustryConfig = () => {
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
   const [planId, setPlanId] = useState('mindustry-4gb');
-  const [gameType, setGameType] = useState('mindustry');
+  const [gameType, setGameType] = useState('mindustry-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,19 @@ const MindustryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'mindustry-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 3.99, players: '2-4', description: 'Small tower defense servers, 2-4 players' },
-    { id: 'mindustry-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 5.99, players: '4-8', description: 'Medium tower defense servers, 4-8 players', recommended: true },
-    { id: 'mindustry-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 9.99, players: '8-16', description: 'Large tower defense servers, 8-16 players' }
+    { id: 'mindustry-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'mindustry' },
+    { id: 'mindustry-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'mindustry-vanilla' },
+    { id: 'mindustry-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry' },
+    { id: 'mindustry-pvp-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 8.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-pvp' },
+    { id: 'mindustry-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-vanilla' },
+    { id: 'mindustry-survival-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.49, players: '4-16', description: '', recommended: true, serverType: 'mindustry-survival' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'mindustry', name: 'Mindustry', description: 'Classic Mindustry experience' }
+    { id: 'mindustry', name: 'Mindustry', description: 'From $5.99/mo' },
+    { id: 'mindustry-vanilla', name: 'Mindustry Vanilla', description: 'From $5.99/mo' },
+    { id: 'mindustry-pvp', name: 'Mindustry PvP', description: 'From $8.99/mo' },
+    { id: 'mindustry-survival', name: 'Mindustry Survival', description: 'From $9.49/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('mindustry', fallbackPlans, fallbackGameTypes);
 

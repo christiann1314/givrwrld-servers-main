@@ -12,8 +12,8 @@ const AmongUsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('among-us-2gb');
-  const [gameType, setGameType] = useState('among-us-impostor');
+  const [planId, setPlanId] = useState('among-us-vanilla-2gb');
+  const [gameType, setGameType] = useState('among-us-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,15 +34,14 @@ const AmongUsConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'among-us-1gb', name: '1GB', ram: '1GB', cpu: '1 vCPU', disk: '10GB NVMe', price: 1.99, players: '4-10', description: 'Small social deduction servers, 4-10 players' },
-    { id: 'among-us-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 2.99, players: '10-15', description: 'Medium social deduction servers, 10-15 players', recommended: true },
-    { id: 'among-us-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 4.99, players: '15+', description: 'Large social deduction servers, 15+ players' }
+    { id: 'among-us-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 4.99, players: '2-8', description: '', serverType: 'among-us-vanilla' },
+    { id: 'among-us-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 6.99, players: '4-16', description: '', recommended: true, serverType: 'among-us-vanilla' },
+    { id: 'among-us-proximity-chat-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 8.99, players: '4-16', description: '', recommended: true, serverType: 'among-us-proximity-chat-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'among-us-impostor', name: 'Among Us - Impostor Server', description: 'Impostor is one of the first Among Us private servers, written in C#. Close to the real server experience.' },
-    { id: 'among-us-crewlink', name: 'Crewlink Server', description: 'An egg designed to allow support for Proximity Chat in Among Us using CrewLink Server' },
-    { id: 'among-us-better-crewlink', name: 'BetterCrewlink Server', description: 'An egg designed to allow support for Proximity Chat in Among Us using BetterCrewLink Server' }
+    { id: 'among-us-vanilla', name: 'Among Us Vanilla', description: 'From $4.99/mo' },
+    { id: 'among-us-proximity-chat-ready', name: 'Among Us Proximity Chat Ready', description: 'From $8.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('among-us', fallbackPlans, fallbackGameTypes);
 

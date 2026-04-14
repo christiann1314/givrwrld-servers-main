@@ -12,8 +12,8 @@ const VintageStoryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('vintage-story-4gb');
-  const [gameType, setGameType] = useState('vintage-story');
+  const [planId, setPlanId] = useState('vintage-story-vanilla-8gb');
+  const [gameType, setGameType] = useState('vintage-story-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,17 @@ const VintageStoryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'vintage-story-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 5.99, players: '2-4', description: 'Small survival servers, 2-4 players' },
-    { id: 'vintage-story-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 7.99, players: '4-8', description: 'Medium survival servers, 4-8 players', recommended: true },
-    { id: 'vintage-story-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 12.99, players: '8-16', description: 'Large survival servers, 8-16 players' }
+    { id: 'vintage-story-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 11.99, players: '4-16', description: '', serverType: 'vintage-story' },
+    { id: 'vintage-story-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 11.99, players: '4-16', description: '', serverType: 'vintage-story-vanilla' },
+    { id: 'vintage-story-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story' },
+    { id: 'vintage-story-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story-vanilla' },
+    { id: 'vintage-story-primitive-plus-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story-primitive-plus' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'vintage-story', name: 'Vintage Story', description: 'Uncompromising wilderness survival sandbox game inspired by lovecraftian horror themes' }
+    { id: 'vintage-story', name: 'Vintage Story', description: 'From $11.99/mo' },
+    { id: 'vintage-story-vanilla', name: 'Vintage Story Vanilla', description: 'From $11.99/mo' },
+    { id: 'vintage-story-primitive-plus', name: 'Vintage Story Primitive Plus', description: 'From $21.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('vintage-story', fallbackPlans, fallbackGameTypes);
 

@@ -13,7 +13,7 @@ const PalworldConfig = () => {
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
   const [planId, setPlanId] = useState('palworld-8gb');
-  const [gameType, setGameType] = useState('palworld');
+  const [gameType, setGameType] = useState('palworld-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,19 @@ const PalworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'palworld-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 11.99, players: '4-8', description: 'Small survival servers, 4-8 players' },
-    { id: 'palworld-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 23.99, players: '8-16', description: 'Medium servers with plugins, 8-16 players', recommended: true },
-    { id: 'palworld-16gb', name: '16GB', ram: '16GB', cpu: '4 vCPU', disk: '160GB NVMe', price: 47.99, players: '16-32', description: 'Large servers with mods, 16-32 players' }
+    { id: 'palworld-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'palworld' },
+    { id: 'palworld-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'palworld-vanilla' },
+    { id: 'palworld-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld' },
+    { id: 'palworld-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-vanilla' },
+    { id: 'palworld-hardcore-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 29.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-hardcore' },
+    { id: 'palworld-community-plus-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 30.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-community-plus' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'palworld', name: 'Palworld', description: 'Fight, farm, build and work alongside mysterious creatures called "Pals" in this completely new multiplayer, open world survival and crafting game!' }
+    { id: 'palworld', name: 'Palworld', description: 'From $14.99/mo' },
+    { id: 'palworld-vanilla', name: 'Palworld Vanilla', description: 'From $14.99/mo' },
+    { id: 'palworld-hardcore', name: 'Palworld Hardcore', description: 'From $29.99/mo' },
+    { id: 'palworld-community-plus', name: 'Palworld Community Plus', description: 'From $30.99/mo' },
   ];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('palworld', fallbackPlans, fallbackGameTypes);

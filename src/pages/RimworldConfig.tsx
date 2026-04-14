@@ -12,8 +12,8 @@ const RimworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rimworld-4gb');
-  const [gameType, setGameType] = useState('rimworld-open-world');
+  const [planId, setPlanId] = useState('rimworld-vanilla-8gb');
+  const [gameType, setGameType] = useState('rimworld-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,14 @@ const RimworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rimworld-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 5.99, players: '2-4', description: 'Small colony servers, 2-4 players' },
-    { id: 'rimworld-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 7.99, players: '4-8', description: 'Medium colony servers, 4-8 players', recommended: true },
-    { id: 'rimworld-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 12.99, players: '8-16', description: 'Large colony servers, 8-16 players' }
+    { id: 'rimworld-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 12.99, players: '4-16', description: '', serverType: 'rimworld-vanilla' },
+    { id: 'rimworld-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 24.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-vanilla' },
+    { id: 'rimworld-multiplayer-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-multiplayer-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'rimworld-open-world', name: 'Rimworld: Open World', description: 'Multiplayer mod with trading, PvP, and global features' },
-    { id: 'rimworld-together', name: 'Rimworld Together', description: 'Community-driven multiplayer mod for Rimworld' }
+    { id: 'rimworld-vanilla', name: 'Rimworld Vanilla', description: 'From $12.99/mo' },
+    { id: 'rimworld-multiplayer-ready', name: 'Rimworld Multiplayer Ready', description: 'From $28.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rimworld', fallbackPlans, fallbackGameTypes);
 

@@ -12,8 +12,8 @@ const TeeworldsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('teeworlds-2gb');
-  const [gameType, setGameType] = useState('teeworlds');
+  const [planId, setPlanId] = useState('teeworlds-vanilla-2gb');
+  const [gameType, setGameType] = useState('teeworlds-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,15 @@ const TeeworldsConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'teeworlds-1gb', name: '1GB', ram: '1GB', cpu: '1 vCPU', disk: '10GB NVMe', price: 2.49, players: '8-16', description: 'Small 2D multiplayer servers, 8-16 players' },
-    { id: 'teeworlds-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 3.99, players: '16-32', description: 'Medium 2D multiplayer servers, 16-32 players', recommended: true },
-    { id: 'teeworlds-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 6.99, players: '32-64', description: 'Large 2D multiplayer servers, 32-64 players' }
+    { id: 'teeworlds-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 4.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds' },
+    { id: 'teeworlds-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 4.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds-vanilla' },
+    { id: 'teeworlds-instagib-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds-instagib' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'teeworlds', name: 'Teeworlds', description: 'Free online multiplayer game with up to 16 players in various game modes including Team Deathmatch and Capture The Flag' }
+    { id: 'teeworlds', name: 'Teeworlds', description: 'From $4.99/mo' },
+    { id: 'teeworlds-vanilla', name: 'Teeworlds Vanilla', description: 'From $4.99/mo' },
+    { id: 'teeworlds-instagib', name: 'Teeworlds Instagib', description: 'From $5.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('teeworlds', fallbackPlans, fallbackGameTypes);
 

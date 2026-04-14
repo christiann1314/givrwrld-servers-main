@@ -3,40 +3,38 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
-import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups, type CatalogPlanOption } from '@/hooks/useGamePlanCatalog';
+import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
 import { useNavigate } from 'react-router-dom';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const minecraftWallpaper = 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg';
 
-type PlanOption = {
-  id: string;
-  name: string;
-  ram: string;
-  cpu: string;
-  disk: string;
-  price: number;
-  players: string;
-  description: string;
-  recommended?: boolean;
-};
-
-const fallbackPlans: PlanOption[] = [
-  { id: 'mc-1gb', name: '1GB', ram: '1GB', cpu: '0.5 vCPU', disk: '10GB NVMe', price: 3.99, players: '2-4', description: 'Small survival servers, 2-4 players' },
-  { id: 'mc-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 6.99, players: '4-8', description: 'Medium servers with plugins, 4-8 players' },
-  { id: 'mc-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 13.99, players: '8-16', description: 'Large servers with mods, 8-16 players', recommended: true },
-  { id: 'mc-8gb', name: '8GB', ram: '8GB', cpu: '4 vCPU', disk: '80GB NVMe', price: 27.99, players: '16-32', description: 'High-pop servers with custom mods, 16-32 players' }
+const fallbackPlans = [
+  { id: 'mc-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'minecraft-vanilla' },
+  { id: 'mc-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 12.99, players: '4-16', description: '', serverType: 'minecraft-vanilla' },
+  { id: 'mc-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 26.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-vanilla' },
+  { id: 'mc-vanilla-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 35.99, players: '8-32', description: '', serverType: 'minecraft-vanilla' },
+  { id: 'mc-paper-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 6.99, players: '2-8', description: '', serverType: 'minecraft-paper' },
+  { id: 'mc-paper-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', serverType: 'minecraft-paper' },
+  { id: 'mc-paper-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 27.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-paper' },
+  { id: 'mc-paper-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 36.99, players: '8-32', description: '', serverType: 'minecraft-paper' },
+  { id: 'mc-purpur-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 7.99, players: '2-8', description: '', serverType: 'minecraft-purpur' },
+  { id: 'mc-purpur-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'minecraft-purpur' },
+  { id: 'mc-purpur-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-purpur' },
+  { id: 'mc-purpur-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 37.99, players: '8-32', description: '', serverType: 'minecraft-purpur' },
+  { id: 'mc-fabric-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 16.99, players: '4-16', description: '', serverType: 'minecraft-fabric' },
+  { id: 'mc-fabric-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 30.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-fabric' },
+  { id: 'mc-fabric-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 39.99, players: '8-32', description: '', serverType: 'minecraft-fabric' },
+  { id: 'mc-forge-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 18.99, players: '4-16', description: '', serverType: 'minecraft-forge' },
+  { id: 'mc-forge-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 32.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-forge' },
+  { id: 'mc-forge-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 41.99, players: '8-32', description: '', serverType: 'minecraft-forge' },
 ];
 
 const fallbackGameTypes = [
-  { id: 'minecraft-vanilla-bedrock', name: 'Vanilla Bedrock', description: 'Multi-platform family of Minecraft editions (Pocket Edition/MCPE)' },
-  { id: 'minecraft-quilt', name: 'Quilt', description: 'Open-source, community-driven modding toolchain for Minecraft' },
-  { id: 'minecraft-fabric', name: 'Fabric', description: 'A modular modding toolchain targeting Minecraft 1.14 and above' },
-  { id: 'minecraft-spigot', name: 'Spigot', description: 'The most widely-used modded Minecraft server software, known for reducing lag' },
-  { id: 'minecraft-spongeforge', name: 'SpongeForge', description: 'Community-driven open-source Minecraft: Java Edition modding platform' },
-  { id: 'minecraft-spongevanilla', name: 'SpongeVanilla', description: 'Implementation of the Sponge API on top of Vanilla Minecraft' },
-  { id: 'minecraft-vanillacord', name: 'VanillaCord', description: 'Minecraft itself with added support for BungeeCord ip_forward setting' },
-  { id: 'minecraft-folia', name: 'Folia', description: 'Fork of Paper that adds regionized multithreading to the dedicated server' },
-  { id: 'minecraft-purpur-geyser-floodgate', name: 'Purpur-Geyser-Floodgate', description: 'Drop-in replacement for Paper with GeyserMC and Floodgate support' },
+  { id: 'minecraft-vanilla', name: 'Minecraft Vanilla', description: 'From $5.99/mo' },
+  { id: 'minecraft-paper', name: 'Minecraft Paper', description: 'From $6.99/mo' },
+  { id: 'minecraft-purpur', name: 'Minecraft Purpur', description: 'From $7.99/mo' },
+  { id: 'minecraft-fabric', name: 'Minecraft Fabric', description: 'From $16.99/mo' },
+  { id: 'minecraft-forge', name: 'Minecraft Forge', description: 'From $18.99/mo' },
 ];
 
 const MinecraftConfig = () => {
@@ -44,7 +42,7 @@ const MinecraftConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('mc-8gb');
+  const [planId, setPlanId] = useState('mc-vanilla-8gb');
   const [gameType, setGameType] = useState(fallbackGameTypes[0].id);
   const [billingTerm, setBillingTerm] = useState('semiannual');
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('minecraft', fallbackPlans, fallbackGameTypes);

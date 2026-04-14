@@ -12,8 +12,8 @@ const RustConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rust-6gb');
-  const [gameType, setGameType] = useState('rust-generic');
+  const [planId, setPlanId] = useState('rust-vanilla-4gb');
+  const [gameType, setGameType] = useState('rust-vanilla');
   const [billingTerm, setBillingTerm] = useState<string>('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,19 @@ const RustConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rust-3gb', name: '3GB', ram: '3GB', cpu: '1 vCPU', disk: '30GB NVMe', price: 8.99, players: '50-100', description: 'Small survival servers, 50-100 players' },
-    { id: 'rust-6gb', name: '6GB', ram: '6GB', cpu: '2 vCPU', disk: '60GB NVMe', price: 16.99, players: '100-200', description: 'Medium servers with plugins, 100-200 players', recommended: true },
-    { id: 'rust-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 24.99, players: '200-300', description: 'Large servers with mods, 200-300 players' },
-    { id: 'rust-12gb', name: '12GB', ram: '12GB', cpu: '4 vCPU', disk: '120GB NVMe', price: 36.99, players: '300+', description: 'High-pop servers with custom mods, 300+ players' }
+    { id: 'rust-3gb', name: '3 GB', ram: '3 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 12.99, players: '2-8', description: '', serverType: 'rust' },
+    { id: 'rust-vanilla-3gb', name: '3 GB', ram: '3 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 12.99, players: '2-8', description: '', serverType: 'rust-vanilla' },
+    { id: 'rust-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'rust' },
+    { id: 'rust-oxide-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 17.99, players: '4-16', description: '', recommended: true, serverType: 'rust-oxide-u-mod' },
+    { id: 'rust-carbon-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 18.99, players: '4-16', description: '', recommended: true, serverType: 'rust-carbon' },
+    { id: 'rust-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'rust-vanilla' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'rust-generic', name: 'Rust Generic', description: 'Creates a container that runs rust with cargo' }
+    { id: 'rust', name: 'Rust', description: 'From $12.99/mo' },
+    { id: 'rust-vanilla', name: 'Rust Vanilla', description: 'From $12.99/mo' },
+    { id: 'rust-oxide-u-mod', name: 'Rust Oxide (uMod)', description: 'From $17.99/mo' },
+    { id: 'rust-carbon', name: 'Rust Carbon', description: 'From $18.99/mo' },
   ];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rust', fallbackPlans, fallbackGameTypes);

@@ -34,15 +34,19 @@ const FactorioConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'factorio-2gb', name: '2GB', ram: '2GB', cpu: '1 vCPU', disk: '20GB NVMe', price: 4.99, players: '2-4', description: 'Small factory servers, 2-4 players' },
-    { id: 'factorio-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 6.99, players: '4-8', description: 'Medium factory servers, 4-8 players', recommended: true },
-    { id: 'factorio-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 12.99, players: '8-16', description: 'Large factory servers, 8-16 players' }
+    { id: 'factorio-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 7.99, players: '2-8', description: '', serverType: 'factorio' },
+    { id: 'factorio-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 7.99, players: '2-8', description: '', serverType: 'factorio-vanilla' },
+    { id: 'factorio-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', recommended: true, serverType: 'factorio' },
+    { id: 'factorio-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-vanilla' },
+    { id: 'factorio-space-age-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-space-age-ready' },
+    { id: 'factorio-bobs-angels-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-bob-s-angel-s-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'factorio', name: 'Factorio', description: 'Classic Factorio experience' },
-    { id: 'clusterio', name: 'Clusterio', description: 'Multi-server Factorio cluster' },
-    { id: 'factorio-modupdate', name: 'Factorio-ModUpdate', description: 'Factorio with mod update support' }
+    { id: 'factorio', name: 'Factorio', description: 'From $7.99/mo' },
+    { id: 'factorio-vanilla', name: 'Factorio Vanilla', description: 'From $7.99/mo' },
+    { id: 'factorio-space-age-ready', name: 'Factorio Space Age Ready', description: 'From $13.99/mo' },
+    { id: 'factorio-bob-s-angel-s-ready', name: "Factorio Bob's+Angel's Ready", description: 'From $14.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('factorio', fallbackPlans, fallbackGameTypes);
 

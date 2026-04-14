@@ -13,7 +13,7 @@ const ArkConfig = () => {
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
   const [planId, setPlanId] = useState('ark-8gb');
-  const [gameType, setGameType] = useState('ark-survival-evolved');
+  const [gameType, setGameType] = useState('ark');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,19 @@ const ArkConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'ark-4gb', name: '4GB', ram: '4GB', cpu: '2 vCPU', disk: '40GB NVMe', price: 9.99, players: '10-20', description: 'Small survival servers, 10-20 players' },
-    { id: 'ark-8gb', name: '8GB', ram: '8GB', cpu: '3 vCPU', disk: '80GB NVMe', price: 14.99, players: '20-50', description: 'Medium servers with plugins, 20-50 players', recommended: true },
-    { id: 'ark-16gb', name: '16GB', ram: '16GB', cpu: '4 vCPU', disk: '160GB NVMe', price: 24.99, players: '50-100', description: 'Large servers with mods, 50-100 players' }
+    { id: 'ark-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'ark' },
+    { id: 'ark-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'ark-vanilla' },
+    { id: 'ark-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark' },
+    { id: 'ark-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark-vanilla' },
+    { id: 'ark-primal-fear-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 34.99, players: '8-32', description: '', recommended: true, serverType: 'ark-primal-fear-ready' },
+    { id: 'ark-pve-cluster-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 32.99, players: '8-32', description: '', recommended: true, serverType: 'ark-pve-cluster-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'ark-survival-evolved', name: 'Ark: Survival Evolved', description: 'Classic Ark survival experience' }
+    { id: 'ark', name: 'ARK', description: 'From $14.99/mo' },
+    { id: 'ark-vanilla', name: 'ARK Vanilla', description: 'From $14.99/mo' },
+    { id: 'ark-primal-fear-ready', name: 'ARK Primal Fear Ready', description: 'From $34.99/mo' },
+    { id: 'ark-pve-cluster-ready', name: 'ARK PvE Cluster Ready', description: 'From $32.99/mo' },
   ];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('ark', fallbackPlans, fallbackGameTypes);
