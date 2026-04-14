@@ -58,8 +58,10 @@ const VelorenConfig = () => {
     { id: 'yearly', name: '12 Months', discount: 20 }
   ];
 
-  const selectedEggId = gameType.startsWith('egg-') ? Number(gameType.replace('egg-', '')) : null;
-  const visiblePlans = selectedEggId ? plans.filter((p: any) => Number(p.pteroEggId || 0) === selectedEggId) : plans;
+  const visiblePlans = React.useMemo(() => {
+    const byType = plans.filter((p) => p.serverType === gameType);
+    return byType.length > 0 ? byType : plans;
+  }, [plans, gameType]);
   React.useEffect(() => {
     if (visiblePlans.length > 0 && !visiblePlans.some((p) => p.id === planId)) setPlanId(visiblePlans[0].id);
   }, [visiblePlans, planId]);
@@ -188,7 +190,7 @@ const VelorenConfig = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-white">{planCardTitle(plan)}</h3>
+                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
                           {plan.recommended && (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
                           )}

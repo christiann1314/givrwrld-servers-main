@@ -7,6 +7,8 @@ export interface CatalogPlanOption {
   name: string;
   /** Primary label from billing DB when present (e.g. "ARK Primal Fear Ready 8GB"). */
   displayName?: string;
+  /** Variant slug (e.g. "factorio-vanilla") used to link plans to their game-type group. */
+  serverType?: string;
   ram: string;
   ram_gb?: number;
   cpu: string;
@@ -59,8 +61,13 @@ function normalizeGameSlug(value: string) {
     .replace(/^-+|-+$/g, '');
 }
 
+/** Strip trailing RAM suffix (e.g. " 4GB", " 12GB") to get the variant name. */
+function extractVariantName(displayName: string): string {
+  return displayName.replace(/\s+\d+(?:\.\d+)?\s*GB$/i, '').trim() || displayName;
+}
+
 /**
- * Pick one "recommended" plan per egg / server-type group so the UI does not mark every 8GB row.
+ * Pick one "recommended" plan per variant group so the UI shows one badge per server-type.
  * Preference order follows typical sweet-spot tiers for game hosting.
  */
 function pickRecommendedPlanIdInGroup(group: CatalogPlanOption[]): string | null {
@@ -79,15 +86,15 @@ function pickRecommendedPlanIdInGroup(group: CatalogPlanOption[]): string | null
   return sorted[Math.floor(sorted.length / 2)]?.id ?? sorted[0].id;
 }
 
-function assignSingleRecommendedPerEgg(plans: CatalogPlanOption[]): CatalogPlanOption[] {
-  const byEgg = new Map<string, CatalogPlanOption[]>();
+function assignSingleRecommendedPerVariant(plans: CatalogPlanOption[]): CatalogPlanOption[] {
+  const byVariant = new Map<string, CatalogPlanOption[]>();
   for (const p of plans) {
-    const k = p.pteroEggId != null && Number.isFinite(Number(p.pteroEggId)) ? `egg:${p.pteroEggId}` : 'egg:none';
-    if (!byEgg.has(k)) byEgg.set(k, []);
-    byEgg.get(k)!.push(p);
+    const k = p.serverType || 'default';
+    if (!byVariant.has(k)) byVariant.set(k, []);
+    byVariant.get(k)!.push(p);
   }
   const chosen = new Set<string>();
-  for (const g of byEgg.values()) {
+  for (const g of byVariant.values()) {
     const id = pickRecommendedPlanIdInGroup(g);
     if (id) chosen.add(id);
   }
@@ -99,7 +106,7 @@ export function useGamePlanCatalog(
   fallbackPlans: CatalogPlanOption[],
   fallbackGameTypes: CatalogGameTypeOption[]
 ) {
-  const [plans, setPlans] = useState<CatalogPlanOption[]>(() => assignSingleRecommendedPerEgg(fallbackPlans));
+  const [plans, setPlans] = useState<CatalogPlanOption[]>(() => assignSingleRecommendedPerVariant(fallbackPlans));
   const [gameTypes, setGameTypes] = useState<CatalogGameTypeOption[]>(fallbackGameTypes);
   const [loading, setLoading] = useState(false);
 
@@ -131,19 +138,20 @@ export function useGamePlanCatalog(
           const vcores = Number(p.vcores || 0);
           const ssdGb = Number(p.ssd_gb || 0);
           const display = String(p.display_name || '').trim();
-          const specLine = `${ramGb} GB RAM · ${vcores} vCPU · ${ssdGb} GB NVMe`;
+          const variantName = display ? extractVariantName(display) : game;
+          const variantId = normalizeGameSlug(variantName);
           return {
             id: p.id,
             name: `${ramGb} GB`,
             displayName: display || `${ramGb} GB`,
+            serverType: variantId,
             ram: `${ramGb} GB`,
             ram_gb: ramGb,
             cpu: `${vcores} vCPU`,
             disk: `${ssdGb} GB NVMe`,
             price: Number(p.price_monthly || 0),
             players: '2–32',
-            // Specs are shown once in the plan card (RAM / CPU / disk row); avoid duplicating the same line as `description`.
-            description: display ? '' : `${specLine} — pick the tier that fits your player count.`,
+            description: '',
             recommended: false,
             pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
             pteroEggName: p.ptero_egg_name || null,
@@ -156,23 +164,32 @@ export function useGamePlanCatalog(
           };
         });
 
-        const eggMap = new Map<string, CatalogGameTypeOption>();
+        const variantMap = new Map<string, { name: string; pteroEggId: number | null; minPrice: number; count: number }>();
         for (const p of mappedPlans) {
-          const key = p.pteroEggId ? `egg-${p.pteroEggId}` : `plan-${p.id}`;
-          if (!eggMap.has(key)) {
-            const eggName = p.pteroEggName || `${game} default`;
-            eggMap.set(key, {
-              id: key,
-              name: eggName,
-              description: `Runs on ${eggName}`,
-              pteroEggId: p.pteroEggId || null,
-            });
+          const key = p.serverType || normalizeGameSlug(game);
+          const existing = variantMap.get(key);
+          if (!existing) {
+            const variantName = p.displayName ? extractVariantName(p.displayName) : game;
+            variantMap.set(key, { name: variantName, pteroEggId: p.pteroEggId, minPrice: p.price, count: 1 });
+          } else {
+            existing.minPrice = Math.min(existing.minPrice, p.price);
+            existing.count += 1;
           }
         }
 
-        setPlans(assignSingleRecommendedPerEgg(mappedPlans));
-        if (eggMap.size > 0) {
-          setGameTypes(Array.from(eggMap.values()));
+        const derivedGameTypes: CatalogGameTypeOption[] = [];
+        for (const [key, v] of variantMap) {
+          derivedGameTypes.push({
+            id: key,
+            name: v.name,
+            description: `From $${v.minPrice.toFixed(2)}/mo`,
+            pteroEggId: v.pteroEggId,
+          });
+        }
+
+        setPlans(assignSingleRecommendedPerVariant(mappedPlans));
+        if (derivedGameTypes.length > 0) {
+          setGameTypes(derivedGameTypes);
         }
       } catch (error) {
         console.warn(`Failed to load live plans for ${game}; using fallback values.`, error);
