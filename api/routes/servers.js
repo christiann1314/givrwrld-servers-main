@@ -1898,6 +1898,22 @@ export async function provisionServer(orderId) {
     }
 
     const runtimePolicy = getEggRuntimePolicy(order.ptero_egg_id);
+
+    if (runtimePolicy?.preferredDockerImage) {
+      const preferred = runtimePolicy.preferredDockerImage;
+      const javaMatch = resolvedDockerImage.match(/java_(\d+)/);
+      const preferredMatch = preferred.match(/java_(\d+)/);
+      if (javaMatch && preferredMatch && Number(javaMatch[1]) < Number(preferredMatch[1])) {
+        logger.info({
+          event: 'provision_trace',
+          order_id: orderId,
+          step: 'docker_image_upgrade',
+          from: resolvedDockerImage,
+          to: preferred,
+        }, 'provision_step');
+        resolvedDockerImage = preferred;
+      }
+    }
     if (runtimePolicy?.requiredDockerImage) {
       if (!egg.ptero_nest_id) {
         await recordProvisionError(orderId, `Egg ${order.ptero_egg_id} missing ptero_nest_id; cannot validate docker image`);
