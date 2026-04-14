@@ -5,7 +5,7 @@ import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
-const velorenBackdrop = 'https://gitlab.com/veloren/book/-/raw/master/src/contributors/journalists/data/screenshots/Savannah%20Exploration.jpg';
+const velorenBackdrop = '/images/veloren-hero.jpg';
 
 const VelorenConfig = () => {
   const navigate = useNavigate();

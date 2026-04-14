@@ -137,7 +137,7 @@ const Dashboard = () => {
     'vintage-story': ['https://cdn.akamai.steamstatic.com/steam/apps/1608230/library_hero.jpg'],
     teeworlds: ['https://cdn.akamai.steamstatic.com/steam/apps/380840/library_hero.jpg'],
     'among-us': ['https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg'],
-    veloren: ['https://gitlab.com/veloren/book/-/raw/master/src/contributors/journalists/data/screenshots/Savannah%20Exploration.jpg'],
+    veloren: ['/images/veloren-hero.jpg'],
     enshrouded: ['https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg'],
   };
 
@@ -354,6 +354,13 @@ const Dashboard = () => {
                     <div className="flex items-center space-x-4">
                         <div className="relative flex-shrink-0">
                           <ServerIcon server={server} />
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-gray-800 ${
+                            server.status === 'online' || server.status === 'running'
+                              ? 'bg-emerald-400'
+                              : server.status === 'starting' || server.status === 'stopping'
+                                ? 'bg-yellow-400 animate-pulse'
+                                : 'bg-gray-500'
+                          }`} />
                         </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-white font-semibold text-base lg:text-lg truncate">{server.name}</h3>
@@ -362,14 +369,21 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-4 justify-between sm:justify-end">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                        server.status === 'online'
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                        server.status === 'online' || server.status === 'running'
                           ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                           : server.status === 'starting' || server.status === 'stopping'
                             ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                             : 'bg-red-500/20 text-red-400 border-red-500/30'
                       }`}>
-                        {server.status}
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          server.status === 'online' || server.status === 'running'
+                            ? 'bg-emerald-400'
+                            : server.status === 'starting' || server.status === 'stopping'
+                              ? 'bg-yellow-400'
+                              : 'bg-red-400'
+                        }`} />
+                        {server.status === 'running' ? 'online' : server.status}
                       </span>
                       <div className="flex items-center space-x-2">
                         {orderId ? (

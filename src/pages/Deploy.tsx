@@ -110,7 +110,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   veloren: {
     name: 'Veloren',
     subtitle: 'Open-world voxel RPG',
-    image: 'https://gitlab.com/veloren/book/-/raw/master/src/contributors/journalists/data/screenshots/Savannah%20Exploration.jpg',
+    image: '/images/veloren-hero.jpg',
     features: ['Community server ready', 'Fast NVMe storage', 'Scalable tiers'],
     buttonColor: 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500',
     configPath: '/configure/veloren',
