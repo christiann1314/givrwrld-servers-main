@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
-import { useGamePlanCatalog } from '@/hooks/useGamePlanCatalog';
+import { useGamePlanCatalog, planCardTitle } from '@/hooks/useGamePlanCatalog';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 
 const enshroudedWallpaper = 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg';
@@ -178,8 +178,8 @@ const EnshroudedConfig = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                          {(plan.recommended || plan.ram === '6GB') && (
+                          <h3 className="text-lg font-bold text-white">{planCardTitle(plan)}</h3>
+                          {plan.recommended && (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
                           )}
                         </div>
@@ -225,7 +225,7 @@ const EnshroudedConfig = () => {
                 <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
-                    <span className="text-gray-100">Server Plan ({selectedPlan?.name})</span>
+                    <span className="text-gray-100">Server Plan ({planCardTitle(selectedPlan)})</span>
                     <span className="text-white">${selectedPlan?.price}/mo</span>
                   </div>
                   <div className="flex justify-between">

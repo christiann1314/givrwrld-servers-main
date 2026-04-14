@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Check, Server, ExternalLink, ArrowRight } from 'lucide-react';
+import { Check, Server, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import api from '@/lib/api';
 
@@ -9,7 +9,6 @@ interface PurchaseData {
   plan_name: string;
   amount: number;
   created_at: string;
-  pterodactyl_url?: string;
 }
 
 const PurchaseSuccess = () => {
@@ -41,16 +40,11 @@ const PurchaseSuccess = () => {
         if (orders && orders.length > 0) {
           const latestOrder = orders[0];
           
-          // Get servers to find pterodactyl URL
-          const serversResponse = await api.getServers();
-          const servers = serversResponse?.servers || [];
-
           setPurchaseData({
             id: latestOrder.id,
             plan_name: latestOrder.plan_id || 'Game Server',
             amount: latestOrder.amount || 0,
             created_at: latestOrder.created_at,
-            pterodactyl_url: servers[0]?.pterodactyl_url
           });
         }
         setLoading(false);
@@ -173,19 +167,17 @@ const PurchaseSuccess = () => {
               <ArrowRight size={24} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            {purchaseData?.pterodactyl_url && (
-              <a
-                href={purchaseData.pterodactyl_url}
-                target="_blank"
-                rel="noopener noreferrer"
+            {purchaseData?.id && (
+              <Link
+                to={`/dashboard/services/${encodeURIComponent(purchaseData.id)}`}
                 className="flex items-center justify-between p-6 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl transition-all group"
               >
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Game Panel</h3>
-                  <p className="text-gray-300">Access your server control panel</p>
+                  <h3 className="text-xl font-bold text-white mb-2">Open Game Panel</h3>
+                  <p className="text-gray-300">Console, files, power, and settings in your dashboard</p>
                 </div>
-                <ExternalLink size={24} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
-              </a>
+                <ArrowRight size={24} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
             )}
           </div>
 

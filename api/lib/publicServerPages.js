@@ -10,10 +10,14 @@ const PUBLIC_KICK_EMBED_ENABLED = truthy.has(
     .trim()
 );
 
+/** Game orders that may configure a public streamer page (includes fully live servers). */
 const ELIGIBLE_ORDER_STATUSES = new Set([
   ORDER_STATUS.PAID,
   ORDER_STATUS.PROVISIONING,
   ORDER_STATUS.PROVISIONED,
+  ORDER_STATUS.CONFIGURING,
+  ORDER_STATUS.VERIFYING,
+  ORDER_STATUS.PLAYABLE,
   'active',
 ]);
 const RESERVED_SLUGS = new Set([

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
-import { useGamePlanCatalog } from '@/hooks/useGamePlanCatalog';
+import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const terrariaBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/105600/library_hero.jpg';
 
@@ -197,8 +197,8 @@ const TerrariaConfig = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                          {(plan.recommended || plan.ram === '8GB') && (
+                          <h3 className="text-lg font-bold text-white">{planCardTitle(plan)}</h3>
+                          {plan.recommended && (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
                           )}
                         </div>
@@ -211,7 +211,7 @@ const TerrariaConfig = () => {
                       <div className="text-purple-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
-                      {((plan as { ram_gb?: number }).ram_gb ?? 0) >= 8 || plan.ram === '8GB' ? (
+                      {planIncludesAutoBackups(plan) ? (
                         <div className="mt-2 text-xs text-gray-200">Auto backups included</div>
                       ) : null}
                     </div>
@@ -254,7 +254,7 @@ const TerrariaConfig = () => {
                 
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
-                    <span className="text-gray-100">Server Plan ({selectedPlan?.name})</span>
+                    <span className="text-gray-100">Server Plan ({planCardTitle(selectedPlan)})</span>
                     <span className="text-white">${selectedPlan?.price}/mo</span>
                   </div>
                   
@@ -290,7 +290,7 @@ const TerrariaConfig = () => {
                       'Instant setup & NVMe',
                       'Ryzen 9 5900X',
                       '24/7 support and Discord community access',
-                      ...(selectedPlan && (((selectedPlan as { ram_gb?: number }).ram_gb ?? 0) >= 8 || (selectedPlan as { ram?: string }).ram === '8GB') ? ['Daily auto backups'] : [])
+                      ...(selectedPlan && planIncludesAutoBackups(selectedPlan) ? ['Daily auto backups'] : [])
                     ].map((feature, index) => (
                       <div key={index} className="flex items-center">
                         <div className="w-4 h-4 bg-purple-500 rounded-full mr-3 flex items-center justify-center">

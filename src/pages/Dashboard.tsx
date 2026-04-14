@@ -68,6 +68,13 @@ const ServerIcon = ({ server }: { server: any }) => {
   );
 };
 
+/** Order UUID for `/dashboard/services/:orderId` and `/api/servers/:orderId`. */
+function resolveServerOrderId(server: { id?: unknown; order_id?: unknown; orderId?: unknown }): string {
+  const raw = server?.id ?? (server as { order_id?: unknown }).order_id ?? (server as { orderId?: unknown }).orderId;
+  if (raw == null) return '';
+  return String(raw).trim();
+}
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   
@@ -340,8 +347,10 @@ const Dashboard = () => {
                     </Link>
                   </div>
                 )}
-                {servers.map((server) => (
-                  <div key={server.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-700/30 rounded-lg gap-4">
+                {servers.map((server) => {
+                  const orderId = resolveServerOrderId(server);
+                  return (
+                  <div key={orderId || `${String(server.name)}-${String(server.game)}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-700/30 rounded-lg gap-4">
                     <div className="flex items-center space-x-4">
                         <div className="relative flex-shrink-0">
                           <ServerIcon server={server} />
@@ -363,26 +372,27 @@ const Dashboard = () => {
                         {server.status}
                       </span>
                       <div className="flex items-center space-x-2">
-                        {server.pterodactylUrl && (server.status === 'online' || server.status === 'offline' || server.status === 'starting' || server.status === 'stopping') && (
-                          <a
-                            href={server.pterodactylUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        {orderId ? (
+                          <Link
+                            to={`/dashboard/services/${encodeURIComponent(orderId)}`}
                             className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-emerald-500/30"
                           >
                             Manage
-                          </a>
-                        )}
+                          </Link>
+                        ) : null}
+                        {orderId ? (
                         <Link
-                          to={`/success?order_id=${encodeURIComponent(server.id)}`}
+                          to={`/success?order_id=${encodeURIComponent(orderId)}`}
                           className="bg-gray-600/40 hover:bg-gray-600/60 text-gray-200 hover:text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors border border-gray-500/50"
                         >
                           View confirmation
                         </Link>
+                        ) : null}
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
             </div>
           </div>

@@ -345,10 +345,26 @@ const DashboardServerDetails: React.FC = () => {
   const hasPanel = !!details?.panel;
   const panelServerIdentifier = details?.panel?.identifier || details?.ptero_identifier || null;
   const currentState = (resources?.state || details?.status || "").toLowerCase();
-  const isOnline = currentState.startsWith("online") || currentState === "running" || currentState === "starting";
   const isProvisioning =
     (details?.ptero_server_id == null && (details?.status || "").toLowerCase() === "provisioning") ||
     currentState === "provisioning";
+  const livePanelState = String(resources?.state || "").toLowerCase();
+  const orderStatusLower = String(details?.status || "").toLowerCase();
+  const orderImpliesPanelRunning = ["playable", "configuring", "verifying"].includes(orderStatusLower);
+  const effectivePowerState =
+    livePanelState ||
+    (orderImpliesPanelRunning ? "online" : orderStatusLower);
+  const isPoweredOn =
+    effectivePowerState.startsWith("online") ||
+    effectivePowerState === "running" ||
+    effectivePowerState === "starting";
+  const canStart =
+    !isProvisioning &&
+    (effectivePowerState === "offline" ||
+      effectivePowerState === "stopped" ||
+      effectivePowerState === "stopping");
+  const canStop = !isProvisioning && (isPoweredOn || effectivePowerState === "stopping");
+  const canRestart = !isProvisioning && (isPoweredOn || effectivePowerState === "stopping");
 
   function buildConsoleWsUrl(id: string) {
     const base = getApiBase().replace(/\/+$/, "") || window.location.origin.replace(/\/+$/, "");
@@ -716,7 +732,7 @@ const DashboardServerDetails: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handlePower("start")}
-                        disabled={isOnline || isProvisioning || powerLoading !== null}
+                        disabled={!canStart || powerLoading !== null}
                         className="inline-flex items-center h-8 px-3 rounded-md text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Power size={14} className="mr-1.5" />
@@ -725,7 +741,7 @@ const DashboardServerDetails: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handlePower("stop")}
-                        disabled={!isOnline || isProvisioning || powerLoading !== null}
+                        disabled={!canStop || powerLoading !== null}
                         className="inline-flex items-center h-8 px-3 rounded-md text-xs sm:text-sm font-semibold text-white bg-red-600/90 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <PowerOff size={14} className="mr-1.5" />
@@ -734,7 +750,7 @@ const DashboardServerDetails: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handlePower("restart")}
-                        disabled={isProvisioning || powerLoading !== null}
+                        disabled={!canRestart || powerLoading !== null}
                         className="inline-flex items-center h-8 px-3 rounded-md text-xs sm:text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <RefreshCcw size={14} className="mr-1.5" />

@@ -130,7 +130,7 @@ async function http<T>(
       if (!retryRes.ok) {
         throw await buildHttpError(retryRes);
       }
-      return (await retryRes.json()) as T;
+      return parseSuccessJsonBody<T>(retryRes);
     }
 
     // refresh failed -> clear tokens
@@ -142,7 +142,7 @@ async function http<T>(
     throw await buildHttpError(res);
   }
 
-  return (await res.json()) as T;
+  return parseSuccessJsonBody<T>(res);
 }
 
 async function safeErrorMessage(res: Response): Promise<string> {
@@ -151,6 +151,20 @@ async function safeErrorMessage(res: Response): Promise<string> {
     return data?.message || data?.error || `Request failed (${res.status})`;
   } catch {
     return `Request failed (${res.status})`;
+  }
+}
+
+async function parseSuccessJsonBody<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  if (!text || !text.trim()) {
+    return null as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const error = new Error("Invalid JSON response") as Error & { status?: number };
+    error.status = res.status;
+    throw error;
   }
 }
 
