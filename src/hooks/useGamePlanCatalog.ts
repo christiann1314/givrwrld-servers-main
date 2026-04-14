@@ -142,7 +142,8 @@ export function useGamePlanCatalog(
             disk: `${ssdGb} GB NVMe`,
             price: Number(p.price_monthly || 0),
             players: '2–32',
-            description: display ? specLine : `${specLine} — pick the tier that fits your player count.`,
+            // Specs are shown once in the plan card (RAM / CPU / disk row); avoid duplicating the same line as `description`.
+            description: display ? '' : `${specLine} — pick the tier that fits your player count.`,
             recommended: false,
             pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
             pteroEggName: p.ptero_egg_name || null,

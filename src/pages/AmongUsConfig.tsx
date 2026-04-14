@@ -206,7 +206,9 @@ const AmongUsConfig = () => {
                           <div className="text-gray-200 text-sm">per month</div>
                         </div>
                       </div>
-                      <p className="text-gray-100 text-sm mb-2">{plan.description}</p>
+                      {plan.description?.trim() ? (
+                        <p className="text-gray-100 text-sm mb-2">{plan.description}</p>
+                      ) : null}
                       <div className="text-pink-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>

@@ -236,7 +236,9 @@ const MinecraftConfig = () => {
                           <div className="text-gray-200 text-base">per month</div>
                         </div>
                       </div>
-                      <p className="text-gray-100 text-base mb-2">{plan.description}</p>
+                      {plan.description?.trim() ? (
+                        <p className="text-gray-100 text-base mb-2">{plan.description}</p>
+                      ) : null}
                       <div className="text-emerald-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
