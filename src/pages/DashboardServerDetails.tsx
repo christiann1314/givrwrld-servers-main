@@ -559,10 +559,13 @@ const DashboardServerDetails: React.FC = () => {
         description: `${action.charAt(0).toUpperCase() + action.slice(1)} requested for ${details.server_name || details.game}.`,
       });
     } catch (err: any) {
+      const status = (err as any)?.status;
       const message = err instanceof Error ? err.message : String(err);
       toast({
-        title: "Power action failed",
-        description: message,
+        title: status === 429 ? "Slow down" : "Power action failed",
+        description: status === 429
+          ? "Too many power actions in a short time. Wait a moment and try again."
+          : message,
         variant: "destructive",
       });
     } finally {

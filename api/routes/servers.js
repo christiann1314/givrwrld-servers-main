@@ -114,8 +114,8 @@ async function persistPublicSnapshotBestEffort(orderId, payload, snapshotSource)
 // Simple in-memory per-order power action rate limiter.
 // This is per-process and intended as a guardrail; a future iteration can
 // move this to Redis for multi-instance coordination.
-const POWER_RATE_WINDOW_MS = 5 * 60 * 1000;
-const POWER_RATE_MAX_PER_ORDER = 5;
+const POWER_RATE_WINDOW_MS = 2 * 60 * 1000;
+const POWER_RATE_MAX_PER_ORDER = 10;
 const powerRateState = new Map();
 const slugAvailabilityLimiter = rateLimit({
   windowMs: 60 * 1000,
