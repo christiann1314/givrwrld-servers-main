@@ -74,7 +74,7 @@ async function processClassAb({ orderId, payload, order }) {
   }
 }
 
-async function processClassC({ orderId, payload }) {
+async function processClassC({ orderId, payload, order }) {
   const hostname = payload.hostname;
   const upstreamPort = payload.httpsProxyRegistration?.upstreamPort;
   if (!hostname) {
@@ -84,13 +84,8 @@ async function processClassC({ orderId, payload }) {
     throw new Error('Missing upstream port for Class C nginx upstream');
   }
 
-  const display = buildCustomerDisplayAddress({
-    trafficClass: 'C',
-    hostname,
-    port: 443,
-  });
-
   const infra = process.env.POST_PROVISION_INFRA_ENABLED === '1';
+  let httpsReady = false;
 
   logger.info(
     { order_id: orderId, hostname, upstream_port: Number(upstreamPort), infra_enabled: infra },
@@ -98,23 +93,27 @@ async function processClassC({ orderId, payload }) {
   );
 
   if (infra) {
-    const configText = buildNginxSiteConfig({
-      hostname,
-      upstreamHost: '127.0.0.1',
-      upstreamPort: Number(upstreamPort),
-    });
-    await writeNginxSite({ hostname, configText });
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_site_written');
-    await testNginxConfig();
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_test_ok');
-    await reloadNginx();
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_reload_after_http');
-    await obtainCertificateNginx({ hostname, email: LETSENCRYPT_EMAIL });
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_certbot_ok');
-    await testNginxConfig();
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_test_ok_post_cert');
-    await reloadNginx();
-    logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_reload_after_cert');
+    try {
+      const configText = buildNginxSiteConfig({
+        hostname,
+        upstreamHost: '127.0.0.1',
+        upstreamPort: Number(upstreamPort),
+      });
+      await writeNginxSite({ hostname, configText });
+      logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_nginx_site_written');
+      await testNginxConfig();
+      await reloadNginx();
+      await obtainCertificateNginx({ hostname, email: LETSENCRYPT_EMAIL });
+      logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_certbot_ok');
+      await testNginxConfig();
+      await reloadNginx();
+      httpsReady = true;
+    } catch (infraErr) {
+      logger.warn(
+        { order_id: orderId, hostname, err: infraErr instanceof Error ? infraErr.message : String(infraErr) },
+        'provisioning_worker_class_c_infra_failed_fallback_to_game_port',
+      );
+    }
   } else {
     logger.warn(
       { order_id: orderId, hostname },
@@ -126,29 +125,47 @@ async function processClassC({ orderId, payload }) {
     throw new Error('Could not move order to verifying (expected configuring)');
   }
 
-  logger.info(
-    { order_id: orderId, hostname, url: `https://${hostname}` },
-    'provisioning_worker_class_c_https_probe_start',
-  );
-  const httpsOk = await waitForHttps({
-    url: `https://${hostname}`,
-    attempts: Number(process.env.POST_PROVISION_HTTPS_ATTEMPTS || 18),
-    intervalMs: Number(process.env.POST_PROVISION_HTTPS_INTERVAL_MS || 5000),
-  });
-  if (!httpsOk) {
-    throw new Error(`HTTPS health check failed for https://${hostname}`);
+  if (httpsReady) {
+    const httpsOk = await waitForHttps({
+      url: `https://${hostname}`,
+      attempts: Number(process.env.POST_PROVISION_HTTPS_ATTEMPTS || 18),
+      intervalMs: Number(process.env.POST_PROVISION_HTTPS_INTERVAL_MS || 5000),
+    });
+    if (httpsOk) {
+      const display = buildCustomerDisplayAddress({ trafficClass: 'C', hostname, port: 443 });
+      await updateGameReachabilityDisplay(orderId, { hostname, displayAddress: display });
+      if (!(await transitionVerifyingToPlayable(orderId))) {
+        throw new Error('Could not move order to playable (expected verifying)');
+      }
+      logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_order_playable_https');
+      return;
+    }
+    logger.warn({ order_id: orderId, hostname }, 'provisioning_worker_class_c_https_probe_failed_fallback');
   }
-  logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_https_probe_ok');
+
+  // Fallback: mark playable via game UDP port when HTTPS isn't ready.
+  // Players connect to the game server directly via IP:port — the HTTPS
+  // endpoint is for the Impostor HTTP API and can be set up later.
+  const gamePort = payload.primaryPort;
+  const policy = order ? getEggRuntimePolicy(order.ptero_egg_id) : null;
+  const gameKey = payload.gameKey || policy?.gameKey || 'game';
+  const brandHost = buildGameBrandHostname({ gameKey, orderId });
+  const fallbackDisplay = gamePort
+    ? `${brandHost}:${gamePort}`
+    : brandHost;
 
   await updateGameReachabilityDisplay(orderId, {
-    hostname,
-    displayAddress: display,
+    hostname: brandHost,
+    displayAddress: fallbackDisplay,
   });
 
   if (!(await transitionVerifyingToPlayable(orderId))) {
     throw new Error('Could not move order to playable (expected verifying)');
   }
-  logger.info({ order_id: orderId, hostname }, 'provisioning_worker_class_c_order_playable');
+  logger.info(
+    { order_id: orderId, display: fallbackDisplay, https_hostname: hostname },
+    'provisioning_worker_class_c_order_playable_game_port_fallback',
+  );
 }
 
 const worker = new Worker(
@@ -253,7 +270,7 @@ const worker = new Worker(
     );
 
     if (trafficClass === 'C') {
-      await processClassC({ orderId, payload });
+      await processClassC({ orderId, payload, order });
     } else {
       await processClassAb({ orderId, payload, order });
     }
