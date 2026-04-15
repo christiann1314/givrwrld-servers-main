@@ -201,7 +201,7 @@ function resolveReturnBase(req) {
  */
 router.post('/create-session', authenticate, async (req, res) => {
   try {
-    const { plan_id, item_type, term, region, server_name, referral_code } = req.body;
+    const { plan_id, item_type, term, region, server_name, referral_code, parent_order_id } = req.body;
 
     if (!plan_id || !item_type) {
       return res.status(400).json({
@@ -250,6 +250,7 @@ router.post('/create-session', authenticate, async (req, res) => {
         term: billingTerm,
         region: regionCode,
         server_name: serverName,
+        parent_order_id: parent_order_id || null,
       },
       referral_code
     );

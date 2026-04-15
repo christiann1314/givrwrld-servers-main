@@ -14,6 +14,7 @@ export interface CheckoutSessionData {
   success_url?: string;
   cancel_url?: string;
   amount?: number;
+  parent_order_id?: string;
 }
 
 export interface CheckoutSessionResponse {

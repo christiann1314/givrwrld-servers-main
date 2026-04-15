@@ -8,6 +8,7 @@ import {
   getNodeForRegion,
   getOrCreatePterodactylUser,
   releaseNodeCapacityForOrder,
+  getActiveAddonsForOrder,
 } from '../utils/mysql.js';
 import {
   getOrder,
@@ -967,6 +968,41 @@ router.post('/:orderId/power', authenticate, async (req, res) => {
 /**
  * GET /api/servers/:orderId
  * Server details for a single order, including basic Panel details when available.
+ * Get active add-ons/upgrades purchased for a specific game server.
+ */
+router.get('/:orderId/addons', authenticate, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+
+    const [rows] = await pool.execute(
+      `SELECT id FROM orders WHERE id = ? AND user_id = ? AND item_type = 'game' LIMIT 1`,
+      [orderId, req.userId],
+    );
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'Server not found' });
+    }
+
+    const addons = await getActiveAddonsForOrder(orderId);
+
+    const addonMap = {};
+    for (const a of addons) {
+      addonMap[a.plan_id] = {
+        active: true,
+        addon_name: a.addon_name,
+        order_id: a.id,
+        purchased_at: a.created_at,
+      };
+    }
+
+    res.json({ success: true, addons: addonMap, addons_list: addons });
+  } catch (err) {
+    logger.error({ err: err?.message, orderId: req.params.orderId }, 'Error fetching addons');
+    res.status(500).json({ error: 'Failed to fetch addons' });
+  }
+});
+
+/**
  * Auth invariant: user must own the order; client never provides ptero_server_id.
  * Registered after /:orderId/resources and /:orderId/power so those paths match first.
  */

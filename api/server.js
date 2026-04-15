@@ -98,6 +98,7 @@ app.use('/api/paypal/webhook', webhookLimiter, paypalWebhookRouter);
 
 // Body parsing middleware (for all other routes)
 app.use(express.json());
+app.use(express.text({ type: 'text/plain' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Health check: uptime, version, memory

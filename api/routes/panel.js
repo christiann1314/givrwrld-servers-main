@@ -68,8 +68,33 @@ router.get('/:orderId/files/list', authenticate,
   proxyHandler((id, req) => `/servers/${id}/files/list`, { method: 'GET' }));
 router.get('/:orderId/files/contents', authenticate,
   proxyHandler((id) => `/servers/${id}/files/contents`, { method: 'GET' }));
-router.post('/:orderId/files/write', authenticate,
-  proxyHandler((id) => `/servers/${id}/files/write`, { method: 'POST' }));
+router.post('/:orderId/files/write', authenticate, async (req, res) => {
+  try {
+    const identifier = await resolveIdentifier(req.params.orderId, req.userId);
+    if (!identifier) return res.status(404).json({ error: 'Server not found' });
+    const file = req.query.file;
+    if (!file) return res.status(400).json({ error: 'file query param required' });
+    let url = `${PANEL_URL}/api/client/servers/${identifier}/files/write?file=${encodeURIComponent(file)}`;
+    const contentType = req.headers['content-type'] || 'application/json';
+    const isRaw = contentType.startsWith('text/');
+    const body = isRaw ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body)) : JSON.stringify(req.body);
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${CLIENT_KEY}`,
+        Accept: 'application/json',
+        'Content-Type': isRaw ? 'text/plain' : 'application/json',
+      },
+      body,
+    });
+    const text = await r.text();
+    let json; try { json = JSON.parse(text); } catch { json = null; }
+    res.status(r.status).json(json ?? { success: r.ok });
+  } catch (err) {
+    logger.error({ err: err?.message, orderId: req.params.orderId }, 'Panel file write error');
+    res.status(502).json({ error: 'File write failed' });
+  }
+});
 router.post('/:orderId/files/rename', authenticate,
   proxyHandler((id) => `/servers/${id}/files/rename`, { method: 'POST' }));
 router.post('/:orderId/files/delete', authenticate,
@@ -247,5 +272,46 @@ router.put('/:orderId/startup/variable', authenticate,
 // ── Activity ──
 router.get('/:orderId/activity', authenticate,
   proxyHandler((id) => `/servers/${id}/activity`, { method: 'GET' }));
+
+// ── Server Details (includes SFTP info) ──
+router.get('/:orderId/details', authenticate, async (req, res) => {
+  try {
+    const identifier = await resolveIdentifier(req.params.orderId, req.userId);
+    if (!identifier) return res.status(404).json({ error: 'Server not found' });
+    const result = await panelClient(`/servers/${identifier}`);
+    res.status(result.status).json(result.json ?? {});
+  } catch (err) {
+    logger.error({ err: err?.message, orderId: req.params.orderId }, 'Panel details proxy error');
+    res.status(502).json({ error: 'Panel request failed' });
+  }
+});
+
+// ── Settings ──
+router.post('/:orderId/settings/rename', authenticate, async (req, res) => {
+  try {
+    const identifier = await resolveIdentifier(req.params.orderId, req.userId);
+    if (!identifier) return res.status(404).json({ error: 'Server not found' });
+    const result = await panelClient(`/servers/${identifier}/settings/rename`, {
+      method: 'POST',
+      body: req.body,
+    });
+    res.status(result.status).json(result.json ?? { success: result.ok });
+  } catch (err) {
+    logger.error({ err: err?.message, orderId: req.params.orderId }, 'Panel rename proxy error');
+    res.status(502).json({ error: 'Rename request failed' });
+  }
+});
+
+router.post('/:orderId/settings/reinstall', authenticate, async (req, res) => {
+  try {
+    const identifier = await resolveIdentifier(req.params.orderId, req.userId);
+    if (!identifier) return res.status(404).json({ error: 'Server not found' });
+    const result = await panelClient(`/servers/${identifier}/settings/reinstall`, { method: 'POST' });
+    res.status(result.status).json(result.json ?? { success: result.ok });
+  } catch (err) {
+    logger.error({ err: err?.message, orderId: req.params.orderId }, 'Panel reinstall proxy error');
+    res.status(502).json({ error: 'Reinstall request failed' });
+  }
+});
 
 export default router;

@@ -457,5 +457,59 @@ export async function getAvailableAllocation(nodeId, panelUrl, panelAppKey) {
   }
 }
 
+/**
+ * Get active addons for a game server order.
+ * Returns addon orders where:
+ *   - parent_order_id matches the game server order
+ *   - the addon has an active PayPal or Stripe subscription (not canceled)
+ *   - OR the addon order is in a paid/provisioned status
+ */
+export async function getActiveAddonsForOrder(parentOrderId) {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT
+        o.id, o.plan_id, o.status, o.created_at,
+        p.display_name AS addon_name, p.description AS addon_description,
+        p.price_monthly,
+        ps.status AS paypal_status
+       FROM orders o
+       LEFT JOIN plans p ON p.id = o.plan_id
+       LEFT JOIN paypal_subscriptions ps ON ps.order_id = o.id
+       WHERE o.parent_order_id = ?
+         AND o.item_type = 'vps'
+         AND o.status NOT IN ('canceled', 'failed', 'error')
+       ORDER BY o.created_at DESC`,
+      [parentOrderId],
+    );
+    return rows;
+  } catch (error) {
+    console.error('Error fetching addons for order:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if a specific addon plan is active for a given server order.
+ */
+export async function hasActiveAddon(parentOrderId, planId) {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT COUNT(*) AS cnt
+       FROM orders o
+       LEFT JOIN paypal_subscriptions ps ON ps.order_id = o.id
+       WHERE o.parent_order_id = ?
+         AND o.plan_id = ?
+         AND o.item_type = 'vps'
+         AND o.status NOT IN ('canceled', 'failed', 'error')
+       LIMIT 1`,
+      [parentOrderId, planId],
+    );
+    return rows[0]?.cnt > 0;
+  } catch (error) {
+    console.error('Error checking addon:', error);
+    return false;
+  }
+}
+
 export default pool;
 

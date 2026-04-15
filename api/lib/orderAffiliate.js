@@ -11,14 +11,14 @@ import pool from '../config/database.js';
  * @param {string} [referralCode] - Optional affiliate code from link/cookie
  */
 export async function createOrderWithAttribution(params, referralCode) {
-  const { orderId, userId, item_type, plan_id, term, region, server_name } = params;
+  const { orderId, userId, item_type, plan_id, term, region, server_name, parent_order_id } = params;
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     await conn.execute(
-      `INSERT INTO orders (id, user_id, item_type, plan_id, term, region, server_name, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
-      [orderId, userId, item_type, plan_id, term, region, server_name]
+      `INSERT INTO orders (id, user_id, parent_order_id, item_type, plan_id, term, region, server_name, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+      [orderId, userId, parent_order_id || null, item_type, plan_id, term, region, server_name]
     );
     if (referralCode && String(referralCode).trim()) {
       const [rows] = await conn.execute(

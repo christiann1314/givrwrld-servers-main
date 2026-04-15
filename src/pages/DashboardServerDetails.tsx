@@ -5,6 +5,15 @@ import api, { getApiBase } from "@/lib/api";
 import { toast } from "@/components/ui/use-toast";
 import { getAccessToken } from "@/lib/auth";
 import { ENV } from "@/config/env";
+import FilesTab from "@/components/server-tabs/FilesTab";
+import DatabasesTab from "@/components/server-tabs/DatabasesTab";
+import BackupsTab from "@/components/server-tabs/BackupsTab";
+import SchedulesTab from "@/components/server-tabs/SchedulesTab";
+import UsersTab from "@/components/server-tabs/UsersTab";
+import NetworkTab from "@/components/server-tabs/NetworkTab";
+import StartupTab from "@/components/server-tabs/StartupTab";
+import SettingsTab from "@/components/server-tabs/SettingsTab";
+import ActivityTab from "@/components/server-tabs/ActivityTab";
 
 interface ServerPlan {
   id: string;
@@ -53,30 +62,7 @@ interface ServerResourcesResponse {
   measured_at: string;
 }
 
-interface PublicPageSettingsResponse {
-  order_id: string;
-  public_page_enabled: number;
-  public_slug: string | null;
-  streamer_name: string | null;
-  stream_platform: "twitch" | "kick" | null;
-  stream_channel: string | null;
-  stream_url: string | null;
-  discord_url: string | null;
-  server_description: string | null;
-  kick_embed_enabled: number;
-  eligible: boolean;
-}
-
-interface PublicPageFormState {
-  public_page_enabled: boolean;
-  public_slug: string;
-  streamer_name: string;
-  stream_platform: "twitch" | "kick";
-  stream_channel: string;
-  stream_url: string;
-  discord_url: string;
-  server_description: string;
-}
+/* PublicPageSettingsResponse and PublicPageFormState moved to SettingsTab component */
 
 function formatBytesToGb(bytes: number): string {
   if (!bytes || bytes <= 0) return "0 GB";
@@ -91,75 +77,9 @@ function formatUptime(seconds: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-function normalizeSlugInput(value: string): string {
-  return String(value || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
+/* normalizeSlugInput and buildPublicForm moved to SettingsTab component */
 
-function buildPublicForm(settings: PublicPageSettingsResponse | null): PublicPageFormState {
-  return {
-    public_page_enabled: Number(settings?.public_page_enabled || 0) === 1,
-    public_slug: settings?.public_slug || "",
-    streamer_name: settings?.streamer_name || "",
-    stream_platform: settings?.stream_platform || "twitch",
-    stream_channel: settings?.stream_channel || "",
-    stream_url: settings?.stream_url || "",
-    discord_url: settings?.discord_url || "",
-    server_description: settings?.server_description || "",
-  };
-}
-
-function PanelTabLoader({ orderId, endpoint, title, queryParams, children }: {
-  orderId: string;
-  endpoint: string;
-  title: string;
-  queryParams?: Record<string, string>;
-  children: (data: any) => React.ReactNode;
-}) {
-  const [data, setData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const base = getApiBase().replace(/\/+$/, "");
-        const qs = queryParams ? "?" + new URLSearchParams(queryParams).toString() : "";
-        const token = (await import("@/lib/auth")).getAccessToken();
-        const res = await fetch(`${base}/api/panel/${orderId}/${endpoint}${qs}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        });
-        if (!cancelled) {
-          if (!res.ok) throw new Error(`Panel returned ${res.status}`);
-          setData(await res.json());
-        }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [orderId, endpoint]);
-
-  return (
-    <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-      <h2 className="text-lg font-semibold text-white mb-4">{title}</h2>
-      {loading && <div className="flex items-center gap-2 text-gray-400"><Loader2 className="animate-spin" size={16} /> Loading...</div>}
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-      {!loading && !error && data && children(data)}
-    </div>
-  );
-}
+/* PanelTabLoader removed — each tab now uses its own panelApi calls via dedicated components */
 
 type ServerDetailsTab =
   | "console"
@@ -184,22 +104,6 @@ const DashboardServerDetails: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [powerLoading, setPowerLoading] = React.useState<"start" | "stop" | "restart" | null>(null);
   const [metricsError, setMetricsError] = React.useState<string | null>(null);
-  const [publicPage, setPublicPage] = React.useState<PublicPageSettingsResponse | null>(null);
-  const [publicForm, setPublicForm] = React.useState<PublicPageFormState>({
-    public_page_enabled: false,
-    public_slug: "",
-    streamer_name: "",
-    stream_platform: "twitch",
-    stream_channel: "",
-    stream_url: "",
-    discord_url: "",
-    server_description: "",
-  });
-  const [publicPageLoading, setPublicPageLoading] = React.useState(true);
-  const [publicPageSaving, setPublicPageSaving] = React.useState(false);
-  const [publicPageErrors, setPublicPageErrors] = React.useState<Record<string, string>>({});
-  const [slugStatus, setSlugStatus] = React.useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [publicUrlCopyState, setPublicUrlCopyState] = React.useState<"idle" | "copied" | "error">("idle");
   const [consoleLines, setConsoleLines] = React.useState<string[]>([]);
   const [consoleInput, setConsoleInput] = React.useState("");
   const [consoleStatus, setConsoleStatus] = React.useState<"disconnected" | "connecting" | "connected" | "error">(
@@ -222,13 +126,11 @@ const DashboardServerDetails: React.FC = () => {
 
       try {
         setLoading(true);
-        setPublicPageLoading(true);
         setError(null);
 
-        const [server, live, publicPageResponse] = await Promise.allSettled([
+        const [server, live] = await Promise.allSettled([
           api.getServer(orderId),
           api.getServerResources(orderId),
-          api.getServerPublicPage(orderId),
         ]);
 
         if (cancelled) return;
@@ -242,20 +144,12 @@ const DashboardServerDetails: React.FC = () => {
         if (live.status === "fulfilled") {
           setResources(live.value as ServerResourcesResponse);
         }
-        if (publicPageResponse.status === "fulfilled") {
-          const next = publicPageResponse.value as PublicPageSettingsResponse;
-          setPublicPage(next);
-          setPublicForm(buildPublicForm(next));
-          setPublicPageErrors({});
-          setSlugStatus("idle");
-        }
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load server");
       } finally {
         if (!cancelled) {
           setLoading(false);
-          setPublicPageLoading(false);
         }
       }
     }
@@ -573,100 +467,7 @@ const DashboardServerDetails: React.FC = () => {
     }
   }
 
-  async function handleSlugAvailabilityCheck(nextSlug?: string) {
-    if (!orderId) return;
-    const slug = normalizeSlugInput(nextSlug ?? publicForm.public_slug);
-    if (!slug) {
-      setSlugStatus("idle");
-      return;
-    }
-
-    setSlugStatus("checking");
-    try {
-      const result = await api.checkPublicSlugAvailability(orderId, slug);
-      setSlugStatus(result?.available ? "available" : "taken");
-    } catch {
-      setSlugStatus("idle");
-    }
-  }
-
-  async function handleSavePublicPage() {
-    if (!orderId) return;
-    setPublicPageSaving(true);
-    setPublicPageErrors({});
-
-    try {
-      let channel = publicForm.stream_channel.trim();
-      let url = publicForm.stream_url.trim();
-      const platform = publicForm.stream_platform;
-
-      if (channel && !url) {
-        url = platform === "twitch"
-          ? `https://www.twitch.tv/${channel}`
-          : `https://kick.com/${channel}`;
-      } else if (url && !channel) {
-        const match = platform === "twitch"
-          ? url.match(/twitch\.tv\/([^/?#]+)/i)
-          : url.match(/kick\.com\/([^/?#]+)/i);
-        if (match) channel = match[1];
-      }
-
-      const payload = {
-        public_page_enabled: publicForm.public_page_enabled,
-        public_slug: normalizeSlugInput(publicForm.public_slug),
-        streamer_name: publicForm.streamer_name.trim(),
-        stream_platform: platform,
-        stream_channel: channel,
-        stream_url: url,
-        discord_url: publicForm.discord_url.trim(),
-        server_description: publicForm.server_description.trim(),
-        kick_embed_enabled: 0,
-      };
-
-      const saved = (await api.updateServerPublicPage(orderId, payload)) as PublicPageSettingsResponse;
-      setPublicPage(saved);
-      setPublicForm(buildPublicForm(saved));
-      setSlugStatus(saved.public_slug ? "available" : "idle");
-      toast({
-        title: "Public page updated",
-        description: "Your public streamer server page settings have been saved.",
-      });
-    } catch (err: any) {
-      const fields = err?.fields || err?.response?.data?.fields;
-      if (fields && typeof fields === "object") {
-        setPublicPageErrors(fields);
-      }
-      toast({
-        title: "Save failed",
-        description: err instanceof Error ? err.message : "Unable to save public page settings.",
-        variant: "destructive",
-      });
-    } finally {
-      setPublicPageSaving(false);
-    }
-  }
-
-  async function handleCopyPublicUrl() {
-    if (!publicForm.public_slug || typeof window === "undefined") return;
-    const url = `${window.location.origin}/server/${publicForm.public_slug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setPublicUrlCopyState("copied");
-      toast({
-        title: "Public URL copied",
-        description: "The public server page link is ready to share.",
-      });
-    } catch {
-      setPublicUrlCopyState("error");
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy the public page URL.",
-        variant: "destructive",
-      });
-    } finally {
-      window.setTimeout(() => setPublicUrlCopyState("idle"), 1800);
-    }
-  }
+  /* Public page handlers moved to SettingsTab component */
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -1165,455 +966,21 @@ const DashboardServerDetails: React.FC = () => {
                 </div>
               )}
 
-              {activeTab === "files" && (
-                <PanelTabLoader orderId={orderId!} endpoint="files/list" queryParams={{ directory: "/" }} title="Files">
-                  {(data: any) => {
-                    const files = data?.data || [];
-                    return (
-                      <div className="space-y-1">
-                        {files.length === 0 && <p className="text-gray-400 text-sm">No files found.</p>}
-                        {files.map((f: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-800/60 rounded border border-gray-700/50 text-sm">
-                            <span className="text-gray-200">{f.attributes?.is_file === false ? "\u{1F4C1}" : "\u{1F4C4}"} {f.attributes?.name}</span>
-                            <span className="text-gray-500 text-xs">
-                              {f.attributes?.is_file !== false && f.attributes?.size != null
-                                ? `${(f.attributes.size / 1024).toFixed(1)} KB`
-                                : f.attributes?.is_file === false ? "dir" : ""}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "databases" && (
-                <PanelTabLoader orderId={orderId!} endpoint="databases" title="Databases">
-                  {(data: any) => {
-                    const dbs = data?.data || [];
-                    return dbs.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No databases created yet.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {dbs.map((db: any, i: number) => (
-                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
-                            <div className="font-medium text-white">{db.attributes?.name || "Database"}</div>
-                            <div className="text-xs text-gray-400 mt-1">Host: {db.attributes?.host?.address || "N/A"}:{db.attributes?.host?.port || 3306}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "schedules" && (
-                <PanelTabLoader orderId={orderId!} endpoint="schedules" title="Schedules">
-                  {(data: any) => {
-                    const schedules = data?.data || [];
-                    return schedules.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No schedules configured.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {schedules.map((s: any, i: number) => (
-                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-white">{s.attributes?.name || "Schedule"}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${s.attributes?.is_active ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                                {s.attributes?.is_active ? "Active" : "Inactive"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "users" && (
-                <PanelTabLoader orderId={orderId!} endpoint="users" title="Sub-Users">
-                  {(data: any) => {
-                    const users = data?.data || [];
-                    return users.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No sub-users added yet.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {users.map((u: any, i: number) => (
-                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50 flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-white">{u.attributes?.email || "User"}</div>
-                              <div className="text-xs text-gray-400 mt-1">{(u.attributes?.permissions || []).length} permissions</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "backups" && (
-                <PanelTabLoader orderId={orderId!} endpoint="backups" title="Backups">
-                  {(data: any) => {
-                    const backups = data?.data || [];
-                    return backups.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No backups yet.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {backups.map((b: any, i: number) => (
-                          <div key={i} className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-white">{b.attributes?.name || "Backup"}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${b.attributes?.is_successful ? "bg-emerald-500/20 text-emerald-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-                                {b.attributes?.is_successful ? "Complete" : "In Progress"}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {b.attributes?.bytes != null ? `${(b.attributes.bytes / 1024 / 1024).toFixed(1)} MB` : ""}
-                              {b.attributes?.created_at ? ` - ${new Date(b.attributes.created_at).toLocaleString()}` : ""}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "network" && (
-                <PanelTabLoader orderId={orderId!} endpoint="network" title="Network / Allocations">
-                  {(data: any) => {
-                    const allocs = data?.data || [];
-                    return allocs.length === 0 ? (
-                      <p className="text-gray-400 text-sm">No network allocations found.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {allocs.map((a: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-800/60 rounded-lg border border-gray-700/50">
-                            <span className="text-white font-mono text-sm">{a.attributes?.ip_alias || a.attributes?.ip || "0.0.0.0"}:{a.attributes?.port}</span>
-                            {a.attributes?.is_default && <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Primary</span>}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
-              {activeTab === "startup" && (
-                <PanelTabLoader orderId={orderId!} endpoint="startup" title="Startup Configuration">
-                  {(data: any) => {
-                    const vars = data?.data || [];
-                    const startup = data?.meta?.startup_command || "";
-                    const dockerImg = data?.meta?.docker_image || "";
-                    return (
-                      <div className="space-y-4">
-                        {startup && (
-                          <div className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">Startup Command</div>
-                            <code className="text-sm text-emerald-300 break-all">{startup}</code>
-                          </div>
-                        )}
-                        {dockerImg && (
-                          <div className="bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
-                            <div className="text-xs text-gray-400 mb-1">Docker Image</div>
-                            <code className="text-sm text-blue-300 break-all">{dockerImg}</code>
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-400 uppercase tracking-wide">Environment Variables</div>
-                          {vars.length === 0 && <p className="text-gray-500 text-sm">No startup variables.</p>}
-                          {vars.map((v: any, i: number) => (
-                            <div key={i} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/50">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-white">{v.attributes?.name || v.attributes?.env_variable}</span>
-                                <span className="text-xs text-gray-500 font-mono">{v.attributes?.env_variable}</span>
-                              </div>
-                              <div className="mt-1 text-sm text-emerald-300 font-mono">{v.attributes?.server_value ?? v.attributes?.default_value ?? ""}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }}
-                </PanelTabLoader>
-              )}
-
+              {activeTab === "files" && <FilesTab orderId={orderId!} />}
+              {activeTab === "databases" && <DatabasesTab orderId={orderId!} />}
+              {activeTab === "schedules" && <SchedulesTab orderId={orderId!} />}
+              {activeTab === "users" && <UsersTab orderId={orderId!} />}
+              {activeTab === "backups" && <BackupsTab orderId={orderId!} />}
+              {activeTab === "network" && <NetworkTab orderId={orderId!} />}
+              {activeTab === "startup" && <StartupTab orderId={orderId!} />}
               {activeTab === "settings" && (
-                <div className="space-y-6">
-                  <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                    <h2 className="text-lg font-semibold text-white mb-2">Public Page</h2>
-                    <p className="text-sm text-gray-200 leading-relaxed">
-                      Create a public page for this server at <span className="font-semibold text-white">/server/:slug</span>
-                      with your stream, Discord link, and server details.
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                    {publicPageLoading ? (
-                      <div className="text-sm text-gray-200">Loading public page settings...</div>
-                    ) : publicPage && !publicPage.eligible ? (
-                      <div className="rounded-lg border border-amber-500/40 bg-amber-950/40 px-4 py-3 text-sm text-amber-100">
-                        This server is not currently eligible for a public page.
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <div className="text-sm font-semibold text-white">Enable public page</div>
-                            <div className="text-xs text-gray-400">
-                              Turn on a shareable public page for this server.
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPublicForm((prev) => ({
-                                ...prev,
-                                public_page_enabled: !prev.public_page_enabled,
-                              }))
-                            }
-                            className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition-colors ${
-                              publicForm.public_page_enabled
-                                ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
-                                : "border-gray-600 bg-gray-800 text-gray-300"
-                            }`}
-                          >
-                            {publicForm.public_page_enabled ? "Enabled" : "Disabled"}
-                          </button>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Public slug
-                            </label>
-                            <input
-                              type="text"
-                              value={publicForm.public_slug}
-                              onChange={(e) => {
-                                const next = normalizeSlugInput(e.target.value);
-                                setPublicForm((prev) => ({ ...prev, public_slug: next }));
-                                setPublicPageErrors((prev) => ({ ...prev, public_slug: "" }));
-                                setSlugStatus("idle");
-                              }}
-                              onBlur={() => handleSlugAvailabilityCheck()}
-                              placeholder="cjn-enshrouded"
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                            <div className="mt-2 text-xs text-gray-400">
-                              Public URL:{" "}
-                              <span className="text-gray-200">
-                                {typeof window !== "undefined"
-                                  ? `${window.location.origin}/server/${publicForm.public_slug || "your-slug"}`
-                                  : `/server/${publicForm.public_slug || "your-slug"}`}
-                              </span>
-                            </div>
-                            {slugStatus === "checking" && (
-                              <div className="mt-1 text-xs text-gray-400">Checking slug availability...</div>
-                            )}
-                            {slugStatus === "available" && !publicPageErrors.public_slug && (
-                              <div className="mt-1 text-xs text-emerald-300">Slug is available.</div>
-                            )}
-                            {slugStatus === "taken" && (
-                              <div className="mt-1 text-xs text-red-300">That slug is already taken.</div>
-                            )}
-                            {publicPageErrors.public_slug && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.public_slug}</div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Streamer name
-                            </label>
-                            <input
-                              type="text"
-                              value={publicForm.streamer_name}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setPublicForm((prev) => ({ ...prev, streamer_name: value }));
-                                setPublicPageErrors((prev) => ({ ...prev, streamer_name: "" }));
-                              }}
-                              placeholder="CJN"
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {publicPageErrors.streamer_name && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.streamer_name}</div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Stream platform
-                            </label>
-                            <select
-                              value={publicForm.stream_platform}
-                              onChange={(e) => {
-                                const value = e.target.value as "twitch" | "kick";
-                                setPublicForm((prev) => ({ ...prev, stream_platform: value }));
-                                setPublicPageErrors((prev) => ({
-                                  ...prev,
-                                  stream_platform: "",
-                                  stream_url: "",
-                                  stream_channel: "",
-                                }));
-                              }}
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            >
-                              <option value="twitch">Twitch</option>
-                              <option value="kick">Kick</option>
-                            </select>
-                            {publicPageErrors.stream_platform && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.stream_platform}</div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Stream channel
-                            </label>
-                            <input
-                              type="text"
-                              value={publicForm.stream_channel}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setPublicForm((prev) => ({ ...prev, stream_channel: value }));
-                                setPublicPageErrors((prev) => ({ ...prev, stream_channel: "" }));
-                              }}
-                              placeholder={publicForm.stream_platform === "kick" ? "cjnlive" : "cjn_live"}
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {publicPageErrors.stream_channel && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.stream_channel}</div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Stream URL
-                            </label>
-                            <input
-                              type="url"
-                              value={publicForm.stream_url}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setPublicForm((prev) => ({ ...prev, stream_url: value }));
-                                setPublicPageErrors((prev) => ({ ...prev, stream_url: "" }));
-                              }}
-                              placeholder={publicForm.stream_platform === "kick" ? "https://kick.com/cjnlive" : "https://www.twitch.tv/cjn_live"}
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {publicPageErrors.stream_url && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.stream_url}</div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                              Discord URL
-                            </label>
-                            <input
-                              type="url"
-                              value={publicForm.discord_url}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setPublicForm((prev) => ({ ...prev, discord_url: value }));
-                                setPublicPageErrors((prev) => ({ ...prev, discord_url: "" }));
-                              }}
-                              placeholder="https://discord.gg/your-community"
-                              className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {publicPageErrors.discord_url && (
-                              <div className="mt-1 text-xs text-red-300">{publicPageErrors.discord_url}</div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                            Server description
-                          </label>
-                          <textarea
-                            value={publicForm.server_description}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setPublicForm((prev) => ({ ...prev, server_description: value }));
-                              setPublicPageErrors((prev) => ({ ...prev, server_description: "" }));
-                            }}
-                            rows={5}
-                            placeholder="Tell visitors what this server is about, who it is for, and what makes it worth joining."
-                            className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
-                          />
-                          {publicPageErrors.server_description && (
-                            <div className="mt-1 text-xs text-red-300">{publicPageErrors.server_description}</div>
-                          )}
-                        </div>
-
-                        <div className="rounded-lg border border-gray-700/60 bg-black/25 p-4">
-                          <div className="text-xs uppercase font-medium tracking-wide text-gray-400 mb-2">
-                            Platform behavior
-                          </div>
-                          <p className="text-sm text-gray-300 leading-relaxed">
-                            Twitch pages render an embedded player on the public page. Kick is supported in the
-                            data model and public page UX, but v1 uses a channel card with an external watch link.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={handleSavePublicPage}
-                            disabled={publicPageSaving || (publicPage?.eligible === false)}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400 text-white text-sm font-semibold transition-colors min-w-[170px]"
-                          >
-                            {publicPageSaving && (
-                              <Loader2 size={16} className="animate-spin" />
-                            )}
-                            <span>Save public page</span>
-                          </button>
-                          {publicForm.public_page_enabled && publicForm.public_slug && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={handleCopyPublicUrl}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-600 text-sm font-medium text-gray-200 hover:text-white hover:border-gray-500 transition-colors"
-                              >
-                                <ExternalLink size={14} />
-                                {publicUrlCopyState === "copied"
-                                  ? "Copied link"
-                                  : publicUrlCopyState === "error"
-                                  ? "Copy failed"
-                                  : "Copy public URL"}
-                              </button>
-                              <Link
-                                to={`/server/${publicForm.public_slug}`}
-                                state={{ from: "dashboard-server", orderId }}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-600 text-sm font-medium text-gray-200 hover:text-white hover:border-gray-500 transition-colors"
-                              >
-                                <ExternalLink size={14} />
-                                Open public page
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <SettingsTab
+                  orderId={orderId!}
+                  serverName={details?.server_name}
+                  panelIdentifier={panelServerIdentifier}
+                />
               )}
-
-              {activeTab === "activity" && (
-                <div className="bg-gray-900/90 border border-gray-600 rounded-xl p-6 shadow">
-                  <h2 className="text-lg font-semibold text-white mb-2">Activity</h2>
-                  <p className="text-sm text-gray-200 leading-relaxed">
-                    A chronological view of server actions (power changes, backups, errors) will land here so
-                    you can audit what happened over time.
-                  </p>
-                </div>
-              )}
+              {activeTab === "activity" && <ActivityTab orderId={orderId!} />}
             </>
           )}
         </div>
