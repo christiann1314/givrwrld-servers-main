@@ -21,6 +21,8 @@ const DashboardOrder = () => {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [gameCards, setGameCards] = useState<any[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
+  const [userServers, setUserServers] = useState<any[]>([]);
+  const [selectedServerId, setSelectedServerId] = useState<string>('');
 
   const sidebarItems = [
     { name: "Overview", icon: BarChart3, link: "/dashboard", active: false },
@@ -47,6 +49,17 @@ const DashboardOrder = () => {
     veloren: { name: 'Veloren', subtitle: 'Open-world voxel RPG', image: '/images/veloren-hero.jpg', configPath: '/configure/veloren' },
     enshrouded: { name: 'Enshrouded', subtitle: 'Survival, crafting & action RPG', image: 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg', configPath: '/configure/enshrouded' },
   };
+
+  React.useEffect(() => {
+    let active = true;
+    api.getServers().then((res: any) => {
+      if (!active) return;
+      const servers = (res?.servers || []).filter((s: any) => s.item_type === 'game');
+      setUserServers(servers);
+      if (servers.length === 1) setSelectedServerId(servers[0].id);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   React.useEffect(() => {
     let active = true;
@@ -388,6 +401,38 @@ const DashboardOrder = () => {
             {/* Upgrades & Add-ons Tab */}
             {activeTab === 'upgrades' && (
               <div className="space-y-8 mb-12">
+                {/* Server Selector */}
+                {userServers.length > 0 && (
+                  <div className="bg-gray-800/40 backdrop-blur-md border border-gray-600/30 rounded-xl p-5">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Apply upgrades &amp; add-ons to:
+                    </label>
+                    <select
+                      value={selectedServerId}
+                      onChange={(e) => setSelectedServerId(e.target.value)}
+                      className="w-full sm:w-auto bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">— Select a server —</option>
+                      {userServers.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.server_name || s.game} ({s.game} • {s.region})
+                        </option>
+                      ))}
+                    </select>
+                    {!selectedServerId && (
+                      <p className="text-amber-400 text-xs mt-2">Select a server above to purchase upgrades or add-ons for it.</p>
+                    )}
+                  </div>
+                )}
+                {userServers.length === 0 && (
+                  <div className="bg-gray-800/40 backdrop-blur-md border border-amber-500/30 rounded-xl p-5 text-center">
+                    <p className="text-gray-300">You need an active game server before purchasing upgrades or add-ons.</p>
+                    <Link to="/dashboard/order" onClick={() => setActiveTab('servers')} className="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">
+                      Deploy a server first
+                    </Link>
+                  </div>
+                )}
+
                 {/* Upgrade Packages */}
                 <div>
                   <h3 className="text-2xl font-bold text-white mb-6">Upgrade Packages</h3>
@@ -428,7 +473,8 @@ const DashboardOrder = () => {
                             });
                             setPaymentModalOpen(true);
                           }}
-                          className={`block w-full text-center font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
+                          disabled={!selectedServerId}
+                          className={`block w-full text-center font-semibold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${!selectedServerId ? '' : 'transform hover:scale-105'} shadow-lg hover:shadow-xl ${
                             pkg.buttonColor === 'emerald' 
                               ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-emerald-500/25'
                               : pkg.buttonColor === 'blue'
@@ -470,7 +516,8 @@ const DashboardOrder = () => {
                               </div>
                               <button
                                 onClick={() => handlePurchaseAddon(addon)}
-                                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300"
+                                disabled={!selectedServerId}
+                                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-300"
                               >
                                 Add to Subscription
                               </button>
@@ -497,6 +544,7 @@ const DashboardOrder = () => {
             setPaymentModalOpen(false);
             setSelectedPackage(null);
           }}
+          parentOrderId={selectedServerId || undefined}
           packageData={selectedPackage}
         />
       )}

@@ -345,63 +345,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
           </div>
 
-          {/* Payment Method Selection */}
-          <div className="space-y-4">
-            <h4 className="text-white font-semibold">Payment Method</h4>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('credit-card')}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  selectedPaymentMethod === 'credit-card'
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
-                }`}
-              >
-                <div className="text-center">
-                  <div className={`font-semibold text-sm ${
-                    selectedPaymentMethod === 'credit-card' ? 'text-emerald-400' : 'text-white'
-                  }`}>Credit Card</div>
-                  <div className="text-xs text-gray-400 mt-1">Visa, Mastercard</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('paypal')}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  selectedPaymentMethod === 'paypal'
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
-                }`}
-              >
-                <div className="text-center">
-                  <div className={`font-semibold text-sm ${
-                    selectedPaymentMethod === 'paypal' ? 'text-emerald-400' : 'text-white'
-                  }`}>PayPal</div>
-                  <div className="text-xs text-gray-400 mt-1">Secure payment</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('crypto')}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  selectedPaymentMethod === 'crypto'
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
-                }`}
-              >
-                <div className="text-center">
-                  <div className={`font-semibold text-sm ${
-                    selectedPaymentMethod === 'crypto' ? 'text-emerald-400' : 'text-white'
-                  }`}>Crypto</div>
-                  <div className="text-xs text-gray-400 mt-1">ETH, XRP</div>
-                </div>
-              </button>
+          {/* Payment Method */}
+          <div className="bg-gray-700/50 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+                <span className="text-blue-400 font-bold text-sm">PP</span>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold text-sm">PayPal Checkout</h4>
+                <p className="text-gray-400 text-xs">You'll be redirected to PayPal to complete payment securely.</p>
+              </div>
             </div>
           </div>
-
-          {/* Dynamic Payment Form */}
-          {renderPaymentForm()}
 
           {/* Action Buttons */}
           <div className="flex space-x-3">

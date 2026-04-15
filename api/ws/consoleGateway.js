@@ -396,6 +396,16 @@ export function attachConsoleWebSocketServer(server) {
             line: String(parsed.args[0]),
             ts: new Date().toISOString(),
           });
+        } else if (parsed?.event === 'auth success') {
+          logger.info({ order_id: orderId }, 'Panel console auth success');
+        } else if (parsed?.event === 'status') {
+          const state = parsed.args?.[0];
+          if (state) {
+            safeSend(ws, {
+              type: 'console.system',
+              message: `Server status: ${state}`,
+            });
+          }
         } else if (parsed?.event === 'token expiring' || parsed?.event === 'token expired') {
           invalidateWsCredCache(order.ptero_identifier);
           safeSend(ws, {
@@ -485,11 +495,12 @@ export function attachConsoleWebSocketServer(server) {
         })
         .catch((err) => {
           meta.panelConnectInFlight = false;
+          const errMsg = err?.message || String(err);
           logger.warn(
             {
               order_id: orderId,
               user_id: userId,
-              err: err?.message || String(err),
+              err: errMsg,
             },
             'Failed to connect to panel console websocket'
           );
@@ -500,6 +511,10 @@ export function attachConsoleWebSocketServer(server) {
             }, PANEL_RATE_LIMIT_COOLDOWN_MS);
             return;
           }
+          safeSend(ws, {
+            type: 'console.system',
+            message: `Console reconnecting… (${errMsg})`,
+          });
           scheduleReconnect();
         });
     }

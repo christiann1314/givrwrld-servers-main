@@ -9,6 +9,7 @@ import { useStripeCheckout } from '../hooks/useStripeCheckout';
 interface UpgradePaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  parentOrderId?: string;
   packageData: {
     name: string;
     price: string;
@@ -21,6 +22,7 @@ interface UpgradePaymentModalProps {
 const UpgradePaymentModal: React.FC<UpgradePaymentModalProps> = ({
   isOpen,
   onClose,
+  parentOrderId,
   packageData,
 }) => {
   const navigate = useNavigate();
@@ -56,6 +58,7 @@ const UpgradePaymentModal: React.FC<UpgradePaymentModalProps> = ({
         success_url: `${window.location.origin}/purchase-confirmed?package=${encodeURIComponent(packageData.name)}`,
         cancel_url: window.location.href,
         amount: amount,
+        parent_order_id: parentOrderId,
       });
       
       onClose();

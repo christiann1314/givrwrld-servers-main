@@ -17,7 +17,7 @@ router.post('/contact', async (req, res) => {
 
   try {
     const { transporter, from } = await buildTransporter();
-    const to = process.env.SUPPORT_EMAIL || 'givrwlrdservers.com@outlook.com';
+    const to = process.env.SUPPORT_EMAIL || 'givrwrldservers.com@outlook.com';
 
     const plainText = [
       `Name: ${name}`,

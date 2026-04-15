@@ -612,15 +612,13 @@ router.get('/metrics/summary', authenticate, async (req, res) => {
     await ensureMetricsTables();
     const days = Math.max(1, Math.min(30, Number(req.query.days || 7)));
     const [rows] = await pool.execute(
-      `SELECT order_id, state, cpu_percent, players_online, uptime_seconds, sampled_at
-       FROM server_stats_snapshots
-       WHERE sampled_at >= (NOW() - INTERVAL ? DAY)
-         AND order_id COLLATE utf8mb4_unicode_ci IN (
-           SELECT id FROM orders
-           WHERE user_id = ?
-             AND item_type = 'game'
-         )
-       ORDER BY order_id ASC, sampled_at ASC`,
+      `SELECT s.order_id, s.state, s.cpu_percent, s.players_online, s.uptime_seconds, s.sampled_at
+       FROM server_stats_snapshots s
+       INNER JOIN orders o ON o.id = s.order_id COLLATE utf8mb4_general_ci
+       WHERE s.sampled_at >= (NOW() - INTERVAL ? DAY)
+         AND o.user_id = ?
+         AND o.item_type = 'game'
+       ORDER BY s.order_id ASC, s.sampled_at ASC`,
       [days, req.userId]
     );
 
