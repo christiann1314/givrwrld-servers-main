@@ -17,6 +17,13 @@ const PANEL_CLIENT_KEY = (process.env.PTERO_CLIENT_KEY || '').trim();
 const PANEL_URL = (process.env.PANEL_URL || '').trim();
 const PANEL_RATE_LIMIT_COOLDOWN_MS = 120000;
 const PANEL_OPEN_TIMEOUT_MS = 20000;
+/**
+ * When the API server lives on the same host as Wings, the Panel returns a public
+ * wss:// URL that the server can't reach (hairpin NAT).  WINGS_LOCAL_WS_BASE lets
+ * us rewrite that URL to a localhost address that skips the public network hop.
+ * Example: ws://127.0.0.1:8082
+ */
+const WINGS_LOCAL_WS_BASE = (process.env.WINGS_LOCAL_WS_BASE || '').trim();
 /** Browser→API pings so nginx/proxies do not treat the console stream as idle and RST it. */
 const CLIENT_WS_PING_MS = 25000;
 /**
@@ -199,15 +206,34 @@ async function fetchPanelWebsocketCredentials(order) {
   });
 }
 
+function rewriteSocketUrl(originalUrl) {
+  if (!WINGS_LOCAL_WS_BASE) return originalUrl;
+  try {
+    const parsed = new URL(originalUrl);
+    const localBase = new URL(WINGS_LOCAL_WS_BASE);
+    parsed.protocol = localBase.protocol;
+    parsed.hostname = localBase.hostname;
+    parsed.port = localBase.port;
+    return parsed.toString();
+  } catch {
+    return originalUrl;
+  }
+}
+
 async function createPanelSocket(order, onMessage, onClose) {
   if (!PANEL_URL || !PANEL_CLIENT_KEY || !order.ptero_identifier) {
     throw new Error('Panel client API not configured for console streaming');
   }
 
   const { token, socketUrl } = await fetchPanelWebsocketCredentials(order);
+  const effectiveUrl = rewriteSocketUrl(socketUrl);
 
   return new Promise((resolve, reject) => {
-    const panelWs = new WebSocket(socketUrl);
+    const wsOptions = {};
+    if (effectiveUrl.startsWith('ws://')) {
+      wsOptions.rejectUnauthorized = false;
+    }
+    const panelWs = new WebSocket(effectiveUrl, wsOptions);
     let settled = false;
     let connected = false;
 
