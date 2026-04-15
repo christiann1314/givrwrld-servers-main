@@ -1264,17 +1264,14 @@ function buildEnvironmentForAllocationGroup(ctx) {
     environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
   }
 
-  // Egg defaults often use "1"/"0"; Panel validates AUTO_UPDATE as boolean in JSON (not the strings "true"/"false").
-  // Match BATTLE_EYE below: send actual JSON booleans in the Application API payload.
-  if (environment.AUTO_UPDATE !== undefined && environment.AUTO_UPDATE !== null) {
-    const au = String(environment.AUTO_UPDATE).trim().toLowerCase();
-    environment.AUTO_UPDATE =
-      au === '' || ['1', 'true', 'on', 'yes'].includes(au);
-  }
-
-  if (gameKey === 'ark' && environment.BATTLE_EYE !== undefined) {
-    const boolInput = String(environment.BATTLE_EYE).toLowerCase();
-    environment.BATTLE_EYE = boolInput === 'true' || boolInput === '1' || boolInput === 'yes';
+  // Pterodactyl Application API validates boolean egg variables as JSON booleans,
+  // not strings. Convert every variable whose rules include "boolean" to an actual
+  // JS boolean so JSON.stringify sends true/false instead of "true"/"false".
+  for (const { key, rules } of requiredVarMeta) {
+    if (!String(rules || '').toLowerCase().includes('boolean')) continue;
+    if (environment[key] === undefined || environment[key] === null) continue;
+    const v = String(environment[key]).trim().toLowerCase();
+    environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
   }
 
   if (gameKey === 'among-us') {

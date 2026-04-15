@@ -23,8 +23,8 @@ UPDATE plans SET ptero_egg_id = 64 WHERE item_type = 'game' AND id LIKE 'mc-purp
 UPDATE plans SET ptero_egg_id = 65 WHERE item_type = 'game' AND game = 'rust';
 UPDATE plans SET ptero_egg_id = 66 WHERE item_type = 'game' AND game = 'ark';
 
-UPDATE plans SET ptero_egg_id = 68 WHERE item_type = 'game' AND game = 'terraria' AND id LIKE '%tmodloader%';
 UPDATE plans SET ptero_egg_id = 67 WHERE item_type = 'game' AND game = 'terraria';
+UPDATE plans SET ptero_egg_id = 68 WHERE item_type = 'game' AND game = 'terraria' AND (id LIKE '%tmodloader%' OR id LIKE '%calamity%');
 
 UPDATE plans SET ptero_egg_id = 69 WHERE item_type = 'game' AND game = 'factorio';
 UPDATE plans SET ptero_egg_id = 70 WHERE item_type = 'game' AND game = 'palworld';
