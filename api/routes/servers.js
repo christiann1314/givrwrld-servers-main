@@ -232,7 +232,7 @@ function inferRequiredEnvValue(key, rules, context) {
 
   if (lowerRules.includes('boolean')) return 'true';
   if (lowerRules.includes('numeric') || lowerRules.includes('integer')) return '1';
-  if (lowerRules.includes('url')) return 'https://example.com';
+  if (lowerRules.includes('url')) return '';
   return 'default';
 }
 
