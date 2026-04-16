@@ -1266,11 +1266,24 @@ function buildEnvironmentForAllocationGroup(ctx) {
   // Pterodactyl Application API validates boolean egg variables as JSON booleans,
   // not strings. Convert every variable whose rules include "boolean" to an actual
   // JS boolean so JSON.stringify sends true/false instead of "true"/"false".
+  const booleanKeysFromMeta = [];
   for (const { key, rules } of requiredVarMeta) {
     if (!String(rules || '').toLowerCase().includes('boolean')) continue;
+    booleanKeysFromMeta.push(key);
     if (environment[key] === undefined || environment[key] === null) continue;
     const v = String(environment[key]).trim().toLowerCase();
     environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
+  }
+
+  // Fallback: if Panel API didn't return variable metadata, force-convert
+  // known boolean env vars that Pterodactyl commonly validates.
+  if (booleanKeysFromMeta.length === 0) {
+    const knownBooleanKeys = ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK'];
+    for (const key of knownBooleanKeys) {
+      if (environment[key] === undefined || environment[key] === null) continue;
+      const v = String(environment[key]).trim().toLowerCase();
+      environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
+    }
   }
 
   if (gameKey === 'among-us') {
@@ -1928,8 +1941,11 @@ export async function provisionServer(orderId) {
           }
         }
       }
-    } catch {
-      // Fallback handled in buildEnvironmentForAllocationGroup.
+    } catch (eggFetchErr) {
+      logger.warn(
+        { order_id: orderId, egg_id: order.ptero_egg_id, nest_id: egg.ptero_nest_id, err: eggFetchErr },
+        'panel_egg_variable_fetch_failed',
+      );
     }
 
     const startupForNormalize =
