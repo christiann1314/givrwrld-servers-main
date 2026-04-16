@@ -7,7 +7,6 @@ import {
   getDecryptedSecret,
   getNodeForRegion,
   getOrCreatePterodactylUser,
-  releaseNodeCapacityForOrder,
   getActiveAddonsForOrder,
 } from '../utils/mysql.js';
 import {
@@ -2237,7 +2236,6 @@ export async function provisionServer(orderId) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await recordProvisionError(orderId, errorMessage);
       await transitionToFailed(orderId, errorMessage);
-      await releaseNodeCapacityForOrder(orderId);
       logger.error({ order_id: orderId, err: error, message: errorMessage }, 'Provisioning error');
       throw error;
     }

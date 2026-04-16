@@ -1,7 +1,7 @@
 // PayPal Checkout & Webhook Routes
 import express from 'express';
 import pool from '../config/database.js';
-import { getPlan, getDecryptedSecret, releaseNodeCapacityForOrder } from '../utils/mysql.js';
+import { getPlan, getDecryptedSecret } from '../utils/mysql.js';
 import { authenticate } from '../middleware/auth.js';
 import {
   getPayPalAccessToken,
@@ -307,7 +307,6 @@ async function handlePayPalWebhook(req, res) {
         const orderId = rows?.[0]?.id || null;
         if (orderId) {
           await transitionToCanceled(orderId);
-          await releaseNodeCapacityForOrder(orderId);
         }
       } catch (err) {
         req.log?.error?.(

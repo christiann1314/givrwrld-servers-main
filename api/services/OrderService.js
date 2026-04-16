@@ -4,6 +4,7 @@
  */
 import pool from '../config/database.js';
 import { getLogger } from '../lib/logger.js';
+import { releaseNodeCapacityForOrder } from '../utils/mysql.js';
 
 const log = getLogger();
 
@@ -520,6 +521,7 @@ export async function transitionToFailed(orderId, errorMessage = null) {
   );
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.FAILED);
+    await releaseNodeCapacityForOrder(orderId);
     return true;
   }
   return false;
@@ -548,6 +550,7 @@ export async function transitionToCanceled(orderId) {
   );
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.CANCELED);
+    await releaseNodeCapacityForOrder(orderId);
     return true;
   }
   return false;
