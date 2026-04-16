@@ -128,6 +128,7 @@ export async function createSubscription(accessToken, planId, returnUrl, cancelU
 
   const body = {
     plan_id: planId,
+    custom_id: customId || undefined,
     application_context: {
       brand_name: 'GIVRwrld',
       user_action: 'SUBSCRIBE_NOW',

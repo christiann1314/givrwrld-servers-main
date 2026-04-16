@@ -7,6 +7,8 @@ import {
 } from './paypal.js';
 
 const SANDBOX = process.env.PAYPAL_SANDBOX !== 'false';
+const SANDBOX_BASE = 'https://api-m.sandbox.paypal.com';
+const LIVE_BASE = 'https://api-m.paypal.com';
 
 export function getBillingTermSpec(termRaw) {
   const term = String(termRaw || 'monthly').toLowerCase();
@@ -65,50 +67,16 @@ export async function ensurePayPalPlanTermTable() {
   );
 }
 
-/**
- * Ensure plan has a PayPal plan ID for selected term.
- * Writes to paypal_plan_terms as the source of truth, and keeps plans.paypal_plan_id in sync for monthly.
- */
-export async function ensurePayPalPlan(plan, term = 'monthly') {
-  const termPrice = getPlanPriceForTerm(plan, term);
+async function verifyPayPalPlan(accessToken, paypalPlanId) {
+  const base = SANDBOX ? SANDBOX_BASE : LIVE_BASE;
+  const res = await fetch(`${base}/v1/billing/plans/${paypalPlanId}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  return res.ok;
+}
 
-  // In local/dev, prefer .env PayPal credentials over encrypted DB secrets.
-  const aesKey = process.env.AES_KEY;
-  const clientId =
-    process.env.PAYPAL_CLIENT_ID ||
-    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null);
-  const clientSecret =
-    process.env.PAYPAL_CLIENT_SECRET ||
-    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null);
-
-  if (!clientId || !clientSecret) {
-    throw new Error('PayPal credentials not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.');
-  }
-
-  const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
-
-  await ensurePayPalPlanTermTable();
-
-  const [existing] = await pool.execute(
-    `SELECT paypal_plan_id
-     FROM paypal_plan_terms
-     WHERE plan_id = ? AND term = ? AND sandbox_mode = ?
-     LIMIT 1`,
-    [plan.id, termPrice.term, SANDBOX ? 1 : 0],
-  );
-  if (existing?.[0]?.paypal_plan_id) {
-    return existing[0].paypal_plan_id;
-  }
-
-  const [existingProduct] = await pool.execute(
-    `SELECT paypal_product_id
-     FROM paypal_plan_terms
-     WHERE plan_id = ? AND sandbox_mode = ? AND paypal_product_id IS NOT NULL
-     LIMIT 1`,
-    [plan.id, SANDBOX ? 1 : 0],
-  );
-
-  const productId = existingProduct?.[0]?.paypal_product_id || await createProduct(
+async function createFreshPlan(accessToken, plan, termPrice) {
+  const productId = await createProduct(
     accessToken,
     {
       name: `${plan.display_name || plan.id} - ${plan.game || 'Game'} Server`,
@@ -140,10 +108,56 @@ export async function ensurePayPalPlan(plan, term = 'monthly') {
     [plan.id, termPrice.term, SANDBOX ? 1 : 0, productId, paypalPlanId],
   );
 
-  // Keep legacy column populated for monthly compatibility.
   if (termPrice.term === 'monthly') {
     await pool.execute('UPDATE plans SET paypal_plan_id = ? WHERE id = ?', [paypalPlanId, plan.id]);
   }
+
   return paypalPlanId;
+}
+
+/**
+ * Ensure plan has a PayPal plan ID for selected term.
+ * Verifies cached plans still exist in PayPal; recreates if stale.
+ */
+export async function ensurePayPalPlan(plan, term = 'monthly') {
+  const termPrice = getPlanPriceForTerm(plan, term);
+
+  const aesKey = process.env.AES_KEY;
+  const clientId =
+    process.env.PAYPAL_CLIENT_ID ||
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_ID', aesKey) : null);
+  const clientSecret =
+    process.env.PAYPAL_CLIENT_SECRET ||
+    (aesKey ? await getDecryptedSecret('paypal', 'PAYPAL_CLIENT_SECRET', aesKey) : null);
+
+  if (!clientId || !clientSecret) {
+    throw new Error('PayPal credentials not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.');
+  }
+
+  const accessToken = await getPayPalAccessToken(clientId, clientSecret, SANDBOX);
+
+  await ensurePayPalPlanTermTable();
+
+  const [existing] = await pool.execute(
+    `SELECT paypal_plan_id
+     FROM paypal_plan_terms
+     WHERE plan_id = ? AND term = ? AND sandbox_mode = ?
+     LIMIT 1`,
+    [plan.id, termPrice.term, SANDBOX ? 1 : 0],
+  );
+
+  if (existing?.[0]?.paypal_plan_id) {
+    const cached = existing[0].paypal_plan_id;
+    const valid = await verifyPayPalPlan(accessToken, cached);
+    if (valid) return cached;
+
+    console.warn(`Stale PayPal plan ${cached} for ${plan.id}/${termPrice.term} — recreating`);
+    await pool.execute(
+      `DELETE FROM paypal_plan_terms WHERE plan_id = ? AND term = ? AND sandbox_mode = ?`,
+      [plan.id, termPrice.term, SANDBOX ? 1 : 0],
+    );
+  }
+
+  return createFreshPlan(accessToken, plan, termPrice);
 }
 
