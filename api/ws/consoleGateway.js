@@ -229,7 +229,11 @@ async function createPanelSocket(order, onMessage, onClose) {
   const effectiveUrl = rewriteSocketUrl(socketUrl);
 
   return new Promise((resolve, reject) => {
-    const wsOptions = {};
+    const wsOptions = {
+      headers: {
+        Origin: PANEL_URL.replace(/\/+$/, ''),
+      },
+    };
     if (effectiveUrl.startsWith('ws://')) {
       wsOptions.rejectUnauthorized = false;
     }
