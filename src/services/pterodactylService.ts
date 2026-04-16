@@ -122,8 +122,9 @@ export class PterodactylService {
 
     const panelReadyStatus = (status: string) => {
       const s = String(status || '').toLowerCase();
-      if (s === 'active' || s === 'playable') return 'online';
       if (['provisioned', 'configuring', 'verifying'].includes(s)) return 'starting';
+      if (['pending', 'provisioning'].includes(s)) return 'starting';
+      if (s === 'error' || s === 'failed') return 'offline';
       return 'offline';
     };
 

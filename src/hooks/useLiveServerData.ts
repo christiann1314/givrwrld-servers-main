@@ -7,7 +7,7 @@ interface ServerData {
   id: string;
   name: string;
   game: string;
-  status: 'online' | 'offline' | 'starting' | 'stopping';
+  status: 'online' | 'offline' | 'starting' | 'stopping' | 'unknown';
   players: number;
   maxPlayers: number;
   uptime: string;

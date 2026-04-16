@@ -370,9 +370,9 @@ function normalizeState(status, panelState) {
   if (panel === 'stopping') return 'stopping';
   if (panel === 'stopped' || panel === 'offline') return 'offline';
   const current = String(status || '').toLowerCase();
-  if (['active', 'provisioned', 'paid', 'playable', 'configuring', 'verifying'].includes(current)) return 'online';
   if (['pending', 'provisioning'].includes(current)) return 'provisioning';
   if (current === 'error' || current === 'failed') return 'error';
+  if (['active', 'provisioned', 'paid', 'playable', 'configuring', 'verifying'].includes(current)) return 'unknown';
   return 'offline';
 }
 
