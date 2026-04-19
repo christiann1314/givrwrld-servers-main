@@ -12,10 +12,11 @@ const MAX_PUBLIC_PAGE_REFRESH_PER_PASS = 100;
 export async function runRefreshPublicServerSnapshots(logger) {
   const [rows] = await pool.execute(
     `SELECT
-       spp.order_id,
-       o.status AS order_status,
-       o.item_type,
-       o.ptero_server_id
+        spp.order_id,
+        o.status AS order_status,
+        o.item_type,
+        o.ptero_server_id,
+        o.ptero_identifier
      FROM server_public_pages spp
      INNER JOIN orders o ON o.id = spp.order_id
      WHERE spp.public_page_enabled = 1
@@ -38,7 +39,7 @@ export async function runRefreshPublicServerSnapshots(logger) {
       continue;
     }
 
-    if (row.ptero_server_id == null) {
+    if (row.ptero_server_id == null || !row.ptero_identifier) {
       await upsertPublicServerSnapshot({
         orderId,
         status: normalizePublicSnapshotState(null, row.order_status),
@@ -53,7 +54,7 @@ export async function runRefreshPublicServerSnapshots(logger) {
     }
 
     try {
-      const resources = await getServerResources(row.ptero_server_id);
+      const resources = await getServerResources(row.ptero_identifier);
 
       let joinAddress = null;
       try {
@@ -61,7 +62,9 @@ export async function runRefreshPublicServerSnapshots(logger) {
         const ip = details?.allocations?.primaryIp;
         const port = details?.allocations?.primaryPort;
         if (ip && port) joinAddress = `${ip}:${port}`;
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
 
       await upsertPublicServerSnapshot({
         orderId,
@@ -75,11 +78,13 @@ export async function runRefreshPublicServerSnapshots(logger) {
       refreshed += 1;
     } catch (err) {
       skipped += 1;
+
       if (err instanceof PterodactylError) {
         logger.warn?.(
           {
             order_id: orderId,
             ptero_server_id: row.ptero_server_id,
+            ptero_identifier: row.ptero_identifier,
             err: err.message,
           },
           'public_page_snapshot_refresh_panel_error'
@@ -89,6 +94,7 @@ export async function runRefreshPublicServerSnapshots(logger) {
           {
             order_id: orderId,
             ptero_server_id: row.ptero_server_id,
+            ptero_identifier: row.ptero_identifier,
             err: err?.message || String(err),
           },
           'public_page_snapshot_refresh_failed'
