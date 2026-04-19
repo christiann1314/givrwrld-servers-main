@@ -33,7 +33,7 @@ async function main() {
     `SELECT l.ptero_node_id,
             SUM(l.ram_gb) AS sum_ram_gb,
             SUM(l.disk_gb) AS sum_disk_gb,
-            COUNT(*) AS rows
+            COUNT(*) AS ledger_rows
      FROM ptero_node_capacity_ledger l
      GROUP BY l.ptero_node_id`,
   );
