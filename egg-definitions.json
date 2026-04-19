@@ -1,0 +1,1253 @@
+{
+  "_meta": {
+    "description": "Pterodactyl game egg definitions for GIVRWRLD servers",
+    "source": "https://github.com/pterodactyl/game-eggs (main branch)",
+    "fetched_at": "2026-04-17",
+    "games_count": 13
+  },
+  "eggs": {
+    "minecraft_paper": {
+      "repo_path": "minecraft/java/paper/egg-paper.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/minecraft/java/paper/egg-paper.json",
+      "name": "Paper",
+      "author": "parker@pterodactyl.io",
+      "description": "High performance Spigot fork that aims to fix gameplay and mechanics inconsistencies.",
+      "features": ["eula", "java_version", "pid_limit"],
+      "docker_images": {
+        "Java 25": "ghcr.io/ptero-eggs/yolks:java_25",
+        "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+        "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+        "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+        "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+        "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+        "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+      },
+      "startup": "java -Xms128M -XX:MaxRAMPercentage=95.0 -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+      "config": {
+        "files": {
+          "server.properties": {
+            "parser": "properties",
+            "find": {
+              "server-ip": "0.0.0.0",
+              "server-port": "{{server.build.default.port}}",
+              "query.port": "{{server.build.default.port}}"
+            }
+          }
+        },
+        "startup": {
+          "done": ")! For help, type "
+        },
+        "logs": {},
+        "stop": "stop"
+      },
+      "variables": [
+        {
+          "name": "Minecraft Version",
+          "env_variable": "MINECRAFT_VERSION",
+          "default_value": "latest",
+          "rules": "nullable|string|max:20"
+        },
+        {
+          "name": "Server Jar File",
+          "env_variable": "SERVER_JARFILE",
+          "default_value": "server.jar",
+          "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+        },
+        {
+          "name": "Download Path",
+          "env_variable": "DL_PATH",
+          "default_value": "",
+          "rules": "nullable|string"
+        },
+        {
+          "name": "Build Number",
+          "env_variable": "BUILD_NUMBER",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:alpine",
+        "entrypoint": "ash",
+        "script": "#!/bin/ash\n# Paper Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=paper\nUSER_AGENT=\"Pterodactyl (https://Pterodactyl.io)\"\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl --user-agent \"${USER_AGENT}\" -s https://fill.papermc.io/v3/projects/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions | any(.[]; index($VERSION))' | grep -m1 true`\n\tLATEST_VERSION=`curl --user-agent \"${USER_AGENT}\" -s https://fill.papermc.io/v3/projects/${PROJECT} | jq -r '.versions | to_entries | .[0].value[0]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Specified version not found. Defaulting to the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\n\tBUILD_EXISTS=`curl --user-agent \"${USER_AGENT}\" -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds[] | tostring | contains($BUILD)' | grep -m1 true`\n\tLATEST_BUILD=`curl --user-agent \"${USER_AGENT}\" -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${MINECRAFT_VERSION} | jq -r '.builds' | jq -r '.[0]'`\n\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\n\techo \"Version being downloaded\"\n\techo -e \"Project: ${PROJECT}\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\tDOWNLOAD_URL=`curl --user-agent \"${USER_AGENT}\" -s https://fill.papermc.io/v3/projects/${PROJECT}/versions/${MINECRAFT_VERSION}/builds/${BUILD_NUMBER} | jq -r '.downloads.\"server:default\".url'`\nfi\n\ncd /mnt/server\n\necho -e \"Running curl --user-agent \\\"${USER_AGENT}\\\" -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl --user-agent \"${USER_AGENT}\" -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f server.properties ]; then\n echo -e \"Downloading MC server.properties\"\n curl --user-agent \"${USER_AGENT}\" -o server.properties https://raw.githubusercontent.com/pterodactyl/game-eggs/main/minecraft/java/server.properties\nfi"
+      }
+    },
+
+    "minecraft_purpur": {
+      "repo_path": "minecraft/java/purpur/egg-purpur.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/minecraft/java/purpur/egg-purpur.json",
+      "name": "Purpur",
+      "author": "purpur@birdflop.com",
+      "description": "A drop-in replacement for Paper servers designed for configurability, and new fun and exciting gameplay features.",
+      "features": ["eula", "java_version", "pid_limit"],
+      "docker_images": {
+        "Java 25": "ghcr.io/ptero-eggs/yolks:java_25",
+        "Java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+        "Java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+        "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+        "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+        "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+        "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+      },
+      "startup": "java --add-modules=jdk.incubator.vector -XX:MaxRAMPercentage=95.0 -Dterminal.jline=false -Dterminal.ansi=true -jar {{SERVER_JARFILE}}",
+      "config": {
+        "files": {
+          "server.properties": {
+            "parser": "properties",
+            "find": {
+              "server-ip": "0.0.0.0",
+              "server-port": "{{server.build.default.port}}"
+            }
+          }
+        },
+        "startup": {
+          "done": ")! For help, type "
+        },
+        "logs": {},
+        "stop": "stop"
+      },
+      "variables": [
+        {
+          "name": "Minecraft Version",
+          "env_variable": "MINECRAFT_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Server Jar File",
+          "env_variable": "SERVER_JARFILE",
+          "default_value": "server.jar",
+          "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/|max:80"
+        },
+        {
+          "name": "Build Number",
+          "env_variable": "BUILD_NUMBER",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:alpine",
+        "entrypoint": "ash",
+        "script": "#!/bin/ash\n# Paper Installation Script\n#\n# Server Files: /mnt/server\nPROJECT=purpur\n\nif [ -n \"${DL_PATH}\" ]; then\n\techo -e \"Using supplied download url: ${DL_PATH}\"\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\nelse\n\tVER_EXISTS=`curl -s https://api.purpurmc.org/v2/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep true`\n\tLATEST_VERSION=`curl -s https://api.purpurmc.org/v2/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\n\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} version\"\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\n\tfi\n\t\n\tBUILD_EXISTS=`curl -s https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds.all | tostring | contains($BUILD)' | grep true`\n\tLATEST_BUILD=`curl -s https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION} | jq -r '.builds.latest'`\n\t\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\n\telse\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\n\t\tBUILD_NUMBER=${LATEST_BUILD}\n\tfi\n\t\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\n\t\n\techo \"Version being downloaded\"\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\n\techo -e \"Build: ${BUILD_NUMBER}\"\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\n\tDOWNLOAD_URL=https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION}/${BUILD_NUMBER}/download\nfi\n\ncd /mnt/server\n\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\n\nif [ -f ${SERVER_JARFILE} ]; then\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\nfi\n\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\n\nif [ ! -f server.properties ]; then\n echo -e \"Downloading MC server.properties\"\n curl -o server.properties https://raw.githubusercontent.com/ptero-eggs/game-eggs/main/minecraft/java/server.properties\nfi"
+      }
+    },
+
+    "minecraft_fabric": {
+      "repo_path": "minecraft/java/fabric/egg-fabric.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/minecraft/java/fabric/egg-fabric.json",
+      "name": "Fabric",
+      "author": "accounts@bofanodes.io",
+      "description": "Fabric is a modular modding toolchain targeting Minecraft 1.14 and above, including snapshots.",
+      "features": ["eula", "java_version", "pid_limit"],
+      "docker_images": {
+        "java 24": "ghcr.io/ptero-eggs/yolks:java_24",
+        "java 23": "ghcr.io/ptero-eggs/yolks:java_23",
+        "java 22": "ghcr.io/ptero-eggs/yolks:java_22",
+        "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+        "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+        "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+        "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+        "Java 8": "ghcr.io/ptero-eggs/yolks:java_8"
+      },
+      "startup": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}",
+      "config": {
+        "files": {
+          "server.properties": {
+            "parser": "properties",
+            "find": {
+              "server-ip": "0.0.0.0",
+              "server-port": "{{server.build.default.port}}"
+            }
+          }
+        },
+        "startup": {
+          "done": ")! For help, type ",
+          "userInteraction": ["Go to eula.txt for more info."]
+        },
+        "logs": {
+          "custom": false,
+          "location": "logs/latest.log"
+        },
+        "stop": "stop"
+      },
+      "variables": [
+        {
+          "name": "Server Jar File",
+          "env_variable": "SERVER_JARFILE",
+          "default_value": "server.jar",
+          "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+        },
+        {
+          "name": "Minecraft Version",
+          "env_variable": "MC_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|between:3,15"
+        },
+        {
+          "name": "Fabric Version",
+          "env_variable": "FABRIC_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|between:3,15"
+        },
+        {
+          "name": "Fabric Loader Version",
+          "env_variable": "LOADER_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|between:3,15"
+        }
+      ],
+      "install": {
+        "container": "eclipse-temurin:21-jdk-jammy",
+        "entrypoint": "bash",
+        "script": "#!/bin/bash\n# Fabric MC Installation Script\n#\n# Server Files: /mnt/server\napt update\napt install -y curl jq unzip dos2unix wget\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -z \"$MC_VERSION\" ] || [ \"$MC_VERSION\" == \"latest\" ]; then\n MC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/game | jq -r '.[] | select(.stable== true )|.version' | head -n1)\nelif [ \"$MC_VERSION\" == \"snapshot\" ]; then\n MC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/game | jq -r '.[] | select(.stable== false )|.version' | head -n1)\nfi\n\nif [ -z \"$FABRIC_VERSION\" ] || [ \"$FABRIC_VERSION\" == \"latest\" ]; then\n FABRIC_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/installer | jq -r '.[0].version')\nfi\n\nif [ -z \"$LOADER_VERSION\" ] || [ \"$LOADER_VERSION\" == \"latest\" ]; then\n LOADER_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/loader | jq -r '.[] | select(.stable== true )|.version' | head -n1)\nelif [ \"$LOADER_VERSION\" == \"snapshot\" ]; then\n LOADER_VERSION=$(curl -sSL https://meta.fabricmc.net/v2/versions/loader | jq -r '.[] | select(.stable== false )|.version' | head -n1)\nfi\n\nwget -O fabric-installer.jar https://maven.fabricmc.net/net/fabricmc/fabric-installer/$FABRIC_VERSION/fabric-installer-$FABRIC_VERSION.jar\njava -jar fabric-installer.jar server -mcversion $MC_VERSION -loader $LOADER_VERSION -downloadMinecraft\nmv server.jar minecraft-server.jar\nmv fabric-server-launch.jar server.jar\necho \"serverJar=minecraft-server.jar\" > fabric-server-launcher.properties\necho -e \"Install Complete\""
+      }
+    },
+
+    "minecraft_forge": {
+      "repo_path": "minecraft/java/forge/forge/egg-forge-enhanced.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/minecraft/java/forge/forge/egg-forge-enhanced.json",
+      "name": "Forge Enhanced",
+      "author": "parker@parkervcp.com",
+      "description": "Minecraft Forge Server. Minecraft Forge is a modding API (Application Programming Interface), which makes it easier to create mods, and also make sure mods are compatible with each other.",
+      "features": ["eula", "java_version", "pid_limit"],
+      "docker_images": {
+        "Java 8": "ghcr.io/ptero-eggs/yolks:java_8",
+        "Java 11": "ghcr.io/ptero-eggs/yolks:java_11",
+        "Java 16": "ghcr.io/ptero-eggs/yolks:java_16",
+        "Java 17": "ghcr.io/ptero-eggs/yolks:java_17",
+        "java 21": "ghcr.io/ptero-eggs/yolks:java_21",
+        "java 22": "ghcr.io/ptero-eggs/yolks:java_22"
+      },
+      "startup": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true $( [[ ! -f unix_args.txt ]] && printf %s \"-jar {{SERVER_JARFILE}}\" || printf %s \"@unix_args.txt\" )",
+      "config": {
+        "files": {
+          "server.properties": {
+            "parser": "properties",
+            "find": {
+              "server-ip": "0.0.0.0",
+              "server-port": "{{server.build.default.port}}",
+              "query.port": "{{server.build.default.port}}"
+            }
+          }
+        },
+        "startup": {
+          "done": ")! For help, type "
+        },
+        "logs": {},
+        "stop": "stop"
+      },
+      "variables": [
+        {
+          "name": "Server Jar File",
+          "env_variable": "SERVER_JARFILE",
+          "default_value": "server.jar",
+          "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/"
+        },
+        {
+          "name": "Minecraft Version",
+          "env_variable": "MC_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:9"
+        },
+        {
+          "name": "Build Type",
+          "env_variable": "BUILD_TYPE",
+          "default_value": "recommended",
+          "rules": "required|string|in:recommended,latest"
+        },
+        {
+          "name": "Forge Version",
+          "env_variable": "FORGE_VERSION",
+          "default_value": "",
+          "rules": "nullable|string|max:32"
+        }
+      ],
+      "install": {
+        "container": "eclipse-temurin:8-jdk-jammy",
+        "entrypoint": "bash",
+        "script_note": "Full Forge install script handles version detection via promotions_slim.json, installer download, and unix_args.txt symlink for 1.17+ JPMS"
+      }
+    },
+
+    "terraria_vanilla": {
+      "repo_path": "terraria/vanilla/egg-terraria-vanilla.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/terraria/vanilla/egg-terraria-vanilla.json",
+      "name": "Terraria Vanilla",
+      "author": "iamkubi@gmail.com",
+      "description": "Dig, fight, explore, build! Nothing is impossible in this action-packed adventure game.",
+      "docker_images": {
+        "Debian": "ghcr.io/ptero-eggs/yolks:debian"
+      },
+      "startup": "./TerrariaServer.bin.x86_64 -config serverconfig.txt",
+      "config": {
+        "files": {
+          "serverconfig.txt": {
+            "parser": "properties",
+            "find": {
+              "worldpath": "/home/container/saves/Worlds",
+              "worldname": "{{server.build.env.WORLD_NAME}}",
+              "world": "/home/container/saves/Worlds/{{server.build.env.WORLD_NAME}}.wld",
+              "difficulty": "{{server.build.env.WORLD_DIFFICULTY}}",
+              "autocreate": "{{server.build.env.WORLD_SIZE}}",
+              "port": "{{server.build.default.port}}",
+              "maxplayers": "{{server.build.env.MAX_PLAYERS}}",
+              "motd": "{{server.build.env.SERVER_MOTD}}",
+              "seed": "{{server.build.env.WORLD_SEED}}",
+              "password": "{{server.build.env.PASSWORD}}",
+              "npcstream": "{{server.build.env.NPCSTREAM}}"
+            }
+          }
+        },
+        "startup": {
+          "done": "Type 'help' for a list of commands"
+        },
+        "logs": {},
+        "stop": "exit"
+      },
+      "variables": [
+        {
+          "name": "Terraria version",
+          "env_variable": "TERRARIA_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "World Name",
+          "env_variable": "WORLD_NAME",
+          "default_value": "world",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "8",
+          "rules": "required|numeric|max:255"
+        },
+        {
+          "name": "World Size",
+          "env_variable": "WORLD_SIZE",
+          "default_value": "1",
+          "rules": "required|numeric|in:1,2,3"
+        },
+        {
+          "name": "Difficulty",
+          "env_variable": "WORLD_DIFFICULTY",
+          "default_value": "3",
+          "rules": "required|numeric|in:0,1,2,3"
+        },
+        {
+          "name": "MOTD",
+          "env_variable": "SERVER_MOTD",
+          "default_value": "Welcome!",
+          "rules": "required|string|max:128"
+        },
+        {
+          "name": "World Seed",
+          "env_variable": "WORLD_SEED",
+          "default_value": "",
+          "rules": "nullable|string|max:20"
+        },
+        {
+          "name": "Password",
+          "env_variable": "PASSWORD",
+          "default_value": "",
+          "rules": "nullable|string"
+        },
+        {
+          "name": "NPCStream",
+          "env_variable": "NPCSTREAM",
+          "default_value": "0",
+          "rules": "required|int|between:0,60"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from terraria.org API, unzips Linux server files, generates serverconfig.txt"
+      }
+    },
+
+    "terraria_tmodloader": {
+      "repo_path": "terraria/tmodloader/egg-t-modloader.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/terraria/tmodloader/egg-t-modloader.json",
+      "name": "tModloader",
+      "author": "parker@parkervcp.com",
+      "description": "tModLoader is essentially a mod that provides a way to load your own mods without having to work directly with Terraria's source code itself.",
+      "docker_images": {
+        "Dotnet 8": "ghcr.io/ptero-eggs/yolks:dotnet_8",
+        "Dotnet 6": "ghcr.io/ptero-eggs/yolks:dotnet_6"
+      },
+      "startup": "./tModLoaderServer -ip 0.0.0.0 -port {{SERVER_PORT}} -maxplayers {{MAX_PLAYERS}} -password \"{{SERVER_PASSWORD}}\" -motd \"{{MOTD}}\" -lang {{LANGUAGE}} -world ~/saves/Worlds/{{WORLD_NAME}}.wld -worldname {{WORLD_NAME}} -autocreate {{WORLD_SIZE}} -config serverconfig.txt -savedirectory ~/ -tmlsavedirectory ~/saves -modpath ~/mods",
+      "config": {
+        "files": {
+          "serverconfig.txt": {
+            "parser": "file",
+            "find": {
+              "difficulty": "difficulty={{server.build.env.DIFFICULTY}}"
+            }
+          }
+        },
+        "startup": {
+          "done": "Type 'help' for a list of commands"
+        },
+        "logs": {},
+        "stop": "exit"
+      },
+      "variables": [
+        {
+          "name": "World Name",
+          "env_variable": "WORLD_NAME",
+          "default_value": "world",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "8",
+          "rules": "required|numeric|digits_between:1,3"
+        },
+        {
+          "name": "World Size",
+          "env_variable": "WORLD_SIZE",
+          "default_value": "1",
+          "rules": "required|string|in:1,2,3"
+        },
+        {
+          "name": "tModloader Version",
+          "env_variable": "VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Difficulty",
+          "env_variable": "DIFFICULTY",
+          "default_value": "0",
+          "rules": "required|string|in:0,1,2,3"
+        },
+        {
+          "name": "Server Password",
+          "env_variable": "SERVER_PASSWORD",
+          "default_value": "",
+          "rules": "nullable|string|max:20"
+        },
+        {
+          "name": "MOTD",
+          "env_variable": "MOTD",
+          "default_value": "Please don\u2019t cut the purple trees!",
+          "rules": "required|string|max:40"
+        },
+        {
+          "name": "Language",
+          "env_variable": "LANGUAGE",
+          "default_value": "1",
+          "rules": "required|string|in:1,2,3,4,5"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from GitHub tModLoader releases, extracts, sets up dotnet startup script"
+      }
+    },
+
+    "rust": {
+      "repo_path": "rust/rust_autowipe/egg-rust-autowipe.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/rust/rust_autowipe/egg-rust-autowipe.json",
+      "name": "Rust Autowipe",
+      "author": "support@pterodactyl.io",
+      "description": "The only aim in Rust is to survive. To do this you will need to overcome struggles such as hunger, thirst and cold. Build a fire. Build a shelter. Kill animals for meat. Protect yourself from other players, and kill them for meat. Create alliances with other players and form a town.",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "ghcr.io/pterodactyl/games:rust": "ghcr.io/pterodactyl/games:rust"
+      },
+      "startup": "./RustDedicated -batchmode +server.port {{SERVER_PORT}} +server.queryport {{QUERY_PORT}} +server.identity \"rust\" +rcon.ip 0.0.0.0 +rcon.port {{RCON_PORT}} +rcon.web true +server.hostname \"{{HOSTNAME}}\" +server.level \"{{LEVEL}}\" +server.description \"{{DESCRIPTION}}\" +server.url \"{{SERVER_URL}}\" +server.headerimage \"{{SERVER_IMG}}\" +server.maxplayers {{MAX_PLAYERS}} +rcon.password \"{{RCON_PASS}}\" +app.port {{APP_PORT}} +server.saveinterval {{SAVEINTERVAL}} $( [ -z ${MAP_URL} ] && printf %s \"+server.worldsize \"{{WORLD_SIZE}}\" +server.seed \"...\"\" || printf %s \"+server.levelurl {{MAP_URL}}\" ) {{ADDITIONAL_ARGS}}",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Server startup complete"
+        },
+        "logs": {},
+        "stop": "quit"
+      },
+      "variables": [
+        {
+          "name": "SRCDS_APPID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "258550",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "40",
+          "rules": "required|integer"
+        },
+        {
+          "name": "Server Name",
+          "env_variable": "HOSTNAME",
+          "default_value": "A Rust Server",
+          "rules": "required|string|max:40"
+        },
+        {
+          "name": "Level",
+          "env_variable": "LEVEL",
+          "default_value": "Procedural Map",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Description",
+          "env_variable": "DESCRIPTION",
+          "default_value": "Powered by Pterodactyl",
+          "rules": "required|string"
+        },
+        {
+          "name": "World Size",
+          "env_variable": "WORLD_SIZE",
+          "default_value": "3000",
+          "rules": "required|integer"
+        },
+        {
+          "name": "World Seed",
+          "env_variable": "WORLD_SEED",
+          "default_value": "0",
+          "rules": "nullable|string"
+        },
+        {
+          "name": "RCON Port",
+          "env_variable": "RCON_PORT",
+          "default_value": "28016",
+          "rules": "required|integer"
+        },
+        {
+          "name": "RCON Password",
+          "env_variable": "RCON_PASS",
+          "default_value": "CHANGEME",
+          "rules": "required|regex:/^[\\w.-]*$/|max:64"
+        },
+        {
+          "name": "Save Interval",
+          "env_variable": "SAVEINTERVAL",
+          "default_value": "60",
+          "rules": "required|integer"
+        },
+        {
+          "name": "Additional Arguments",
+          "env_variable": "ADDITIONAL_ARGS",
+          "default_value": "",
+          "rules": "nullable|string"
+        },
+        {
+          "name": "Query Port",
+          "env_variable": "QUERY_PORT",
+          "default_value": "28017",
+          "rules": "required|integer"
+        },
+        {
+          "name": "APP PORT",
+          "env_variable": "APP_PORT",
+          "default_value": "28082",
+          "rules": "required|integer"
+        },
+        {
+          "name": "Custom Map URL",
+          "env_variable": "MAP_URL",
+          "default_value": "",
+          "rules": "nullable|url"
+        },
+        {
+          "name": "Modding Framework",
+          "env_variable": "FRAMEWORK",
+          "default_value": "vanilla",
+          "rules": "required|string|in:vanilla,carbon,oxide"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 258550, auto-wipe support with seed regeneration"
+      }
+    },
+
+    "ark_survival_evolved": {
+      "repo_path": "ark_survival_evolved/egg-ark--survival-evolved.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/ark_survival_evolved/egg-ark--survival-evolved.json",
+      "name": "Ark: Survival Evolved",
+      "author": "dev@shepper.fr",
+      "description": "As a man or woman stranded, naked, freezing, and starving on the unforgiving shores of a mysterious island called ARK, use your skill and cunning to kill or tame and ride the plethora of leviathan dinosaurs and other primeval creatures roaming the land.",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "ghcr.io/ptero-eggs/games:source": "ghcr.io/ptero-eggs/games:source"
+      },
+      "startup": "rmv() { echo \"stopping server\"; rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} saveworld && rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} DoExit && wait ${ARK_PID}; echo \"Server Closed\"; exit; }; trap rmv 15 2; cd ShooterGame/Binaries/Linux && ./ShooterGameServer {{SERVER_MAP}}?listen?SessionName=\"{{SESSION_NAME}}\"?ServerPassword={{ARK_PASSWORD}}?ServerAdminPassword={{ARK_ADMIN_PASSWORD}}?Port={{SERVER_PORT}}?RCONPort={{RCON_PORT}}?QueryPort={{QUERY_PORT}}?RCONEnabled=True?MaxPlayers={{MAX_PLAYERS}}?GameModIds=\"{{MOD_ID}}\" ...",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Waiting commands for 127.0.0.1:"
+        },
+        "logs": {},
+        "stop": "^C"
+      },
+      "variables": [
+        {
+          "name": "Server Password",
+          "env_variable": "ARK_PASSWORD",
+          "default_value": "",
+          "rules": "nullable|alpha_dash|between:1,100"
+        },
+        {
+          "name": "Admin Password",
+          "env_variable": "ARK_ADMIN_PASSWORD",
+          "default_value": "PleaseChangeMe",
+          "rules": "required|alpha_dash|between:1,100"
+        },
+        {
+          "name": "Server Map",
+          "env_variable": "SERVER_MAP",
+          "default_value": "TheIsland",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Server Name",
+          "env_variable": "SESSION_NAME",
+          "default_value": "A Pterodactyl Hosted ARK Server",
+          "rules": "required|string|max:128"
+        },
+        {
+          "name": "RCON Port",
+          "env_variable": "RCON_PORT",
+          "default_value": "27020",
+          "rules": "required|numeric"
+        },
+        {
+          "name": "Query Port",
+          "env_variable": "QUERY_PORT",
+          "default_value": "27015",
+          "rules": "required|numeric"
+        },
+        {
+          "name": "App ID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "376030",
+          "rules": "nullable|numeric"
+        },
+        {
+          "name": "Mods",
+          "env_variable": "MOD_ID",
+          "default_value": "",
+          "rules": "nullable|regex:/^[0-9,]+$/"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "12",
+          "rules": "numeric"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 376030, sets up SteamCMD in Engine/Binaries/ThirdParty for mod loading"
+      }
+    },
+
+    "palworld": {
+      "repo_path": "palworld/egg-palworld.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/palworld/egg-palworld.json",
+      "name": "Palworld",
+      "author": "admin@ballaual.de",
+      "description": "Fight, farm, build and work alongside mysterious creatures called \"Pals\" in this completely new multiplayer, open world survival and crafting game!",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "SteamCMD_Debian": "ghcr.io/ptero-eggs/steamcmd:debian"
+      },
+      "startup": "./PalworldServerConfigParser; (while read cmd; do rcon -s -a \"localhost:$RCON_PORT\" -p \"$ADMIN_PASSWORD\" \"$cmd\";done) < /dev/stdin & /home/container/Pal/Binaries/Linux/PalServer-Linux-Shipping Pal -publiclobby -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS -port={{SERVER_PORT}} -publicport={{SERVER_PORT}} -servername=\"{{SERVER_NAME}}\" -players={{MAX_PLAYERS}} $(if [ -n \"$SERVER_PASSWORD\" ]; then echo \"-serverpassword=\\\"${SERVER_PASSWORD}\\\"\"; fi) -adminpassword=\"{{ADMIN_PASSWORD}}\" -rcon",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Setting breakpad minidump AppID = 2394010"
+        },
+        "logs": {},
+        "stop": "shutdown 15"
+      },
+      "variables": [
+        {
+          "name": "App ID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "2394010",
+          "rules": "required|string|in:2394010"
+        },
+        {
+          "name": "Auto Update",
+          "env_variable": "AUTO_UPDATE",
+          "default_value": "1",
+          "rules": "required|boolean"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "32",
+          "rules": "required|numeric|between:1,32"
+        },
+        {
+          "name": "Admin Password",
+          "env_variable": "ADMIN_PASSWORD",
+          "default_value": "",
+          "rules": "required|alpha_dash|between:1,30"
+        },
+        {
+          "name": "Server Name",
+          "env_variable": "SERVER_NAME",
+          "default_value": "A Pterodactyl hosted Palworld Server",
+          "rules": "required|string|max:64"
+        },
+        {
+          "name": "Server Password",
+          "env_variable": "SERVER_PASSWORD",
+          "default_value": "",
+          "rules": "nullable|alpha_dash|between:1,30"
+        },
+        {
+          "name": "RCON Port",
+          "env_variable": "RCON_PORT",
+          "default_value": "25575",
+          "rules": "required|numeric"
+        },
+        {
+          "name": "Connection Platform",
+          "env_variable": "ALLOW_CONNECT_PLATFORM",
+          "default_value": "Steam",
+          "rules": "required|string|in:Steam,Xbox"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 2394010, copies DefaultPalWorldSettings.ini, downloads PalworldServerConfigParser"
+      }
+    },
+
+    "enshrouded": {
+      "repo_path": "enshrouded/egg-enshrouded.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/enshrouded/egg-enshrouded.json",
+      "name": "Enshrouded",
+      "author": "ptero@redbananaofficial.com",
+      "description": "Enshrouded is a game of survival, crafting, and Action RPG combat, set within a sprawling voxel-based continent.",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "ghcr.io/ptero-eggs/steamcmd:proton": "ghcr.io/ptero-eggs/steamcmd:proton"
+      },
+      "startup": "rm ./logs/enshrouded_server.log; proton run ./enshrouded_server.exe & ENS_PID=$! ; tail -c0 -F ./logs/enshrouded_server.log --pid=$ENS_PID",
+      "config": {
+        "files": {
+          "enshrouded_server.json": {
+            "parser": "json",
+            "find": {
+              "name": "{{server.build.env.SRV_NAME}}",
+              "queryPort": "{{server.build.default.port}}",
+              "slotCount": "{{server.build.env.MAX_PLAYERS}}",
+              "userGroups[0].password": "{{server.build.env.SRV_PW}}",
+              "userGroups[1].name": "Friend",
+              "userGroups[1].password": "{{server.build.env.SRV_PW2}}",
+              "userGroups[2].name": "Guest",
+              "userGroups[2].password": "{{server.build.env.SRV_PW3}}",
+              "userGroups[3].name": "Visitor",
+              "userGroups[3].password": "{{server.build.env.SRV_PW4}}"
+            }
+          }
+        },
+        "startup": {
+          "done": "[Session] 'HostOnline' (up)!"
+        },
+        "logs": {},
+        "stop": "^C"
+      },
+      "variables": [
+        {
+          "name": "Server Name",
+          "env_variable": "SRV_NAME",
+          "default_value": "My Enshrouded Server",
+          "rules": "required|string"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "16",
+          "rules": "required|numeric"
+        },
+        {
+          "name": "Admin Group Password",
+          "env_variable": "SRV_PW",
+          "default_value": "ChangeMe1",
+          "rules": "required|string|not_regex:/^\\d+$/"
+        },
+        {
+          "name": "Friend Group Password",
+          "env_variable": "SRV_PW2",
+          "default_value": "ChangeMe2",
+          "rules": "required|string|not_regex:/^\\d+$/"
+        },
+        {
+          "name": "Guest Group Password",
+          "env_variable": "SRV_PW3",
+          "default_value": "ChangeMe3",
+          "rules": "required|string|not_regex:/^\\d+$/"
+        },
+        {
+          "name": "Visitor Group Password",
+          "env_variable": "SRV_PW4",
+          "default_value": "ChangeMe4",
+          "rules": "required|string|not_regex:/^\\d+$/"
+        },
+        {
+          "name": "Steam App ID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "2278520",
+          "rules": "required|string|in:2278520"
+        },
+        {
+          "name": "Windows Install",
+          "env_variable": "WINDOWS_INSTALL",
+          "default_value": "1",
+          "rules": "required|boolean"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 2278520, uses Proton for Windows exe, downloads enshrouded_server.json default config"
+      }
+    },
+
+    "valheim": {
+      "repo_path": "valheim/valheim_vanilla/egg-valheim.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/valheim/valheim_vanilla/egg-valheim.json",
+      "name": "Valheim",
+      "author": "magi1053@outlook.com",
+      "description": "A brutal exploration and survival game for 1-10 players, set in a procedurally-generated purgatory inspired by viking culture.",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "ghcr.io/ptero-eggs/games:valheim": "ghcr.io/ptero-eggs/games:valheim"
+      },
+      "startup": "./valheim_server.x86_64 -nographics -batchmode -name \"{{SERVER_NAME}}\" -port {{SERVER_PORT}} -world \"{{WORLD}}\" -password \"{{PASSWORD}}\" -public {{PUBLIC_SERVER}} -saveinterval {{BACKUP_INTERVAL}} -backups {{BACKUP_COUNT}} -backupshort {{BACKUP_SHORTTIME}} -backuplong {{BACKUP_LONGTIME}} $( [[ {{ENABLE_CROSSPLAY}} -eq 1 ]] && echo \" -crossplay \") > >(sed -uE \"{{CONSOLE_FILTER}}\") & trap \"{{STOP}}\" 15; wait $!",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "DungeonDB Start"
+        },
+        "logs": {},
+        "stop": "^C"
+      },
+      "variables": [
+        {
+          "name": "Server Name",
+          "env_variable": "SERVER_NAME",
+          "default_value": "My Server",
+          "rules": "required|string|max:60"
+        },
+        {
+          "name": "Server Password",
+          "env_variable": "PASSWORD",
+          "default_value": "secret",
+          "rules": "required|string|min:5|max:20"
+        },
+        {
+          "name": "World Name",
+          "env_variable": "WORLD",
+          "default_value": "Dedicated",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Public Server",
+          "env_variable": "PUBLIC_SERVER",
+          "default_value": "1",
+          "rules": "boolean"
+        },
+        {
+          "name": "App ID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "896660",
+          "rules": "nullable|numeric"
+        },
+        {
+          "name": "Enable Crossplay",
+          "env_variable": "ENABLE_CROSSPLAY",
+          "default_value": "1",
+          "rules": "required|boolean"
+        },
+        {
+          "name": "Backup Interval",
+          "env_variable": "BACKUP_INTERVAL",
+          "default_value": "1800",
+          "rules": "required|numeric|min:0"
+        },
+        {
+          "name": "Backup Count",
+          "env_variable": "BACKUP_COUNT",
+          "default_value": "4",
+          "rules": "required|numeric|min:0"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 896660"
+      }
+    },
+
+    "among_us_impostor": {
+      "repo_path": "among_us/impostor_server/egg-among-us--impostor-server.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/among_us/impostor_server/egg-among-us--impostor-server.json",
+      "name": "Among Us - Impostor Server",
+      "author": "eggs@goover.dev",
+      "description": "Impostor is one of the first Among Us private servers, written in C#. There are no special features at this moment, the goal is aiming to be as close as possible to the real server.",
+      "docker_images": {
+        "Dotnet_8": "ghcr.io/ptero-eggs/yolks:dotnet_8",
+        "Dotnet_7": "ghcr.io/ptero-eggs/yolks:dotnet_7",
+        "Dotnet_6": "ghcr.io/ptero-eggs/yolks:dotnet_6"
+      },
+      "startup": "./Impostor.Server",
+      "config": {
+        "files": {
+          "config.json": {
+            "parser": "json",
+            "find": {
+              "Server.PublicPort": "{{server.build.default.port}}",
+              "Server.ListenPort": "{{server.build.default.port}}"
+            }
+          }
+        },
+        "startup": {
+          "done": "Matchmaker is listening on"
+        },
+        "logs": {},
+        "stop": "^^C"
+      },
+      "variables": [
+        {
+          "name": "Download Version",
+          "env_variable": "VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:30"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from GitHub Impostor/Impostor releases, extracts tar.gz"
+      }
+    },
+
+    "veloren": {
+      "repo_path": "veloren/egg-veloren.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/veloren/egg-veloren.json",
+      "name": "Veloren",
+      "author": "parker@parkervcp.com",
+      "description": "Veloren is a multiplayer voxel RPG written in Rust. It is inspired by games such as Cube World, Legend of Zelda: Breath of the Wild, Dwarf Fortress and Minecraft.",
+      "docker_images": {
+        "Ubuntu": "ghcr.io/ptero-eggs/yolks:ubuntu_24.04"
+      },
+      "startup": "./veloren-server-cli",
+      "config": {
+        "files": {
+          "userdata/server/server_config/settings.ron": {
+            "parser": "file",
+            "find": {
+              " metrics_address": " metrics_address: \"0.0.0.0:{{server.build.env.METRICS_PORT}}\",",
+              " server_name": " server_name: \"{{server.build.env.SERVER_NAME}}\","
+            }
+          }
+        },
+        "startup": {
+          "done": "Server is ready to accept connections"
+        },
+        "logs": {},
+        "stop": "shutdown graceful 10"
+      },
+      "variables": [
+        {
+          "name": "Version",
+          "env_variable": "VERSION",
+          "default_value": "weekly",
+          "rules": "required|string|in:weekly,nightly"
+        },
+        {
+          "name": "Server name",
+          "env_variable": "SERVER_NAME",
+          "default_value": "A pterodactyl hosted server",
+          "rules": "required|string|max:64"
+        },
+        {
+          "name": "Metrics port",
+          "env_variable": "METRICS_PORT",
+          "default_value": "14005",
+          "rules": "required|integer"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from download.veloren.net (weekly or nightly), unzips, pulls settings.ron template"
+      }
+    },
+
+    "vintage_story": {
+      "repo_path": "vintage_story/egg-vintage-story.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/vintage_story/egg-vintage-story.json",
+      "name": "Vintage Story",
+      "author": "mail@wuffy.eu",
+      "description": "Vintage Story is an uncompromising wilderness survival sandbox game inspired by lovecraftian horror themes.",
+      "docker_images": {
+        "Dotnet 8": "ghcr.io/ptero-eggs/yolks:dotnet_8",
+        "Dotnet 9": "ghcr.io/ptero-eggs/yolks:dotnet_9",
+        "Dotnet 10": "ghcr.io/ptero-eggs/yolks:dotnet_10"
+      },
+      "startup": "./VintagestoryServer --dataPath ./data --port={{SERVER_PORT}} --maxclients={{MAX_CLIENTS}} {{OPTIONS}}",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Dedicated Server now running on Port "
+        },
+        "logs": {},
+        "stop": "/stop"
+      },
+      "variables": [
+        {
+          "name": "Start options",
+          "env_variable": "OPTIONS",
+          "default_value": "",
+          "rules": "nullable|string|max:200"
+        },
+        {
+          "name": "Release branch",
+          "env_variable": "FILES_BRANCH",
+          "default_value": "stable",
+          "rules": "required|string|in:stable,unstable,pre"
+        },
+        {
+          "name": "Release version",
+          "env_variable": "RELEASE_VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Max Clients",
+          "env_variable": "MAX_CLIENTS",
+          "default_value": "16",
+          "rules": "required|integer|max:256"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from cdn.vintagestory.at, supports stable/unstable/pre branches, cleans old assets before update"
+      }
+    },
+
+    "mindustry": {
+      "repo_path": "mindustry/egg-mindustry.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/mindustry/egg-mindustry.json",
+      "name": "Mindustry",
+      "author": "sir3lit@gmail.com",
+      "description": "Mindustry is a hybrid tower-defense sandbox factory game. Create elaborate supply chains of conveyor belts to feed ammo into your turrets, produce materials to use for building, and defend your structures from waves of enemies.",
+      "docker_images": {
+        "ghcr.io/ptero-eggs/yolks:java_11": "ghcr.io/ptero-eggs/yolks:java_11"
+      },
+      "startup": "java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server-release.jar config port {{SERVER_PORT}},config name {{SERVER_NAME}},host {{MAPNAME}}",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Server loaded. "
+        },
+        "logs": {},
+        "stop": "exit"
+      },
+      "variables": [
+        {
+          "name": "Version",
+          "env_variable": "VERSION",
+          "default_value": "latest",
+          "rules": "required"
+        },
+        {
+          "name": "Server Name",
+          "env_variable": "SERVER_NAME",
+          "default_value": "A Pterodactyl Hosted Server",
+          "rules": "required|string"
+        },
+        {
+          "name": "Map Name",
+          "env_variable": "MAPNAME",
+          "default_value": "Tendrils",
+          "rules": "required|string"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads server-release.jar from GitHub Anuken/Mindustry releases"
+      }
+    },
+
+    "rimworld_together": {
+      "repo_path": "rimworld/together/egg-rimworld-together.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/rimworld/together/egg-rimworld-together.json",
+      "name": "Rimworld Together",
+      "author": "josdekurk@gmail.com",
+      "description": "A community driven multiplayer mod, for Rimworld.",
+      "docker_images": {
+        "ghcr.io/ptero-eggs/yolks:dotnet_7": "ghcr.io/ptero-eggs/yolks:dotnet_7"
+      },
+      "startup": "./GameServer",
+      "config": {
+        "files": {
+          "Configs/ServerConfig.json": {
+            "parser": "json",
+            "find": {
+              "IP": "0.0.0.0",
+              "Port": "{{server.build.default.port}}",
+              "MaxPlayers": "{{server.build.env.MAX_PLAYERS}}",
+              "VerboseLogs": "{{server.build.env.VERBOSE}}"
+            }
+          }
+        },
+        "startup": {
+          "done": "Server launched"
+        },
+        "logs": {},
+        "stop": "quit"
+      },
+      "variables": [
+        {
+          "name": "Version",
+          "env_variable": "VERSION",
+          "default_value": "latest",
+          "rules": "required|string|max:20"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "100",
+          "rules": "required|numeric|between:1,150"
+        },
+        {
+          "name": "Verbose",
+          "env_variable": "VERBOSE",
+          "default_value": "false",
+          "rules": "required|string|in:false,true"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "Downloads from GitHub RimworldTogether/Rimworld-Together releases, unzips, creates ServerConfig.json"
+      }
+    },
+
+    "counter_strike_2": {
+      "repo_path": "counter_strike/counter_strike_2/egg-counter--strike2.json",
+      "raw_url": "https://raw.githubusercontent.com/pterodactyl/game-eggs/main/counter_strike/counter_strike_2/egg-counter--strike2.json",
+      "name": "Counter-Strike 2",
+      "author": "admin@ballaual.de",
+      "description": "For over two decades, Counter-Strike has offered an elite competitive experience, one shaped by millions of players from across the globe. And now the next chapter in the CS story is about to begin. This is Counter-Strike 2.",
+      "features": ["steam_disk_space"],
+      "docker_images": {
+        "ghcr.io/ptero-eggs/steamcmd:sniper": "ghcr.io/ptero-eggs/steamcmd:sniper"
+      },
+      "startup": "LD_LIBRARY_PATH=\"$HOME/game/bin/linuxsteamrt64:$LD_LIBRARY_PATH\" ./game/bin/linuxsteamrt64/cs2 -dedicated $( [ \"$VAC_ENABLED\" == \"1\" ] || printf %s ' -insecure' ) -ip 0.0.0.0 -port {{SERVER_PORT}} -tv_port {{TV_PORT}} -maxplayers {{MAX_PLAYERS}} $( [ \"$RCON_ENABLED\" == \"0\" ] || printf %s ' -usercon' ) +game_mode {{GAME_MODE}} +game_type {{GAME_TYPE}} +map {{SRCDS_MAP}} +hostname \"{{SERVER_NAME}}\" +sv_password \"{{SERVER_PASSWORD}}\" +rcon_password \"{{RCON_PASSWORD}}\" +sv_setsteamaccount {{STEAM_GSLT}}",
+      "config": {
+        "files": {},
+        "startup": {
+          "done": "Connection to Steam servers successful"
+        },
+        "logs": {},
+        "stop": "quit"
+      },
+      "variables": [
+        {
+          "name": "Map",
+          "env_variable": "SRCDS_MAP",
+          "default_value": "de_dust2",
+          "rules": "required|string"
+        },
+        {
+          "name": "Source AppID",
+          "env_variable": "SRCDS_APPID",
+          "default_value": "730",
+          "rules": "required|string|in:730"
+        },
+        {
+          "name": "Max Players",
+          "env_variable": "MAX_PLAYERS",
+          "default_value": "12",
+          "rules": "required|numeric|between:1,64"
+        },
+        {
+          "name": "Auto-update server",
+          "env_variable": "AUTO_UPDATE",
+          "default_value": "1",
+          "rules": "required|boolean"
+        },
+        {
+          "name": "SourceTV Port",
+          "env_variable": "TV_PORT",
+          "default_value": "27020",
+          "rules": "required|integer|between:1025,65535"
+        },
+        {
+          "name": "Steam GSLT",
+          "env_variable": "STEAM_GSLT",
+          "default_value": "",
+          "rules": "required|string|alpha_num|size:32"
+        },
+        {
+          "name": "Enable VAC",
+          "env_variable": "VAC_ENABLED",
+          "default_value": "1",
+          "rules": "required|boolean"
+        },
+        {
+          "name": "Enable RCON",
+          "env_variable": "RCON_ENABLED",
+          "default_value": "0",
+          "rules": "required|boolean"
+        },
+        {
+          "name": "Server Name",
+          "env_variable": "SERVER_NAME",
+          "default_value": "A Pterodactyl hosted CS2 Server",
+          "rules": "required|string|max:64"
+        },
+        {
+          "name": "Server Password",
+          "env_variable": "SERVER_PASSWORD",
+          "default_value": "",
+          "rules": "nullable|alpha_dash|between:1,30"
+        },
+        {
+          "name": "RCON Password",
+          "env_variable": "RCON_PASSWORD",
+          "default_value": "",
+          "rules": "required|alpha_dash|between:1,30"
+        },
+        {
+          "name": "Gamemode",
+          "env_variable": "GAME_MODE",
+          "default_value": "1",
+          "rules": "required|string"
+        },
+        {
+          "name": "Gametype",
+          "env_variable": "GAME_TYPE",
+          "default_value": "0",
+          "rules": "required|string"
+        }
+      ],
+      "install": {
+        "container": "ghcr.io/ptero-eggs/installers:debian",
+        "entrypoint": "bash",
+        "script_note": "SteamCMD install with app_update 730, uses steamcmd:sniper image"
+      }
+    }
+  }
+}

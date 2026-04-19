@@ -61,6 +61,7 @@ import {
   isOrderEligibleForPublicPage,
 } from '../lib/publicServerPages.js';
 import { normalizeGameKey } from '../lib/normalizeGameKey.js';
+import { preflightEggValidation, resolveDockerImage, fillCatalogDefaults } from '../lib/eggValidator.js';
 
 const logger = getLogger();
 const router = express.Router();
@@ -1210,6 +1211,11 @@ function buildEnvironmentForAllocationGroup(ctx) {
         environment[key] = value;
       }
     }
+    // Egg defaults often ship example.com / placeholder URLs; Steam install can misbehave if left set.
+    for (const k of ['MAP_URL', 'SERVER_IMG', 'SERVER_LOGO']) {
+      const v = String(environment[k] ?? '').trim().toLowerCase();
+      if (v.includes('example.com')) environment[k] = '';
+    }
   }
 
   if (gameKey === 'ark') {
@@ -1223,6 +1229,13 @@ function buildEnvironmentForAllocationGroup(ctx) {
     if (!environment.ARK_ADMIN_PASSWORD) {
       environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
     }
+  }
+
+  // Palworld dedicated server is always Steam app 2394010. Some Panel/egg rows have been
+  // seen with wrong SRCDS_APPID (e.g. 1007), which makes SteamCMD fail with 0x2 and leaves no binary.
+  if (gameKey === 'palworld') {
+    environment.SRCDS_APPID = '2394010';
+    environment.APP_ID = '2394010';
   }
 
   if (gameKey === 'enshrouded') {
@@ -2000,6 +2013,38 @@ export async function provisionServer(orderId) {
         await transitionToFailed(orderId, msg);
         throw err;
       }
+    }
+
+    // ── Catalog pre-flight: validate egg config and override Docker image ──
+    const preflight = preflightEggValidation({
+      eggId: order.ptero_egg_id,
+      panelDockerImage: resolvedDockerImage,
+      panelStartup: resolvedStartupCmd,
+      panelEnvVars: eggVariableDefaults,
+    });
+    if (preflight.catalogEntry) {
+      resolvedDockerImage = resolveDockerImage(order.ptero_egg_id, resolvedDockerImage);
+      fillCatalogDefaults(order.ptero_egg_id, eggVariableDefaults);
+      logger.info(
+        {
+          event: 'provision_trace',
+          order_id: orderId,
+          step: 'egg_catalog_preflight',
+          egg_id: order.ptero_egg_id,
+          game: preflight.catalogEntry.gameKey,
+          variant: preflight.catalogEntry.variant,
+          resolved_image: resolvedDockerImage,
+          warnings: preflight.warnings,
+          errors: preflight.errors,
+        },
+        'provision_step',
+      );
+    }
+    if (!preflight.ok) {
+      const msg = `Egg catalog validation failed: ${preflight.errors.join('; ')}`;
+      await recordProvisionError(orderId, msg);
+      await transitionToFailed(orderId, msg);
+      throw new Error(msg);
     }
 
     const firstTrialGroup = allocationTrialGroups[0];
