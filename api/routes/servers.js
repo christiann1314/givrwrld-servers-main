@@ -1279,24 +1279,23 @@ function buildEnvironmentForAllocationGroup(ctx) {
   // Pterodactyl Application API validates boolean egg variables as JSON booleans,
   // not strings. Convert every variable whose rules include "boolean" to an actual
   // JS boolean so JSON.stringify sends true/false instead of "true"/"false".
-  const booleanKeysFromMeta = [];
   for (const { key, rules } of requiredVarMeta) {
     if (!String(rules || '').toLowerCase().includes('boolean')) continue;
-    booleanKeysFromMeta.push(key);
     if (environment[key] === undefined || environment[key] === null) continue;
     const v = String(environment[key]).trim().toLowerCase();
     environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
   }
 
-  // Fallback: if Panel API didn't return variable metadata, force-convert
-  // known boolean env vars that Pterodactyl commonly validates.
-  if (booleanKeysFromMeta.length === 0) {
-    const knownBooleanKeys = ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK'];
-    for (const key of knownBooleanKeys) {
-      if (environment[key] === undefined || environment[key] === null) continue;
-      const v = String(environment[key]).trim().toLowerCase();
-      environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
-    }
+  // Always coerce common Panel egg booleans to real JSON booleans. The Application API
+  // rejects string "true"/"false" for boolean rules. We must run this even when Panel
+  // returned *some* boolean metadata, otherwise keys like AUTO_UPDATE can stay as
+  // strings and create-server returns 422 (seen on Palworld / ARK / Enshrouded).
+  const knownBooleanKeys = ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK'];
+  for (const key of knownBooleanKeys) {
+    if (environment[key] === undefined || environment[key] === null) continue;
+    if (typeof environment[key] === 'boolean') continue;
+    const v = String(environment[key]).trim().toLowerCase();
+    environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
   }
 
   if (gameKey === 'among-us') {

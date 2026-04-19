@@ -128,7 +128,10 @@ const PurchaseSuccess = () => {
                 Payment Successful!
               </span>
             </h1>
-            <p className="text-xl text-gray-300">Your server will be ready in a few minutes. Check your dashboard for status.</p>
+            <p className="text-xl text-gray-300">
+              Your server is being created on the panel. Use the dashboard to watch live progress—it may take a few
+              minutes for the game to download.
+            </p>
           </div>
 
           {purchaseData && (
@@ -184,9 +187,9 @@ const PurchaseSuccess = () => {
           <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">What's Next?</h3>
             <div className="space-y-3 text-gray-300">
-              <p>• <strong>Server Provisioning:</strong> Your server is being automatically provisioned and will be ready within 3-5 minutes. You can monitor progress in your dashboard.</p>
-              <p>• <strong>Access Control Panel:</strong> Once your server is ready, access it via the "Open Panel" button in your dashboard or go directly to https://panel.givrwrldservers.com. A panel account is automatically created during signup.</p>
-              <p>• <strong>Server Status:</strong> Check your dashboard to see when your server status changes from "provisioning" to "active". You'll also see connection details and server information.</p>
+              <p>• <strong>Server setup:</strong> After payment, the dashboard shows each stage (creating the server, install, checks). First boot often takes 3–8 minutes depending on the game.</p>
+              <p>• <strong>Access Control Panel:</strong> When setup finishes, use &quot;Open Panel&quot; in your dashboard or go to https://panel.givrwrldservers.com. A panel account is created during signup.</p>
+              <p>• <strong>Server status:</strong> The dashboard moves from setup states to ready when the game is installed and reachable. You will see connection details there.</p>
               <p>• <strong>Need Help?</strong> Our support team is available 24/7. If your server takes longer than 10 minutes to provision, please contact support for assistance.</p>
             </div>
           </div>
