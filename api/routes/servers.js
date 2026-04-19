@@ -1290,12 +1290,40 @@ function buildEnvironmentForAllocationGroup(ctx) {
   // rejects string "true"/"false" for boolean rules. We must run this even when Panel
   // returned *some* boolean metadata, otherwise keys like AUTO_UPDATE can stay as
   // strings and create-server returns 422 (seen on Palworld / ARK / Enshrouded).
-  const knownBooleanKeys = ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK'];
+  const knownBooleanKeys = [
+    'AUTO_UPDATE',
+    'WINDOWS_INSTALL',
+    'VALIDATE',
+    'BATTLE_EYE',
+    'STEAM_SDK',
+    'RCON_ENABLE',
+  ];
   for (const key of knownBooleanKeys) {
     if (environment[key] === undefined || environment[key] === null) continue;
     if (typeof environment[key] === 'boolean') continue;
     const v = String(environment[key]).trim().toLowerCase();
     environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
+  }
+
+  // Last-mile: if the Panel variable list was incomplete, required booleans can be missing
+  // entirely (skipped above). Palworld/ARK/Enshrouded still 422 on create without them.
+  const coerceBool = (key, defaultTrue) => {
+    const raw = environment[key];
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+      environment[key] = defaultTrue;
+      return;
+    }
+    if (typeof raw === 'boolean') return;
+    const s = String(raw).trim().toLowerCase();
+    environment[key] = s === '' || ['1', 'true', 'on', 'yes'].includes(s);
+  };
+  if (gameKey === 'palworld' || gameKey === 'ark') {
+    coerceBool('AUTO_UPDATE', true);
+  }
+  if (gameKey === 'enshrouded') {
+    coerceBool('WINDOWS_INSTALL', true);
+    coerceBool('AUTO_UPDATE', true);
+    coerceBool('VALIDATE', false);
   }
 
   if (gameKey === 'among-us') {
