@@ -124,3 +124,55 @@ export async function schedulePostProvisionFollowup(orderId, extras = {}) {
     provisionPlan: extras.provisionPlan ?? null,
   });
 }
+
+/**
+ * Remove the BullMQ post-provision job for this order (unless it is active) and enqueue a fresh one.
+ * Use when orders are stuck in `verifying` after TCP/DNS failures so the worker retries with new code/env.
+ *
+ * @param {string} orderId
+ * @param {{ statuses?: string[] }} [opts] — default only `verifying`
+ */
+export async function forceRequeuePostProvisionJob(orderId, opts = {}) {
+  if (!orderId || process.env.POST_PROVISION_QUEUE_ENABLED === '0') {
+    return { requeued: false, reason: 'disabled_or_missing_id' };
+  }
+  const allowed = (opts.statuses || ['verifying']).map((x) => String(x || '').toLowerCase());
+  const order = await getOrder(orderId);
+  if (!order?.ptero_server_id) {
+    return { requeued: false, reason: 'no_panel_server' };
+  }
+  const s = String(order.status || '').toLowerCase();
+  if (!allowed.includes(s)) {
+    return { requeued: false, reason: `status_${s}_not_allowed` };
+  }
+
+  const q = getProvisioningQueue();
+  const jobId = `post-${String(orderId)}`;
+  try {
+    const existing = await q.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'active') {
+        return { requeued: false, reason: 'job_active', state };
+      }
+      await existing.remove();
+      logger.info({ order_id: orderId, job_id: jobId, prior_state: state }, 'post_provision_job_force_removed');
+    }
+  } catch (e) {
+    logger.warn({ order_id: orderId, err: e }, 'post_provision_job_force_remove_skipped');
+  }
+
+  const data = { orderId: String(orderId), serverId: Number(order.ptero_server_id) };
+  try {
+    await q.add('configure-server', data, {
+      jobId,
+      ...defaultJobOpts(),
+    });
+    logger.info({ order_id: orderId, job_id: jobId }, 'post_provision_job_force_enqueued');
+    return { requeued: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn({ order_id: orderId, err: msg }, 'post_provision_job_force_enqueue_failed');
+    return { requeued: false, reason: msg };
+  }
+}

@@ -7,6 +7,7 @@ import { getBullmqRedisConnection } from '../lib/bullmqRedis.js';
 import { resolvePostProvisionPayload } from '../lib/resolvePostProvisionPayload.js';
 import { getEggRuntimePolicy } from '../config/gameRuntimePolicy.js';
 import { buildGameBrandHostname, buildCustomerDisplayAddress } from './lib/hostname.js';
+import { resolveTcpProbeHosts } from './lib/resolveTcpProbeHosts.js';
 import {
   getOrder,
   transitionProvisionedToConfiguring,
@@ -14,7 +15,7 @@ import {
   transitionVerifyingToPlayable,
   updateGameReachabilityDisplay,
 } from './lib/orders.js';
-import { waitForTcp, waitForHttps } from './lib/health.js';
+import { waitForTcpFirstReachable, waitForHttps } from './lib/health.js';
 import { buildNginxSiteConfig, writeNginxSite, testNginxConfig, reloadNginx } from './lib/nginx.js';
 import { obtainCertificateNginx } from './lib/certs.js';
 import { getLogger } from './lib/logger.js';
@@ -58,15 +59,27 @@ async function processClassAb({ orderId, payload, order }) {
       'provisioning_worker_skip_tcp_probe_udp_game',
     );
   } else {
-    const ok = await waitForTcp({
-      host: brandHost,
+    const hosts = resolveTcpProbeHosts({ orderId, gameKey: payload.gameKey });
+    const totalAttempts = Number(process.env.POST_PROVISION_TCP_ATTEMPTS || 18);
+    const attemptsPerHost = Math.max(4, Math.ceil(totalAttempts / Math.max(1, hosts.length)));
+    const intervalMs = Number(process.env.POST_PROVISION_TCP_INTERVAL_MS || 5000);
+    logger.info(
+      { order_id: orderId, port, tcp_probe_hosts: hosts, attempts_per_host: attemptsPerHost },
+      'provisioning_worker_tcp_probe_start',
+    );
+    const tcp = await waitForTcpFirstReachable({
+      hosts,
       port: Number(port),
-      attempts: Number(process.env.POST_PROVISION_TCP_ATTEMPTS || 18),
-      intervalMs: Number(process.env.POST_PROVISION_TCP_INTERVAL_MS || 5000),
+      attemptsPerHost,
+      intervalMs,
     });
-    if (!ok) {
-      throw new Error(`TCP health check failed for ${brandHost}:${port}`);
+    if (!tcp.ok) {
+      throw new Error(`TCP health check failed (${hosts.join(' → ')}):${port}`);
     }
+    logger.info(
+      { order_id: orderId, port, tcp_ok_host: tcp.host, tcp_probe_hosts: hosts },
+      'provisioning_worker_tcp_probe_ok',
+    );
   }
 
   if (!(await transitionVerifyingToPlayable(orderId))) {
@@ -216,10 +229,6 @@ const worker = new Worker(
         }
         return { success: true, orderId, resumed: true };
       }
-      const brandHost = buildGameBrandHostname({
-        gameKey: resumePayload.gameKey,
-        orderId,
-      });
       const port = resumePayload.primaryPort;
       if (port == null || !Number.isFinite(Number(port))) {
         throw new Error('Missing primary port on resume');
@@ -227,15 +236,24 @@ const worker = new Worker(
       const policy = getEggRuntimePolicy(order.ptero_egg_id);
       const gameProto = policy?.network?.game?.protocol || 'tcp';
       if (gameProto !== 'udp') {
-        const ok = await waitForTcp({
-          host: brandHost,
+        const hosts = resolveTcpProbeHosts({ orderId, gameKey: resumePayload.gameKey });
+        const totalAttempts = Number(process.env.POST_PROVISION_TCP_ATTEMPTS || 18);
+        const attemptsPerHost = Math.max(4, Math.ceil(totalAttempts / Math.max(1, hosts.length)));
+        const intervalMs = Number(process.env.POST_PROVISION_TCP_INTERVAL_MS || 5000);
+        logger.info(
+          { order_id: orderId, port, tcp_probe_hosts: hosts, resume: true },
+          'provisioning_worker_tcp_probe_resume_start',
+        );
+        const tcp = await waitForTcpFirstReachable({
+          hosts,
           port: Number(port),
-          attempts: Number(process.env.POST_PROVISION_TCP_ATTEMPTS || 18),
-          intervalMs: Number(process.env.POST_PROVISION_TCP_INTERVAL_MS || 5000),
+          attemptsPerHost,
+          intervalMs,
         });
-        if (!ok) {
-          throw new Error(`TCP health check failed for ${brandHost}:${port}`);
+        if (!tcp.ok) {
+          throw new Error(`TCP health check failed (${hosts.join(' → ')}):${port}`);
         }
+        logger.info({ order_id: orderId, port, tcp_ok_host: tcp.host, resume: true }, 'provisioning_worker_tcp_probe_resume_ok');
       }
       if (!(await transitionVerifyingToPlayable(orderId))) {
         throw new Error('Could not move order to playable (resume verifying)');
