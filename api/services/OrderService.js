@@ -316,6 +316,10 @@ export async function transitionToProvisioned(orderId, pteroServerId, pteroIdent
   );
   if (result.affectedRows > 0) {
     logTransition(orderId, currentStatus, ORDER_STATUS.PROVISIONED);
+    // Soft capacity reservation only applies until the Panel server exists; after that,
+    // Wings + Panel enforce real limits. Keeping ledger rows would double-count every
+    // successful order and eventually block all new provisions ("No node capacity").
+    await releaseNodeCapacityForOrder(orderId);
     return true;
   }
   return false;
