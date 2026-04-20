@@ -17,6 +17,8 @@ import {
   startProvisionAttempt,
   recordProvisionError,
   backfillOrderProvisionMetadata,
+  resetGameOrderToPaidAfterPanelServerRemoved,
+  resetGameOrderToPaidWhenReachabilityOrphan,
 } from '../services/OrderService.js';
 import { schedulePostProvisionFollowup } from '../queues/postProvisionQueue.js';
 import { serializeProvisionPlanForJob } from '../lib/serializeProvisionPlanForJob.js';
@@ -29,6 +31,7 @@ import {
   getServerResources as getPterodactylResources,
   sendPowerAction,
   PterodactylError,
+  PTERO_ERROR_CODES,
   mapPterodactylErrorToHttp,
 } from '../services/pterodactylService.js';
 import { getModProfileForOrder } from '../config/modProfiles.js';
@@ -385,6 +388,8 @@ async function resolvePanelStatsForOrder(order) {
     players_online: 0,
     players_max: 0,
     uptime_seconds: 0,
+    /** True when Panel client API returns 404 for this identifier (server removed; DB row stale). */
+    panelNotFound: false,
   };
 
   if (!order.ptero_identifier) {
@@ -406,11 +411,54 @@ async function resolvePanelStatsForOrder(order) {
     stats.uptime_seconds = resources.uptimeSeconds ?? 0;
     stats.players_online = resources.playersOnline ?? 0;
     stats.players_max = resources.playersMax ?? 0;
-  } catch {
+  } catch (err) {
+    if (err instanceof PterodactylError && err.code === PTERO_ERROR_CODES.NOT_FOUND) {
+      return { ...stats, panelNotFound: true };
+    }
     return stats;
   }
 
   return stats;
+}
+
+/**
+ * When a game order still appears “active” but Panel no longer has that server (or identifiers were cleared),
+ * reset the row to `paid` so it drops off the dashboard and can be re-provisioned. Returns live stats or null.
+ */
+async function reconcileStaleGameOrderAndResolveLive(order, userId) {
+  const st = String(order.status || '').toLowerCase();
+  const hasIdent = order.ptero_identifier != null && String(order.ptero_identifier).trim() !== '';
+  const hasServerId = order.ptero_server_id != null && String(order.ptero_server_id).trim() !== '';
+
+  const reachabilityOrphan =
+    ['provisioned', 'configuring', 'verifying', 'playable'].includes(st) && !hasIdent && !hasServerId;
+
+  if (reachabilityOrphan) {
+    try {
+      await resetGameOrderToPaidWhenReachabilityOrphan(order.id, userId);
+    } catch (err) {
+      logger.warn(
+        { order_id: order.id, err: err?.message || String(err) },
+        'order_reset_reachability_orphan_failed',
+      );
+    }
+    return null;
+  }
+
+  const live = await resolvePanelStatsForOrder(order);
+  if (live.panelNotFound) {
+    try {
+      await resetGameOrderToPaidAfterPanelServerRemoved(order.id, userId, order.ptero_identifier);
+    } catch (err) {
+      logger.warn(
+        { order_id: order.id, err: err?.message || String(err) },
+        'order_reset_panel_404_failed',
+      );
+    }
+    return null;
+  }
+
+  return live;
 }
 
 async function upsertLiveStats(orderId, live) {
@@ -462,8 +510,12 @@ async function insertSnapshot(orderId, live) {
 router.get('/', authenticate, async (req, res) => {
   try {
     const servers = await getUserServers(req.userId);
+    const listed = [];
     for (const server of servers) {
-      const live = await resolvePanelStatsForOrder(server);
+      const live = await reconcileStaleGameOrderAndResolveLive(server, req.userId);
+      if (!live) {
+        continue;
+      }
       server.live = {
         state: live.state,
         cpu_percent: live.cpu_percent ?? 0,
@@ -482,10 +534,11 @@ router.get('/', authenticate, async (req, res) => {
         },
         'dashboard-list'
       );
+      listed.push(server);
     }
     res.json({
       success: true,
-      servers
+      servers: listed
     });
   } catch (error) {
     console.error('Get servers error:', error);
@@ -576,7 +629,10 @@ router.get('/metrics/live', authenticate, async (req, res) => {
 
     const metrics = {};
     for (const order of orders) {
-      const live = await resolvePanelStatsForOrder(order);
+      const live = await reconcileStaleGameOrderAndResolveLive(order, req.userId);
+      if (!live) {
+        continue;
+      }
       await upsertLiveStats(order.id, live);
       await insertSnapshot(order.id, live);
       metrics[order.id] = {

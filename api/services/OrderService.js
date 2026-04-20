@@ -561,6 +561,81 @@ export async function transitionToCanceled(orderId) {
 }
 
 /**
+ * Clear Panel binding and set `paid` when the Panel server row is gone (Client API 404 for identifier).
+ * Bypasses the status graph (e.g. playable → paid) because the upstream server was deleted.
+ */
+export async function resetGameOrderToPaidAfterPanelServerRemoved(orderId, userId, pteroIdentifier) {
+  const ident = pteroIdentifier != null ? String(pteroIdentifier).trim() : '';
+  if (!orderId || !userId || !ident) return { updated: false };
+
+  const [result] = await pool.execute(
+    `UPDATE orders SET
+       ptero_server_id = NULL,
+       ptero_identifier = NULL,
+       ptero_server_uuid = NULL,
+       ptero_primary_allocation_id = NULL,
+       ptero_primary_port = NULL,
+       ptero_extra_ports_json = NULL,
+       ptero_node_id = NULL,
+       game_brand_hostname = NULL,
+       game_display_address = NULL,
+       error_message = NULL,
+       last_provision_error = NULL,
+       status = 'paid',
+       updated_at = NOW()
+     WHERE id = ?
+       AND user_id = ?
+       AND item_type = 'game'
+       AND ptero_identifier = ?`,
+    [orderId, userId, ident]
+  );
+  await releaseNodeCapacityForOrder(orderId);
+  if (result.affectedRows > 0) {
+    log.info(
+      { order_id: orderId, user_id: userId },
+      'order_reset_panel_binding_404',
+    );
+  }
+  return { updated: result.affectedRows > 0 };
+}
+
+/**
+ * Reachability status with no Panel identifiers — cannot map to a server; reset to `paid`.
+ */
+export async function resetGameOrderToPaidWhenReachabilityOrphan(orderId, userId) {
+  if (!orderId || !userId) return { updated: false };
+
+  const [result] = await pool.execute(
+    `UPDATE orders SET
+       ptero_server_id = NULL,
+       ptero_identifier = NULL,
+       ptero_server_uuid = NULL,
+       ptero_primary_allocation_id = NULL,
+       ptero_primary_port = NULL,
+       ptero_extra_ports_json = NULL,
+       ptero_node_id = NULL,
+       game_brand_hostname = NULL,
+       game_display_address = NULL,
+       error_message = NULL,
+       last_provision_error = NULL,
+       status = 'paid',
+       updated_at = NOW()
+     WHERE id = ?
+       AND user_id = ?
+       AND item_type = 'game'
+       AND status IN ('provisioned','configuring','verifying','playable')
+       AND (ptero_identifier IS NULL OR TRIM(ptero_identifier) = '')
+       AND ptero_server_id IS NULL`,
+    [orderId, userId]
+  );
+  await releaseNodeCapacityForOrder(orderId);
+  if (result.affectedRows > 0) {
+    log.info({ order_id: orderId, user_id: userId }, 'order_reset_reachability_orphan');
+  }
+  return { updated: result.affectedRows > 0 };
+}
+
+/**
  * Start a provisioning attempt (increment count, set last_attempt_at). Call before calling panel.
  */
 export async function startProvisionAttempt(orderId) {
