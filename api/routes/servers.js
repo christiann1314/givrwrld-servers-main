@@ -2203,6 +2203,40 @@ export async function provisionServer(orderId) {
           const startupCmd = resolvedStartupCmd;
           const allocationPayload = buildPanelAllocationPayload(allocationGroup, allocNeeded);
 
+          // Final-mile sanitizer. Pterodactyl's `VariableValidatorService` runs Laravel's
+          // `boolean` rule directly on the JSON value for each egg variable. That rule
+          // accepts true, false, 0, 1, '0', '1'. Pterodactyl panels in the wild have been
+          // seen rejecting '0'/'1' strings (custom fork, or middleware casting), so we emit
+          // JSON integers 0/1 for any variable whose rule contains "boolean". That form
+          // works across all known Pterodactyl/Pelican variants.
+          const booleanKeyRules = new Map();
+          for (const { key, rules } of requiredVarMeta) {
+            if (String(rules || '').toLowerCase().includes('boolean')) {
+              booleanKeyRules.set(key, rules);
+            }
+          }
+          for (const k of ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK', 'RCON_ENABLE']) {
+            if (environment[k] !== undefined && !booleanKeyRules.has(k)) {
+              booleanKeyRules.set(k, 'boolean');
+            }
+          }
+          const payloadEnvironment = { ...environment };
+          for (const k of booleanKeyRules.keys()) {
+            const raw = payloadEnvironment[k];
+            if (raw === undefined || raw === null) continue;
+            if (typeof raw === 'boolean') {
+              payloadEnvironment[k] = raw ? 1 : 0;
+              continue;
+            }
+            const s = String(raw).trim().toLowerCase();
+            payloadEnvironment[k] = ['1', 'true', 'on', 'yes'].includes(s) ? 1 : 0;
+          }
+
+          const boolDebug = {};
+          for (const k of booleanKeyRules.keys()) {
+            boolDebug[k] = { value: payloadEnvironment[k], type: typeof payloadEnvironment[k] };
+          }
+
           logger.info(
             {
               event: 'provision_trace',
@@ -2212,6 +2246,7 @@ export async function provisionServer(orderId) {
               alloc_needed: allocNeeded,
               default_allocation_id: allocationPayload.default,
               additional_allocation_ids: allocationPayload.additional ?? [],
+              bool_env: boolDebug,
             },
             'provision_step',
           );
@@ -2231,7 +2266,7 @@ export async function provisionServer(orderId) {
               egg: order.ptero_egg_id,
               docker_image: resolvedDockerImage,
               startup: startupCmd,
-              environment: environment,
+              environment: payloadEnvironment,
               limits: {
                 memory: order.ram_gb * 1024,
                 swap: 0,
