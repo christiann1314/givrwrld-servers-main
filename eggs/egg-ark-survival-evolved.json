@@ -13,7 +13,7 @@
     "ghcr.io/parkervcp/games:source": "ghcr.io/parkervcp/games:source"
   },
   "file_denylist": [],
-  "startup": "rmv() { echo \"stopping server\"; rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} saveworld &&rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} DoExit && wait ${ARK_PID}; echo \"Server Closed\"; exit; }; trap rmv 15 2; cd ShooterGame/Binaries/Linux && ./ShooterGameServer {{SERVER_MAP}}?listen?SessionName=\"{{SESSION_NAME}}\"?ServerPassword={{ARK_PASSWORD}}?ServerAdminPassword={{ARK_ADMIN_PASSWORD}}?Port={{SERVER_PORT}}?RCONPort={{RCON_PORT}}?QueryPort={{QUERY_PORT}}?RCONEnabled=True?MaxPlayers={{MAX_PLAYERS}}?GameModIds={{MOD_ID}}$( [ \"$BATTLE_EYE\" == \"1\" ] || printf %s ' -NoBattlEye' ) -server -automanagedmods {{ARGS}} -log & ARK_PID=$! ; until echo \"waiting for rcon connection...\"; (rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD})<&0 & wait $!; do sleep 5; done",
+  "startup": "rmv() { echo \"stopping server\"; rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p \"${ARK_ADMIN_PASSWORD}\" saveworld && rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p \"${ARK_ADMIN_PASSWORD}\" DoExit && wait ${ARK_PID}; echo \"Server Closed\"; exit; }; trap rmv 15 2; cd ShooterGame/Binaries/Linux && ./ShooterGameServer {{SERVER_MAP}}?listen?SessionName=\"{{SESSION_NAME}}\"?ServerPassword={{ARK_PASSWORD}}?ServerAdminPassword={{ARK_ADMIN_PASSWORD}}?Port={{SERVER_PORT}}?RCONPort={{RCON_PORT}}?QueryPort={{QUERY_PORT}}?RCONEnabled=True?MaxPlayers={{MAX_PLAYERS}}?GameModIds={{MOD_ID}}$( [ \"$BATTLE_EYE\" == \"1\" ] || printf %s ' -NoBattlEye' ) -server -automanagedmods {{ARGS}} -log & ARK_PID=$! ; until echo \"waiting for rcon connection...\"; (rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p \"${ARK_ADMIN_PASSWORD}\")<&0 & wait $!; do sleep 5; done",
   "config": {
     "files": "{}",
     "startup": "{\r\n \"done\": \"Waiting commands for 127.0.0.1:\"\r\n}",
@@ -90,9 +90,9 @@
     },
     {
       "name": "Auto-update server",
-      "description": "This is to enable auto-updating for servers.\r\n\r\nDefault is 0. Set to 1 to update",
+      "description": "Enable auto-updating via SteamCMD on each server start. Required for initial game download.\r\n\r\n1 = update on start (default)\r\n0 = skip update",
       "env_variable": "AUTO_UPDATE",
-      "default_value": "0",
+      "default_value": "1",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|boolean",

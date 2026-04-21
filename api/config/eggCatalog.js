@@ -206,10 +206,11 @@ export const EGG_CATALOG = {
       MAX_PLAYERS: { default: '20', rules: 'required|integer|min:1' },
       ADDITIONAL_ARGS: { default: '', rules: 'nullable|string' },
       AUTO_UPDATE: { default: '1', rules: 'required|boolean' },
+      SRCDS_APPID: { default: '376030', rules: 'required|numeric', description: 'ARK Dedicated Server Steam App ID' },
       QUERY_PORT: { default: '{{SERVER_PORT}}', rules: 'required|string' },
     },
     expectedFiles: ['ShooterGame/Binaries/Linux/ShooterGameServer'],
-    notes: 'Requires 3 contiguous ports. SteamCMD-based; AUTO_UPDATE=1 installs on first run.',
+    notes: 'Requires 3 contiguous ports. SteamCMD-based; AUTO_UPDATE=1 required for initial game download.',
   },
 
   // ───────────────────────────────── Terraria ──────────────────────────────────

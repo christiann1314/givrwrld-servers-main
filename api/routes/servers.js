@@ -322,13 +322,18 @@ function normalizeStartupCommand(startupCmd) {
   if (!raw) {
     return 'cd /home/container && ./start.sh';
   }
-  // Eggs often embed "cd /home/container" inside an elif while still trying /mnt first.
-  // /mnt can be read-only in our Wings layout, so never treat "contains cd /home/container"
-  // as already safe — only a leading cd counts.
-  let tail = raw.replace(
-    /^\(\s*if\s*\[\s*-d\s+\/mnt\s*\];\s*then\s*mkdir\s+-p\s+\/mnt\/server;\s*cd\s+\/mnt\/server;\s*(?:elif\s*\[\s*-d\s+\/home\/container\s*\];\s*then\s*cd\s+\/home\/container;\s*)?fi\s*\)\s*&&\s*/i,
-    ''
-  ).trim();
+  // /mnt/server only exists inside the install container; at runtime the volume
+  // is mounted at /home/container.  Strip every known /mnt/server pattern so the
+  // startup always runs from /home/container.
+  let tail = raw
+    // Complex if/elif wrapper some eggs use
+    .replace(
+      /^\(\s*if\s*\[\s*-d\s+\/mnt\s*\];\s*then\s*mkdir\s+-p\s+\/mnt\/server;\s*cd\s+\/mnt\/server;\s*(?:elif\s*\[\s*-d\s+\/home\/container\s*\];\s*then\s*cd\s+\/home\/container;\s*)?fi\s*\)\s*&&\s*/i,
+      ''
+    )
+    // Plain "cd /mnt/server &&" or "cd /mnt/server;" prefix
+    .replace(/^cd\s+\/mnt\/server\s*(?:&&|;)\s*/i, '')
+    .trim();
   if (!tail) {
     tail = './start.sh';
   }
@@ -2205,17 +2210,15 @@ export async function provisionServer(orderId) {
 
           // Final-mile sanitizer. Pterodactyl's `VariableValidatorService` runs Laravel's
           // `boolean` rule directly on the JSON value for each egg variable. That rule
-          // accepts true, false, 0, 1, '0', '1'. Pterodactyl panels in the wild have been
-          // seen rejecting '0'/'1' strings (custom fork, or middleware casting), so we emit
-          // JSON integers 0/1 for any variable whose rule contains "boolean". That form
-          // works across all known Pterodactyl/Pelican variants.
+          // accepts true, false, 0, 1, '0', '1'. Some Panel builds only accept native
+          // JSON booleans (true/false), so we emit those to be universally safe.
           const booleanKeyRules = new Map();
           for (const { key, rules } of requiredVarMeta) {
             if (String(rules || '').toLowerCase().includes('boolean')) {
               booleanKeyRules.set(key, rules);
             }
           }
-          for (const k of ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK', 'RCON_ENABLE']) {
+          for (const k of ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK', 'RCON_ENABLE', 'SRCDS_VALIDATE']) {
             if (environment[k] !== undefined && !booleanKeyRules.has(k)) {
               booleanKeyRules.set(k, 'boolean');
             }
@@ -2224,12 +2227,8 @@ export async function provisionServer(orderId) {
           for (const k of booleanKeyRules.keys()) {
             const raw = payloadEnvironment[k];
             if (raw === undefined || raw === null) continue;
-            if (typeof raw === 'boolean') {
-              payloadEnvironment[k] = raw ? 1 : 0;
-              continue;
-            }
-            const s = String(raw).trim().toLowerCase();
-            payloadEnvironment[k] = ['1', 'true', 'on', 'yes'].includes(s) ? 1 : 0;
+            const s = typeof raw === 'boolean' ? (raw ? '1' : '0') : String(raw).trim().toLowerCase();
+            payloadEnvironment[k] = ['1', 'true', 'on', 'yes'].includes(s);
           }
 
           const boolDebug = {};
