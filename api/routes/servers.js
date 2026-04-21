@@ -201,7 +201,7 @@ function inferRequiredEnvValue(key, rules, context) {
   const gameKey = normalizeGameKey(order.game);
   if (upper === 'APP_ID') return steamAppIdsByGame[gameKey] || '1';
   if (upper === 'SRCDS_APPID') return steamAppIdsByGame[gameKey] || '1';
-  if (upper === 'AUTO_UPDATE') return 'true';
+  if (upper === 'AUTO_UPDATE') return '1';
   if (upper === 'MAX_PLAYERS') return String(estimatedPlayers);
   if (upper === 'SERVER_NAME' || upper === 'HOSTNAME' || upper === 'SESSION_NAME' || upper === 'SRV_NAME') {
     return String(order.server_name || 'GIVRwrld Server').slice(0, 80);
@@ -1217,7 +1217,7 @@ function buildEnvironmentForAllocationGroup(ctx) {
     HOSTNAME: order.server_name || 'GIVRwrld Server',
     SESSION_NAME: order.server_name || 'GIVRwrld Server',
     MAX_PLAYERS: String(estimatedPlayers),
-    AUTO_UPDATE: true,
+    AUTO_UPDATE: '1',
     APP_ID: environment.APP_ID || steamAppIdsByGame[gameKey] || '',
     ADDITIONAL_ARGS: '',
     ADDITIONAL_FLAGS: '',
@@ -1275,8 +1275,10 @@ function buildEnvironmentForAllocationGroup(ctx) {
   }
 
   if (gameKey === 'ark') {
-    const battleEye = String(environment.BATTLE_EYE || 'false').toLowerCase();
-    environment.BATTLE_EYE = battleEye === 'true' ? 'true' : 'false';
+    // Pterodactyl casts env values to strings, then Laravel boolean rule accepts only true/false/0/1/'0'/'1'.
+    // Send '0' / '1' so it passes both string-cast and boolean validation.
+    const battleEye = String(environment.BATTLE_EYE ?? '').trim().toLowerCase();
+    environment.BATTLE_EYE = ['1', 'true', 'on', 'yes'].includes(battleEye) ? '1' : '0';
     environment.SERVER_MAP = String(environment.SERVER_MAP || environment.MAP || 'TheIsland');
     environment.ARK_ADMIN_PASSWORD = String(environment.ARK_ADMIN_PASSWORD || arkAdminPassword).replace(
       /[^a-zA-Z0-9_-]/g,
@@ -1332,20 +1334,26 @@ function buildEnvironmentForAllocationGroup(ctx) {
     environment[key] = normalizeEnvValue(key, environment[key], rules, inferContext);
   }
 
-  // Pterodactyl Application API validates boolean egg variables as JSON booleans,
-  // not strings. Convert every variable whose rules include "boolean" to an actual
-  // JS boolean so JSON.stringify sends true/false instead of "true"/"false".
+  // Pterodactyl casts every env value to a string before applying egg rules
+  // (`VariableValidatorService` does `(string) $value`). Laravel's `boolean` rule then
+  // accepts true/false/0/1/'0'/'1' but rejects 'true'/'false'. Sending JS booleans
+  // round-trips to 'true'/'false' and 422s — emit '0' / '1' strings instead.
+  const toBoolString = (raw, defaultTruthy = false) => {
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+      return defaultTruthy ? '1' : '0';
+    }
+    if (typeof raw === 'boolean') return raw ? '1' : '0';
+    const s = String(raw).trim().toLowerCase();
+    return ['1', 'true', 'on', 'yes'].includes(s) ? '1' : '0';
+  };
+
   for (const { key, rules } of requiredVarMeta) {
     if (!String(rules || '').toLowerCase().includes('boolean')) continue;
     if (environment[key] === undefined || environment[key] === null) continue;
-    const v = String(environment[key]).trim().toLowerCase();
-    environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
+    environment[key] = toBoolString(environment[key]);
   }
 
-  // Always coerce common Panel egg booleans to real JSON booleans. The Application API
-  // rejects string "true"/"false" for boolean rules. We must run this even when Panel
-  // returned *some* boolean metadata, otherwise keys like AUTO_UPDATE can stay as
-  // strings and create-server returns 422 (seen on Palworld / ARK / Enshrouded).
+  // Required booleans for SteamCMD-based eggs that frequently 422 on create when missing.
   const knownBooleanKeys = [
     'AUTO_UPDATE',
     'WINDOWS_INSTALL',
@@ -1356,30 +1364,24 @@ function buildEnvironmentForAllocationGroup(ctx) {
   ];
   for (const key of knownBooleanKeys) {
     if (environment[key] === undefined || environment[key] === null) continue;
-    if (typeof environment[key] === 'boolean') continue;
-    const v = String(environment[key]).trim().toLowerCase();
-    environment[key] = v === '' || ['1', 'true', 'on', 'yes'].includes(v);
+    environment[key] = toBoolString(environment[key]);
   }
 
   // Last-mile: if the Panel variable list was incomplete, required booleans can be missing
   // entirely (skipped above). Palworld/ARK/Enshrouded still 422 on create without them.
-  const coerceBool = (key, defaultTrue) => {
+  const ensureBoolDefault = (key, defaultTruthy) => {
     const raw = environment[key];
     if (raw === undefined || raw === null || String(raw).trim() === '') {
-      environment[key] = defaultTrue;
-      return;
+      environment[key] = defaultTruthy ? '1' : '0';
     }
-    if (typeof raw === 'boolean') return;
-    const s = String(raw).trim().toLowerCase();
-    environment[key] = s === '' || ['1', 'true', 'on', 'yes'].includes(s);
   };
   if (gameKey === 'palworld' || gameKey === 'ark') {
-    coerceBool('AUTO_UPDATE', true);
+    ensureBoolDefault('AUTO_UPDATE', true);
   }
   if (gameKey === 'enshrouded') {
-    coerceBool('WINDOWS_INSTALL', true);
-    coerceBool('AUTO_UPDATE', true);
-    coerceBool('VALIDATE', false);
+    ensureBoolDefault('WINDOWS_INSTALL', true);
+    ensureBoolDefault('AUTO_UPDATE', true);
+    ensureBoolDefault('VALIDATE', false);
   }
 
   if (gameKey === 'among-us') {
