@@ -1287,6 +1287,24 @@ function buildEnvironmentForAllocationGroup(ctx) {
     if (!environment.ARK_ADMIN_PASSWORD) {
       environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
     }
+    // ARK: Survival Evolved Linux dedicated server is Steam app 376030. Some Panel egg rows have
+    // been observed with SRCDS_APPID=1007 (Steamworks SDK Redist), which makes SteamCMD fail with
+    // 'App 1007 state is 0x2' and leaves no ShooterGame/Binaries/Linux/ShooterGameServer binary.
+    // Hard-override both fields so our payload wins over egg defaults.
+    environment.SRCDS_APPID = '376030';
+    environment.APP_ID = '376030';
+    // EXTRA_FLAGS is a free-form suffix appended after +app_update in the install script. If an
+    // egg default has snuck in another app_update (e.g. '+app_update 1007 validate'), blank it
+    // and reintroduce 'validate' so the intended game app is verified, not replaced.
+    if (/app_update/i.test(String(environment.EXTRA_FLAGS || ''))) {
+      environment.EXTRA_FLAGS = 'validate';
+    } else if (!environment.EXTRA_FLAGS) {
+      environment.EXTRA_FLAGS = 'validate';
+    }
+    // STEAM_SDK=1 in some Steam eggs triggers an extra +app_update 1007 clause; ARK does not need it.
+    if (environment.STEAM_SDK !== undefined) {
+      environment.STEAM_SDK = '0';
+    }
   }
 
   // Palworld dedicated server is always Steam app 2394010. Some Panel/egg rows have been
