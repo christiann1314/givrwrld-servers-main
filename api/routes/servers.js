@@ -190,6 +190,49 @@ function buildSafeToken(prefix, orderId, length = 24) {
   return raw.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, length);
 }
 
+// Per-game tuning for Pterodactyl `limits` block on server creation.
+// A few games (ARK in particular) load worlds that peak well above their
+// "advertised" RAM and get cgroup-OOM-killed with the naive memory=ram_gb*1024.
+// We keep the billed RAM the SAME but add burst swap + disable the oom killer,
+// and for ARK we give a small 1.5× memory headroom since Linux cgroup swap
+// accounting is unreliable across kernels.
+function buildPteroLimitsForGame(gameKey, { memoryMb, diskMb, cpuPercent }) {
+  const base = {
+    memory: memoryMb,
+    swap: 0,
+    disk: diskMb,
+    io: 500,
+    cpu: cpuPercent,
+  };
+  const key = String(gameKey || '').toLowerCase();
+  if (key === 'ark') {
+    // TheIsland fresh world loads at ~5.7 GiB RSS and hard-OOMs at a 4 GiB
+    // cgroup cap. The ARK plan floor in sql/migrations/20260422120000_fix_ark_minimum_resources.sql
+    // is therefore 6 GB, which should already be reflected in order.ram_gb.
+    // We keep Math.max() as a belt-and-braces guard in case a grandfathered
+    // 4 GB order sneaks through (e.g. resumed provisioning from a pre-migration
+    // row), and we always add 2 GB swap + oom_disabled because cgroup swap
+    // accounting is unreliable across kernels and ARK's peak is very spiky.
+    const minArkMb = 6144;
+    return {
+      ...base,
+      memory: Math.max(memoryMb, minArkMb),
+      swap: 2048,
+      oom_disabled: true,
+    };
+  }
+  if (key === 'palworld' || key === 'rust' || key === 'enshrouded' || key === 'valheim') {
+    // Heavier steam-based worlds benefit from swap headroom during world gen,
+    // but do not need a baseline RAM bump.
+    return {
+      ...base,
+      swap: 1024,
+      oom_disabled: true,
+    };
+  }
+  return base;
+}
+
 function inferRequiredEnvValue(key, rules, context) {
   const upper = String(key || '').toUpperCase();
   const lowerRules = String(rules || '').toLowerCase();
@@ -2402,13 +2445,11 @@ export async function provisionServer(orderId) {
               docker_image: resolvedDockerImage,
               startup: startupCmd,
               environment: payloadEnvironment,
-              limits: {
-                memory: order.ram_gb * 1024,
-                swap: 0,
-                disk: order.ssd_gb * 1024,
-                io: 500,
-                cpu: order.vcores * 100,
-              },
+              limits: buildPteroLimitsForGame(normalizeGameKey(order.game), {
+                memoryMb: order.ram_gb * 1024,
+                diskMb: order.ssd_gb * 1024,
+                cpuPercent: order.vcores * 100,
+              }),
               feature_limits: {
                 databases: 1,
                 backups: 5,
