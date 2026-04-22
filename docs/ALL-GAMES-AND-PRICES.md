@@ -184,7 +184,7 @@ Complete list of every game, every variant/mod, and every price as defined by th
 |------|----------------|----------------------------------------------------|
 | **Minecraft** | Vanilla, Paper, Purpur, Fabric, Forge | 18 (2/4/8/12 GB × variants) |
 | **Rust** | Vanilla, Oxide (uMod), Carbon | 3 GB Vanilla; 4 GB Vanilla/Oxide/Carbon |
-| **ARK** | Vanilla, Primal Fear Ready, PvE Cluster Ready | 4 GB Vanilla; 8 GB all three |
+| **ARK** | Vanilla, Primal Fear Ready, PvE Cluster Ready | 6 GB Vanilla; 8 GB all three |
 | **Terraria** | Vanilla, tModLoader, Calamity Ready | 2 GB Vanilla; 4 GB all three |
 | **Factorio** | Vanilla, Space Age Ready, Bob's+Angel's Ready | 2 GB Vanilla; 4 GB all three |
 | **Palworld** | Vanilla, Community Plus, Hardcore | 4 GB Vanilla; 8 GB all three |

@@ -24,8 +24,8 @@ UI_PLANS["palworld-4gb"]="4|2|40|11.99"
 UI_PLANS["palworld-8gb"]="8|3|80|23.99"
 UI_PLANS["palworld-16gb"]="16|4|160|47.99"
 
-# Ark
-UI_PLANS["ark-4gb"]="4|2|40|9.99"
+# Ark — 6 GB floor (see sql/migrations/20260422120000_fix_ark_minimum_resources.sql)
+UI_PLANS["ark-4gb"]="6|2|35|14.99"
 UI_PLANS["ark-8gb"]="8|3|80|14.99"
 UI_PLANS["ark-16gb"]="16|4|160|24.99"
 

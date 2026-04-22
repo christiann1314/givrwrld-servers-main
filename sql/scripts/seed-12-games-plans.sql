@@ -10,7 +10,9 @@ VALUES
   ('minecraft-2gb',   'game', 'minecraft',      2, 1, 20,  9.99, NULL, 'Minecraft 2GB',   1),
   ('rust-3gb',        'game', 'rust',            3, 1, 25, 12.99, NULL, 'Rust 3GB',        1),
   ('palworld-4gb',    'game', 'palworld',        4, 2, 30, 14.99, NULL, 'Palworld 4GB',    1),
-  ('ark-4gb',         'game', 'ark',              4, 2, 35, 14.99, NULL, 'ARK 4GB',        1),
+  -- ARK: 6 GB is the real minimum; see migration 20260422120000_fix_ark_minimum_resources.sql.
+  -- Plan id `ark-4gb` is kept stable so existing Stripe subscriptions continue to bill.
+  ('ark-4gb',         'game', 'ark',              6, 2, 35, 14.99, NULL, 'ARK 6GB',        1),
   ('terraria-2gb',    'game', 'terraria',        2, 1, 15,  6.99, NULL, 'Terraria 2GB',    1),
   ('factorio-2gb',    'game', 'factorio',        2, 1, 15,  7.99, NULL, 'Factorio 2GB',    1),
   ('mindustry-2gb',   'game', 'mindustry',       2, 1, 15,  5.99, NULL, 'Mindustry 2GB',   1),
