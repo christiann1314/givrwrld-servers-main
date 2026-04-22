@@ -2345,7 +2345,7 @@ export async function provisionServer(orderId) {
               booleanKeyRules.set(key, rules);
             }
           }
-          for (const k of ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK', 'RCON_ENABLE', 'SRCDS_VALIDATE']) {
+          for (const k of ['AUTO_UPDATE', 'WINDOWS_INSTALL', 'VALIDATE', 'BATTLE_EYE', 'STEAM_SDK', 'SRCDS_VALIDATE']) {
             if (environment[k] !== undefined && !booleanKeyRules.has(k)) {
               booleanKeyRules.set(k, 'boolean');
             }
@@ -2356,6 +2356,15 @@ export async function provisionServer(orderId) {
             if (raw === undefined || raw === null) continue;
             const s = typeof raw === 'boolean' ? (raw ? '1' : '0') : String(raw).trim().toLowerCase();
             payloadEnvironment[k] = ['1', 'true', 'on', 'yes'].includes(s);
+          }
+
+          if (payloadEnvironment.RCON_ENABLE !== undefined && payloadEnvironment.RCON_ENABLE !== null) {
+            const rawR = payloadEnvironment.RCON_ENABLE;
+            const on =
+              rawR === true ||
+              rawR === 1 ||
+              ["1", "true", "on", "yes"].includes(String(rawR).trim().toLowerCase());
+            payloadEnvironment.RCON_ENABLE = on ? "True" : "False";
           }
 
           const boolDebug = {};

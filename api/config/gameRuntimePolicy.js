@@ -202,7 +202,7 @@ export const EGG_RUNTIME_POLICY = {
       game: { protocol: 'udp', usesPrimaryAllocation: true },
       http: { protocol: 'tcp', usesExtraAllocationIndex: 1 },
     },
-    requiredDockerImage: 'ghcr.io/parkervcp/yolks:dotnet_8',
+    requiredDockerImage: 'ghcr.io/parkervcp/yolks:dotnet_7',
     https: {
       required: true,
       proxyTarget: 'http',
@@ -262,8 +262,29 @@ export const EGG_RUNTIME_POLICY = {
  * @param {number} eggId
  * @returns {number}
  */
-export function getAllocationsNeededForEgg(eggId) {
+const EGG_ID_ALIASES = {
+  4: 61,
+  11: 66,
+  14: 65,
+  15: 71,
+  16: 70,
+  17: 73,
+  18: 75,
+  19: 72,
+  20: 74,
+  21: 69,
+  22: 78,
+  23: 67,
+  24: 76,
+};
+
+function canonicalEggId(eggId) {
   const n = Number(eggId);
+  return EGG_ID_ALIASES[n] ?? n;
+}
+
+export function getAllocationsNeededForEgg(eggId) {
+  const n = canonicalEggId(eggId);
   const p = EGG_RUNTIME_POLICY[n];
   if (p?.allocationsNeeded != null && Number.isFinite(p.allocationsNeeded) && p.allocationsNeeded >= 1) {
     return p.allocationsNeeded;
@@ -276,7 +297,7 @@ export function getAllocationsNeededForEgg(eggId) {
  * @returns {EggRuntimePolicy | null}
  */
 export function getEggRuntimePolicy(eggId) {
-  const n = Number(eggId);
+  const n = canonicalEggId(eggId);
   if (!Number.isFinite(n) || n <= 0) return null;
   return EGG_RUNTIME_POLICY[n] ?? null;
 }

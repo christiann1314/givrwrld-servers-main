@@ -480,9 +480,27 @@ export const EGG_CATALOG = {
  * @param {number} eggId
  * @returns {EggCatalogEntry | null}
  */
+const EGG_ID_ALIASES = {
+  // Current panel egg ids -> legacy catalog ids used by this file.
+  4: 61,   // Paper -> legacy paper catalog
+  11: 66,  // ARK
+  14: 65,  // Rust
+  15: 71,  // Mindustry
+  16: 70,  // Palworld
+  17: 73,  // Teeworlds
+  18: 75,  // Veloren
+  19: 72,  // Vintage Story
+  20: 74,  // Among Us Impostor
+  21: 69,  // Factorio
+  22: 78,  // Rimworld Together
+  23: 67,  // Terraria Vanilla
+  24: 76,  // Enshrouded
+};
+
 export function getCatalogEntry(eggId) {
   const n = Number(eggId);
-  return EGG_CATALOG[n] ?? null;
+  const canonical = EGG_ID_ALIASES[n] ?? n;
+  return EGG_CATALOG[canonical] ?? null;
 }
 
 /**

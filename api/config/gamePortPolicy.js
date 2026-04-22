@@ -77,22 +77,22 @@ export function applyMultiAllocationEnv(eggId, selectedAllocs, environment) {
     .map((p) => Number(p));
   const n = Number(eggId);
 
-  if (n === 65 && ports.length >= 3) {
+  if ((n === 65 || n === 14) && ports.length >= 3) {
     environment.QUERY_PORT = String(ports[1]);
     environment.RCON_PORT = String(ports[2]);
     environment.APP_PORT = String(ports[0]);
     return;
   }
-  if (n === 66 && ports.length >= 3) {
+  if ((n === 66 || n === 11) && ports.length >= 3) {
     environment.QUERY_PORT = String(ports[1]);
     environment.RCON_PORT = String(ports[2]);
     return;
   }
-  if (n === 70 && ports.length >= 2) {
+  if ((n === 70 || n === 16) && ports.length >= 2) {
     environment.RCON_PORT = String(ports[1]);
     return;
   }
-  if (n === 75 && ports.length >= 2) {
+  if ((n === 75 || n === 18) && ports.length >= 2) {
     environment.METRICS_PORT = String(ports[1]);
     return;
   }
