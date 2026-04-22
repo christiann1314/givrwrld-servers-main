@@ -301,6 +301,10 @@ const worker = new Worker(
     concurrency: Number(
       process.env.PROVISIONING_WORKER_CONCURRENCY || process.env.POST_PROVISION_WORKER_CONCURRENCY || 2,
     ),
+    // Default BullMQ lock is short; TCP/HTTPS reachability probes can run for many minutes.
+    lockDuration: Number(process.env.POST_PROVISION_LOCK_DURATION_MS || 600_000),
+    stalledInterval: Number(process.env.POST_PROVISION_STALLED_INTERVAL_MS || 120_000),
+    maxStalledCount: Number(process.env.POST_PROVISION_MAX_STALLED_COUNT || 3),
   },
 );
 

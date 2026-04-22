@@ -37,6 +37,10 @@ get-price-ids.js
 api/.env
 pterodactyl/.env
 
+# Wings node config contains node UUID + token and must stay node-local
+pterodactyl/wings-live-config.yml
+pterodactyl/wings-live-config.yml.bak*
+
 # Backups and secrets (never commit)
 node_modules_backup
 AES_KEY.txt
