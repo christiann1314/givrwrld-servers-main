@@ -636,6 +636,71 @@ export async function resetGameOrderToPaidWhenReachabilityOrphan(orderId, userId
 }
 
 /**
+ * Clear Panel binding and set `paid` when Application API shows no server for this order
+ * (e.g. panel rebuilt; billing DB still had stale provisioned rows).
+ */
+export async function resetGameOrderToPaidWhenNoPanelServerMatch(orderId, userId) {
+  if (!orderId || !userId) return { updated: false };
+
+  const statuses = ['provisioned', 'configuring', 'verifying', 'playable', 'active'];
+  const placeholders = statuses.map(() => '?').join(', ');
+
+  const [result] = await pool.execute(
+    `UPDATE orders SET
+       ptero_server_id = NULL,
+       ptero_identifier = NULL,
+       ptero_server_uuid = NULL,
+       ptero_primary_allocation_id = NULL,
+       ptero_primary_port = NULL,
+       ptero_extra_ports_json = NULL,
+       ptero_node_id = NULL,
+       game_brand_hostname = NULL,
+       game_display_address = NULL,
+       error_message = NULL,
+       last_provision_error = NULL,
+       status = 'paid',
+       updated_at = NOW()
+     WHERE id = ?
+       AND user_id = ?
+       AND item_type = 'game'
+       AND status IN (${placeholders})`,
+    [orderId, userId, ...statuses],
+  );
+  await releaseNodeCapacityForOrder(orderId);
+  if (result.affectedRows > 0) {
+    log.info({ order_id: orderId, user_id: userId }, 'order_reset_no_panel_server_match');
+  }
+  return { updated: result.affectedRows > 0 };
+}
+
+/**
+ * Repair `ptero_server_id` / `ptero_identifier` from Panel after a rebuild or drift.
+ */
+export async function syncGameOrderPanelBindingFromApplication(orderId, attrs) {
+  if (!orderId || !attrs || typeof attrs !== 'object') return { updated: false };
+  const sid = Number(attrs.id);
+  const ident = attrs.identifier != null ? String(attrs.identifier).trim() : '';
+  const uuid =
+    attrs.uuid != null && String(attrs.uuid).trim() !== '' ? String(attrs.uuid).trim() : null;
+  if (!Number.isFinite(sid) || !ident) return { updated: false };
+
+  const [result] = await pool.execute(
+    `UPDATE orders SET
+       ptero_server_id = ?,
+       ptero_identifier = ?,
+       ptero_server_uuid = COALESCE(?, ptero_server_uuid),
+       updated_at = NOW()
+     WHERE id = ?
+       AND item_type = 'game'`,
+    [sid, ident, uuid, orderId],
+  );
+  if (result.affectedRows > 0) {
+    log.info({ order_id: orderId, ptero_server_id: sid }, 'order_panel_binding_synced_from_application');
+  }
+  return { updated: result.affectedRows > 0 };
+}
+
+/**
  * Start a provisioning attempt (increment count, set last_attempt_at). Call before calling panel.
  */
 export async function startProvisionAttempt(orderId) {

@@ -14,6 +14,14 @@ export const DASHBOARD_ACTIVE_GAME_STATUSES = Object.freeze([
 ]);
 
 /**
+ * Dashboard rows that should map to an Application API server (external_id / name / id).
+ * Excludes `provisioning` because the Panel row may not exist until the worker finishes create.
+ */
+export const DASHBOARD_STATUSES_REQUIRING_PANEL_SERVER = Object.freeze(
+  DASHBOARD_ACTIVE_GAME_STATUSES.filter((s) => s !== 'provisioning'),
+);
+
+/**
  * Superset for ops scripts: cancel + clear panel binding for test resets.
  * Includes `paid` (post-purge / pre-provision) even though it is not dashboard-listed.
  */

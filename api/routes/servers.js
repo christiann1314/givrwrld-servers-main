@@ -19,6 +19,8 @@ import {
   backfillOrderProvisionMetadata,
   resetGameOrderToPaidAfterPanelServerRemoved,
   resetGameOrderToPaidWhenReachabilityOrphan,
+  resetGameOrderToPaidWhenNoPanelServerMatch,
+  syncGameOrderPanelBindingFromApplication,
 } from '../services/OrderService.js';
 import { schedulePostProvisionFollowup } from '../queues/postProvisionQueue.js';
 import { serializeProvisionPlanForJob } from '../lib/serializeProvisionPlanForJob.js';
@@ -47,7 +49,10 @@ import { buildProvisionPlan } from '../lib/buildProvisionPlan.js';
 import { validateProvisionPlan } from '../lib/validateProvisionPlan.js';
 import { validateEggRuntimeForProvision } from '../lib/validateEggRuntime.js';
 import { getImpostorLinuxDownloadUrl } from '../config/impostorReleasePolicy.js';
-import { DASHBOARD_ACTIVE_GAME_STATUSES } from '../lib/gameOrderDashboardStatuses.js';
+import {
+  DASHBOARD_ACTIVE_GAME_STATUSES,
+  DASHBOARD_STATUSES_REQUIRING_PANEL_SERVER,
+} from '../lib/gameOrderDashboardStatuses.js';
 import {
   withMysqlProvisionLock,
   buildDeterministicServerName,
@@ -317,6 +322,90 @@ async function getPanelServerByExternalId(panelUrl, panelAppKey, externalId) {
   return data?.attributes || null;
 }
 
+/** Short-lived cache so one dashboard load lists Panel servers once, not per order. */
+const PANEL_APP_SERVER_SNAPSHOT_TTL_MS = 5000;
+let panelAppServerSnapshot = { expiresAt: 0, servers: /** @type {any[] | null} */ (null) };
+
+function invalidatePanelApplicationServerSnapshotCache() {
+  panelAppServerSnapshot = { expiresAt: 0, servers: null };
+}
+
+async function resolvePanelApplicationCredentialsForDashboard() {
+  const aesKey = process.env.AES_KEY;
+  const panelUrl =
+    (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
+  const panelAppKey =
+    (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) ||
+    process.env.PANEL_APP_KEY;
+  return {
+    panelUrl: panelUrl ? String(panelUrl).trim() : '',
+    panelAppKey: panelAppKey ? String(panelAppKey).trim() : '',
+  };
+}
+
+async function refreshPanelApplicationServerSnapshot(panelUrl, panelAppKey) {
+  const base = String(panelUrl).replace(/\/+$/, '');
+  const servers = [];
+  for (let page = 1; ; page += 1) {
+    const res = await fetch(`${base}/api/application/servers?page=${page}&per_page=100`, {
+      headers: {
+        Authorization: `Bearer ${panelAppKey}`,
+        Accept: 'Application/vnd.pterodactyl.v1+json',
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Panel servers list HTTP ${res.status}: ${text.slice(0, 500)}`);
+    }
+    const json = await res.json();
+    for (const row of json.data || []) {
+      if (row?.attributes) servers.push(row.attributes);
+    }
+    const totalPages = Number(json.meta?.pagination?.total_pages);
+    if (!Number.isFinite(totalPages) || page >= totalPages) break;
+  }
+  return servers;
+}
+
+async function getCachedPanelApplicationServers() {
+  const { panelUrl, panelAppKey } = await resolvePanelApplicationCredentialsForDashboard();
+  if (!panelUrl || !panelAppKey) {
+    return { ok: false, servers: null };
+  }
+  const now = Date.now();
+  if (panelAppServerSnapshot.servers && now < panelAppServerSnapshot.expiresAt) {
+    return { ok: true, servers: panelAppServerSnapshot.servers };
+  }
+  try {
+    const servers = await refreshPanelApplicationServerSnapshot(panelUrl, panelAppKey);
+    panelAppServerSnapshot = { expiresAt: now + PANEL_APP_SERVER_SNAPSHOT_TTL_MS, servers };
+    return { ok: true, servers };
+  } catch (err) {
+    logger.warn(
+      { err: err?.message || String(err) },
+      'panel_application_server_snapshot_failed',
+    );
+    return { ok: false, servers: null };
+  }
+}
+
+function findPanelServerAttributesForOrder(servers, order) {
+  if (!Array.isArray(servers) || !order) return null;
+  const oid = String(order.id || '').trim();
+  const byExternal = servers.find((a) => String(a.external_id || '').trim() === oid);
+  if (byExternal) return byExternal;
+  const detName = buildDeterministicServerName(order);
+  const byName = servers.find((a) => String(a.name || '').trim() === detName);
+  if (byName) return byName;
+  if (order.ptero_server_id != null && String(order.ptero_server_id).trim() !== '') {
+    const pid = Number(order.ptero_server_id);
+    if (Number.isFinite(pid)) {
+      return servers.find((a) => Number(a.id) === pid) || null;
+    }
+  }
+  return null;
+}
+
 function normalizeStartupCommand(startupCmd) {
   const raw = String(startupCmd || '').trim();
   if (!raw) {
@@ -448,6 +537,44 @@ async function reconcileStaleGameOrderAndResolveLive(order, userId) {
       );
     }
     return null;
+  }
+
+  const requiresPanelRow = DASHBOARD_STATUSES_REQUIRING_PANEL_SERVER.includes(st);
+  if (requiresPanelRow) {
+    const snap = await getCachedPanelApplicationServers();
+    if (snap.ok && snap.servers) {
+      const attrs = findPanelServerAttributesForOrder(snap.servers, order);
+      if (!attrs) {
+        try {
+          await resetGameOrderToPaidWhenNoPanelServerMatch(order.id, userId);
+        } catch (err) {
+          logger.warn(
+            { order_id: order.id, err: err?.message || String(err) },
+            'order_reset_no_panel_match_failed',
+          );
+        }
+        return null;
+      }
+      const sid = Number(attrs.id);
+      const ident = attrs.identifier != null ? String(attrs.identifier).trim() : '';
+      if (
+        Number.isFinite(sid) &&
+        ident &&
+        (Number(order.ptero_server_id) !== sid ||
+          String(order.ptero_identifier || '').trim() !== ident)
+      ) {
+        try {
+          await syncGameOrderPanelBindingFromApplication(order.id, attrs);
+        } catch (err) {
+          logger.warn(
+            { order_id: order.id, err: err?.message || String(err) },
+            'order_panel_binding_sync_failed',
+          );
+        }
+        order.ptero_server_id = sid;
+        order.ptero_identifier = ident;
+      }
+    }
   }
 
   const live = await resolvePanelStatsForOrder(order);
@@ -1306,10 +1433,9 @@ function buildEnvironmentForAllocationGroup(ctx) {
     } else if (!environment.EXTRA_FLAGS) {
       environment.EXTRA_FLAGS = 'validate';
     }
-    // STEAM_SDK=1 in some Steam eggs triggers an extra +app_update 1007 clause; ARK does not need it.
-    if (environment.STEAM_SDK !== undefined) {
-      environment.STEAM_SDK = '0';
-    }
+    // games:source entrypoint may treat STEAM_SDK as enabled when unset; always disable so
+    // SteamCMD does not run +app_update 1007 (SDK redist) instead of the dedicated server.
+    environment.STEAM_SDK = '0';
   }
 
   // Palworld dedicated server is always Steam app 2394010. Some Panel/egg rows have been
@@ -1803,6 +1929,7 @@ export async function provisionServer(orderId) {
             verSync.identifier || existing.identifier || null,
             metaSync,
           );
+          invalidatePanelApplicationServerSnapshotCache();
           try {
             await schedulePostProvisionFollowup(orderId);
           } catch (schedErr) {
@@ -2362,6 +2489,7 @@ export async function provisionServer(orderId) {
           verCreate.identifier || pteroIdentifier,
           provisionMeta,
         );
+        invalidatePanelApplicationServerSnapshotCache();
 
         const provisionPlanForQueue =
           winningAllocationGroup?.length > 0
