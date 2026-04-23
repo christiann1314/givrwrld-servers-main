@@ -74,6 +74,8 @@ function pickDockerImage(dockerImagesRaw) {
 
 function chooseEggForGame(game, eggs) {
   const strategies = {
+    // Order matters: used only as a *default* egg when plans still have NULL
+    // ptero_egg_id. Prefer a neutral Paper match; never use this to infer Fabric.
     minecraft: [/paper/i, /vanilla minecraft/i, /forge/i, /sponge/i],
     rust: [/^rust$/i, /\brust\b/i],
     ark: [/ark.*survival/i, /\bark\b/i],
@@ -220,14 +222,30 @@ async function main() {
 
       const needsDefaultMap = gamePlans.some((p) => !Number(p.ptero_egg_id || 0));
       if (needsDefaultMap && !isDryRun) {
-        await conn.execute(
-          `UPDATE plans
-           SET ptero_egg_id = ?
-           WHERE item_type = 'game'
-             AND game = ?
-             AND (ptero_egg_id IS NULL OR ptero_egg_id = 0)`,
-          [chosenEgg.pteroEggId, game]
-        );
+        // Minecraft has multiple commercial variants (Paper, Fabric, Forge, …).
+        // Never assign one default egg to every NULL minecraft plan — that would
+        // stamp Paper onto mc-fabric-* rows after a panel reset. Only fill the
+        // legacy single-SKU plan id from seed-12-games-plans (`minecraft-Ngb`).
+        if (game === 'minecraft') {
+          await conn.execute(
+            `UPDATE plans
+             SET ptero_egg_id = ?
+             WHERE item_type = 'game'
+               AND game = 'minecraft'
+               AND (ptero_egg_id IS NULL OR ptero_egg_id = 0)
+               AND id REGEXP '^minecraft-[0-9]+gb$'`,
+            [chosenEgg.pteroEggId]
+          );
+        } else {
+          await conn.execute(
+            `UPDATE plans
+             SET ptero_egg_id = ?
+             WHERE item_type = 'game'
+               AND game = ?
+               AND (ptero_egg_id IS NULL OR ptero_egg_id = 0)`,
+            [chosenEgg.pteroEggId, game]
+          );
+        }
       }
 
       mapped.push({ game, eggId: chosenEgg.pteroEggId, eggName: chosenEgg.name, changed: needsDefaultMap });
