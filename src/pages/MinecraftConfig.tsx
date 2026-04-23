@@ -47,6 +47,7 @@ const MinecraftConfig = () => {
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
   const [planId, setPlanId] = useState('mc-paper-8gb');
+  /** When live nest data loads, ids become `minecraft-egg-<ptero_egg_id>`; fallbacks use `minecraft-paper` etc. */
   const [gameType, setGameType] = useState('minecraft-paper');
   const [billingTerm, setBillingTerm] = useState('semiannual');
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('minecraft', fallbackPlans, fallbackGameTypes);
@@ -55,15 +56,22 @@ const MinecraftConfig = () => {
     [gameTypes]
   );
 
+  const selectedGameType = React.useMemo(
+    () => effectiveGameTypes.find((g) => g.id === gameType),
+    [effectiveGameTypes, gameType],
+  );
+
   const { run: createCheckout, loading } = useAction(async () => {
     if (!serverName.trim()) throw new Error('Server name is required');
+
+    const modpackId = gameType.startsWith('minecraft-egg-') ? 'minecraft' : gameType;
 
     const response = await stripeService.createCheckoutSession({
       item_type: 'game',
       plan_id: planId,
       region,
       server_name: serverName.trim(),
-      modpack_id: gameType,
+      modpack_id: modpackId,
       term: billingTerm as 'monthly' | 'quarterly' | 'yearly',
       success_url: `${window.location.origin}/purchase-success`,
       cancel_url: `${window.location.origin}/configure/minecraft`
@@ -92,9 +100,13 @@ const MinecraftConfig = () => {
   ];
 
   const visiblePlans = React.useMemo(() => {
+    if (selectedGameType?.pteroEggId != null) {
+      const byEgg = plans.filter((p) => Number(p.pteroEggId) === Number(selectedGameType.pteroEggId));
+      if (byEgg.length > 0) return byEgg;
+    }
     const byType = plans.filter((p) => p.serverType === gameType);
     return byType.length > 0 ? byType : plans;
-  }, [plans, gameType]);
+  }, [plans, gameType, selectedGameType]);
 
   React.useEffect(() => {
     if (visiblePlans.length > 0 && !visiblePlans.some((p) => p.id === planId)) {
@@ -347,7 +359,7 @@ const MinecraftConfig = () => {
                     }
                     createCheckout();
                   }}
-                  disabled={loading || !serverName.trim()}
+                  disabled={loading || !serverName.trim() || visiblePlans.length === 0}
                   className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:transform-none disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating Server...' : (user ? 'Deploy Your Server' : 'Sign Up to Deploy Server')}

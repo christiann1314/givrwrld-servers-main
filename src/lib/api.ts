@@ -384,6 +384,13 @@ export const api = {
      return await http<any>("/api/plans", { method: "GET" });
    },
 
+  async getNestEggs(nestSlug: string) {
+    return await http<{ success: boolean; eggs?: Array<{ ptero_egg_id: number; name: string; ptero_nest_id?: number; nest_name?: string }> }>(
+      `/api/plans/nest/${encodeURIComponent(nestSlug)}/eggs`,
+      { method: "GET" },
+    );
+  },
+
   async getPlanCatalog() {
     return await http<any>("/api/plans/catalog", { method: "GET" });
   },

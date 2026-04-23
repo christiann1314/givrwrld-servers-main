@@ -1,8 +1,42 @@
 // Plans Route
 import express from 'express';
 import { getAllPlans } from '../utils/mysql.js';
+import pool from '../config/database.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/plans/nest/:nestSlug/eggs
+ * Eggs currently in a Panel nest (synced into `ptero_eggs` / `ptero_nests`), e.g. `Minecraft` or `Rust`.
+ * Used so configure UIs match the live Panel nest contents.
+ */
+router.get('/nest/:nestSlug/eggs', async (req, res) => {
+  try {
+    const nestSlug = String(req.params.nestSlug || '').trim();
+    if (!nestSlug) {
+      return res.status(400).json({ success: false, error: 'nest slug is required' });
+    }
+    const [rows] = await pool.execute(
+      `SELECT e.ptero_egg_id AS ptero_egg_id,
+              e.name AS name,
+              e.ptero_nest_id AS ptero_nest_id,
+              n.name AS nest_name
+         FROM ptero_eggs e
+         INNER JOIN ptero_nests n ON n.ptero_nest_id = e.ptero_nest_id
+        WHERE LOWER(n.name) = LOWER(?)
+        ORDER BY e.name ASC`,
+      [nestSlug]
+    );
+    res.json({ success: true, eggs: rows });
+  } catch (error) {
+    console.error('Get nest eggs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch nest eggs',
+      message: error.message,
+    });
+  }
+});
 
 /**
  * GET /api/plans

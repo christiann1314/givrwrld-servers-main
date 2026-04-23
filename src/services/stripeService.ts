@@ -37,6 +37,7 @@ function resolveDbGameKeyForCheckout(data: CheckoutSessionData): string {
   const planId = String(data.plan_id || '').toLowerCase();
   const modpackId = String(data.modpack_id || '').toLowerCase();
   const haystack = modpackId || planId;
+  if (haystack.startsWith('minecraft-egg-')) return 'minecraft';
   for (const slug of [...MULTIWORD_GAME_SLUGS].sort((a, b) => b.length - a.length)) {
     if (haystack === slug || haystack.startsWith(`${slug}-`)) return slug;
     if (planId.startsWith(`${slug}-`)) return slug;

@@ -79,6 +79,11 @@ function normalizeGameSlug(value: string) {
     .replace(/^-+|-+$/g, '');
 }
 
+function isPlanRowActive(p: { is_active?: unknown }): boolean {
+  const v = p?.is_active;
+  return v === true || v === 1 || v === '1' || Number(v) === 1;
+}
+
 /** Strip trailing RAM suffix (e.g. " 4GB", " 12GB") to get the variant name. */
 function extractVariantName(displayName: string): string {
   return displayName.replace(/\s+\d+(?:\.\d+)?\s*GB$/i, '').trim() || displayName;
@@ -143,7 +148,7 @@ export function useGamePlanCatalog(
         const targetGame = normalizeGameSlug(game);
         const rows = (response?.plans || []).filter(
           (p: any) =>
-            normalizeGameSlug(p.game) === targetGame && p.item_type === 'game' && Number(p.is_active) === 1
+            normalizeGameSlug(p.game) === targetGame && p.item_type === 'game' && isPlanRowActive(p)
         );
         if (rows.length === 0) return;
 
@@ -205,7 +210,7 @@ export function useGamePlanCatalog(
           }
         }
 
-        const derivedGameTypes: CatalogGameTypeOption[] = [];
+        let derivedGameTypes: CatalogGameTypeOption[] = [];
         for (const [key, v] of variantMap) {
           derivedGameTypes.push({
             id: key,
@@ -213,6 +218,33 @@ export function useGamePlanCatalog(
             description: `From $${v.minPrice.toFixed(2)}/mo`,
             pteroEggId: v.pteroEggId,
           });
+        }
+
+        if (targetGame === 'minecraft') {
+          try {
+            const nestRes = await api.getNestEggs('Minecraft');
+            const eggRows = nestRes?.eggs;
+            if (nestRes?.success && Array.isArray(eggRows) && eggRows.length > 0) {
+              derivedGameTypes = eggRows.map((e: { ptero_egg_id: number; name: string }) => {
+                const eggId = Number(e.ptero_egg_id);
+                const eggName = String(e.name || 'Minecraft egg').trim();
+                const matchingPlans = mappedPlans.filter((p) => Number(p.pteroEggId) === eggId);
+                const minPrice =
+                  matchingPlans.length > 0 ? Math.min(...matchingPlans.map((p) => p.price)) : null;
+                return {
+                  id: `minecraft-egg-${eggId}`,
+                  name: eggName,
+                  description:
+                    minPrice != null
+                      ? `From $${minPrice.toFixed(2)}/mo`
+                      : 'No billing plans for this egg yet — run api/scripts/seed-minecraft-variant-plans.js after adding SKUs.',
+                  pteroEggId: eggId,
+                };
+              });
+            }
+          } catch {
+            /* keep plan-derived game types */
+          }
         }
 
         setPlans(assignSingleRecommendedPerVariant(mappedPlans));
