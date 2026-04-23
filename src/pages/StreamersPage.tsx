@@ -154,7 +154,9 @@ const StreamersPage: React.FC = () => {
         const aJson = aRes.ok ? ((await aRes.json()) as AnalyticsSummary) : null;
         if (!active) return;
         if (sJson) setSummary({ ...DEFAULT_SUMMARY, ...sJson });
+        else if (!sRes.ok) setSummary({ ...DEFAULT_SUMMARY });
         if (aJson) setAnalytics({ ...DEFAULT_ANALYTICS, ...aJson });
+        else if (!aRes.ok) setAnalytics({ ...DEFAULT_ANALYTICS });
         const apiOk = sRes.ok || aRes.ok;
         setWorkspaceUsingFallback(!apiOk);
       } catch {
