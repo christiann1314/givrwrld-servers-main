@@ -83,7 +83,7 @@ const DeployMinecraft = () => {
             </span>
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-2xl">
-            Run Java or Bedrock, modded or vanilla. Plugin & mod support, NVMe storage, and typical setup in minutes.
+            Run Java or Bedrock with Paper, Fabric, Forge, Purpur, and more. Plugin and mod support, NVMe storage, and typical setup in minutes.
           </p>
 
           {/* Why Minecraft on GIVRwrld */}

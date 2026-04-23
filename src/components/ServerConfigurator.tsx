@@ -64,10 +64,14 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   
   // Server Type state
-  const [selectedServerType, setSelectedServerType] = useState(gameData.serverTypes.find(type => type.key === 'vanilla') || gameData.serverTypes[0]);
-  
+  const [selectedServerType, setSelectedServerType] = useState(
+    () => gameData.serverTypes.find((type) => type.key !== 'vanilla') || gameData.serverTypes[0]
+  );
+
   // Modpack state
-  const [selectedModpack, setSelectedModpack] = useState(gameData.modpacks.find(pack => pack.key === 'vanilla') || gameData.modpacks[0]);
+  const [selectedModpack, setSelectedModpack] = useState(
+    () => gameData.modpacks.find((pack) => pack.key !== 'vanilla') || gameData.modpacks[0]
+  );
   const [customModpackUrl, setCustomModpackUrl] = useState('');
   
   // Add-ons state

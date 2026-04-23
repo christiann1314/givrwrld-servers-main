@@ -12,8 +12,8 @@ const RustConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rust-vanilla-4gb');
-  const [gameType, setGameType] = useState('rust-vanilla');
+  const [planId, setPlanId] = useState('rust-oxide-4gb');
+  const [gameType, setGameType] = useState('rust-oxide-u-mod');
   const [billingTerm, setBillingTerm] = useState<string>('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,17 +34,11 @@ const RustConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rust-3gb', name: '3 GB', ram: '3 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 12.99, players: '2-8', description: '', serverType: 'rust' },
-    { id: 'rust-vanilla-3gb', name: '3 GB', ram: '3 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 12.99, players: '2-8', description: '', serverType: 'rust-vanilla' },
-    { id: 'rust-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'rust' },
     { id: 'rust-oxide-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 17.99, players: '4-16', description: '', recommended: true, serverType: 'rust-oxide-u-mod' },
     { id: 'rust-carbon-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 18.99, players: '4-16', description: '', recommended: true, serverType: 'rust-carbon' },
-    { id: 'rust-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'rust-vanilla' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'rust', name: 'Rust', description: 'From $12.99/mo' },
-    { id: 'rust-vanilla', name: 'Rust (standard)', description: 'From $12.99/mo' },
     { id: 'rust-oxide-u-mod', name: 'Rust Oxide (uMod)', description: 'From $17.99/mo' },
     { id: 'rust-carbon', name: 'Rust Carbon', description: 'From $18.99/mo' },
   ];

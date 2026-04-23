@@ -12,8 +12,8 @@ const PalworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('palworld-8gb');
-  const [gameType, setGameType] = useState('palworld-vanilla');
+  const [planId, setPlanId] = useState('palworld-community-plus-8gb');
+  const [gameType, setGameType] = useState('palworld-community-plus');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,17 +34,11 @@ const PalworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'palworld-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'palworld' },
-    { id: 'palworld-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'palworld-vanilla' },
-    { id: 'palworld-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld' },
-    { id: 'palworld-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-vanilla' },
     { id: 'palworld-hardcore-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 29.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-hardcore' },
     { id: 'palworld-community-plus-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 30.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-community-plus' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'palworld', name: 'Palworld', description: 'From $14.99/mo' },
-    { id: 'palworld-vanilla', name: 'Palworld (standard)', description: 'From $14.99/mo' },
     { id: 'palworld-hardcore', name: 'Palworld Hardcore', description: 'From $29.99/mo' },
     { id: 'palworld-community-plus', name: 'Palworld Community Plus', description: 'From $30.99/mo' },
   ];

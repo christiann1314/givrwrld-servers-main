@@ -12,8 +12,8 @@ const MindustryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('mindustry-4gb');
-  const [gameType, setGameType] = useState('mindustry-vanilla');
+  const [planId, setPlanId] = useState('mindustry-pvp-4gb');
+  const [gameType, setGameType] = useState('mindustry-pvp');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,17 +34,11 @@ const MindustryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'mindustry-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'mindustry' },
-    { id: 'mindustry-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'mindustry-vanilla' },
-    { id: 'mindustry-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry' },
     { id: 'mindustry-pvp-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 8.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-pvp' },
-    { id: 'mindustry-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-vanilla' },
     { id: 'mindustry-survival-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.49, players: '4-16', description: '', recommended: true, serverType: 'mindustry-survival' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'mindustry', name: 'Mindustry', description: 'From $5.99/mo' },
-    { id: 'mindustry-vanilla', name: 'Mindustry (standard)', description: 'From $5.99/mo' },
     { id: 'mindustry-pvp', name: 'Mindustry PvP', description: 'From $8.99/mo' },
     { id: 'mindustry-survival', name: 'Mindustry Survival', description: 'From $9.49/mo' },
   ];

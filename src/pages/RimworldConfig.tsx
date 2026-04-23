@@ -12,8 +12,8 @@ const RimworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rimworld-vanilla-8gb');
-  const [gameType, setGameType] = useState('rimworld-vanilla');
+  const [planId, setPlanId] = useState('rimworld-multiplayer-ready-8gb');
+  const [gameType, setGameType] = useState('rimworld-multiplayer-ready');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,13 +34,10 @@ const RimworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rimworld-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 12.99, players: '4-16', description: '', serverType: 'rimworld-vanilla' },
-    { id: 'rimworld-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 24.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-vanilla' },
     { id: 'rimworld-multiplayer-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-multiplayer-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'rimworld-vanilla', name: 'Rimworld (standard)', description: 'From $12.99/mo' },
     { id: 'rimworld-multiplayer-ready', name: 'Rimworld Multiplayer Ready', description: 'From $28.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rimworld', fallbackPlans, fallbackGameTypes);

@@ -12,8 +12,8 @@ const ArkConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('ark-8gb');
-  const [gameType, setGameType] = useState('ark');
+  const [planId, setPlanId] = useState('ark-primal-fear-ready-8gb');
+  const [gameType, setGameType] = useState('ark-primal-fear-ready');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,17 +34,11 @@ const ArkConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'ark-4gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '35 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'ark' },
-    { id: 'ark-vanilla-4gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '35 GB NVMe', price: 14.99, players: '4-16', description: '', serverType: 'ark-vanilla' },
-    { id: 'ark-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark' },
-    { id: 'ark-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark-vanilla' },
     { id: 'ark-primal-fear-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 34.99, players: '8-32', description: '', recommended: true, serverType: 'ark-primal-fear-ready' },
     { id: 'ark-pve-cluster-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 32.99, players: '8-32', description: '', recommended: true, serverType: 'ark-pve-cluster-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'ark', name: 'ARK', description: 'From $14.99/mo' },
-    { id: 'ark-vanilla', name: 'ARK (standard dedicated)', description: 'From $14.99/mo' },
     { id: 'ark-primal-fear-ready', name: 'ARK Primal Fear Ready', description: 'From $34.99/mo' },
     { id: 'ark-pve-cluster-ready', name: 'ARK PvE Cluster Ready', description: 'From $32.99/mo' },
   ];

@@ -148,18 +148,18 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
     ),
     terraria: () => genericGame(
       'Terraria',
-      ['Vanilla', 'TShock', 'tModLoader', 'Panel console & file manager'],
-      'We support Vanilla, TShock, and tModLoader server types. Choose your type on this page; you can manage mods and config in the panel.',
+      ['tModLoader', 'Calamity-ready profiles', 'Panel console & file manager'],
+      'We focus on modded Terraria: tModLoader and Calamity-ready profiles. Manage mods and config in the panel.',
       [
-        { title: 'Choose plan and server type', body: 'Select a plan and server type (Vanilla, TShock, tModLoader). Complete checkout.' },
-        { title: 'Configure and start', body: 'Set player limit and other options in the panel. For tModLoader, add mods via the file manager.' },
+        { title: 'Choose plan and server type', body: 'Select a plan and server type (tModLoader or Calamity-ready). Complete checkout.' },
+        { title: 'Configure and start', body: 'Set player limit and other options in the panel. Add mods via the file manager.' },
         { title: 'Share your server', body: 'Share the IP and port from the panel. Players join via the in-game join menu.' },
       ],
       [
-        { question: 'Do you support TShock and tModLoader?', answer: 'Yes. We offer Vanilla, TShock, and tModLoader server types. Select the one you want when configuring above.' },
-        { question: 'How do I add Terraria mods?', answer: 'For tModLoader, upload mod files via the panel file manager and enable them in the server config.' },
+        { question: 'Do you support tModLoader?', answer: 'Yes. Choose tModLoader or a Calamity-ready profile when configuring above.' },
+        { question: 'How do I add Terraria mods?', answer: 'Upload mod files via the panel file manager and enable them in the server config.' },
       ],
-      ['Terraria hosting at GIVRwrld gives you a dedicated server for Terraria or tModLoader. Full panel access for config and mods.', 'Terraria is a 2D sandbox adventure game. A dedicated server lets you play with friends and use mods.']
+      ['Terraria hosting at GIVRwrld gives you a dedicated server for modded Terraria. Full panel access for config and mods.', 'Terraria is a 2D sandbox adventure game. A dedicated server lets you play with friends and use mods.']
     ),
     factorio: () => genericGame(
       'Factorio',
@@ -184,10 +184,10 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
     veloren: () => genericGame('Veloren', ['Veloren', 'Panel & file manager'], 'We offer a Veloren server. Manage config and updates via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set server options in the panel and share connection details.' }], [{ question: 'What can I configure?', answer: 'You have full access to server config via the panel.' }], ['Veloren hosting at GIVRwrld gives you a dedicated server for the Veloren voxel RPG.']),
     enshrouded: () => genericGame(
       'Enshrouded',
-      ['Enshrouded dedicated server', 'Vanilla & modded', 'Panel & file manager'],
+      ['Enshrouded dedicated server', 'Mod-ready profiles', 'Panel & file manager'],
       'We offer Enshrouded dedicated server hosting. Up to 16 players; configure name, password, and slots via the panel.',
       [
-        { title: 'Pick plan and type', body: 'Choose Vanilla or Modded and a plan (4–8GB). Complete checkout.' },
+        { title: 'Pick plan and type', body: 'Choose a mod-ready plan (6–8GB typical). Complete checkout.' },
         { title: 'Configure and start', body: 'Set server name, password, slot count (1–16), and ports in the panel. Start the server.' },
         { title: 'Share with players', body: 'Players can add the server via Steam server browser (IP:queryPort) or in-game list.' },
       ],

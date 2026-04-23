@@ -12,8 +12,8 @@ const TerrariaConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('terraria-vanilla-4gb');
-  const [gameType, setGameType] = useState('terraria-vanilla');
+  const [planId, setPlanId] = useState('terraria-tmodloader-4gb');
+  const [gameType, setGameType] = useState('terraria-tmodloader');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,11 @@ const TerrariaConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'terraria-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 6.99, players: '2-8', description: '', serverType: 'terraria-vanilla' },
-    { id: 'terraria-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.99, players: '4-16', description: '', recommended: true, serverType: 'terraria-vanilla' },
     { id: 'terraria-tmodloader-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 12.99, players: '4-16', description: '', recommended: true, serverType: 'terraria-tmodloader' },
     { id: 'terraria-calamity-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', recommended: true, serverType: 'terraria-calamity-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'terraria-vanilla', name: 'Terraria Vanilla', description: 'From $6.99/mo' },
     { id: 'terraria-tmodloader', name: 'Terraria tModLoader', description: 'From $12.99/mo' },
     { id: 'terraria-calamity-ready', name: 'Terraria Calamity Ready', description: 'From $13.99/mo' },
   ];

@@ -17,7 +17,6 @@ const variantCatalog = [
     game: 'rust',
     sourceEggName: 'Rust',
     variants: [
-      { slug: 'vanilla', eggName: 'Rust Vanilla', description: 'Pure Rust dedicated server runtime.' },
       { slug: 'oxide', eggName: 'Rust Oxide (uMod)', description: 'Rust runtime prepared for Oxide/uMod workflows.' },
       { slug: 'carbon', eggName: 'Rust Carbon', description: 'Rust runtime prepared for Carbon framework workflows.' },
     ],
@@ -26,7 +25,6 @@ const variantCatalog = [
     game: 'ark',
     sourceEggName: 'Ark: Survival Evolved',
     variants: [
-      { slug: 'vanilla', eggName: 'ARK Vanilla', description: 'Standard ARK Survival Evolved server runtime.' },
       { slug: 'primal-fear-ready', eggName: 'ARK Primal Fear Ready', description: 'ARK runtime tuned for larger overhaul modpacks.' },
       { slug: 'pve-cluster-ready', eggName: 'ARK PvE Cluster Ready', description: 'ARK runtime profile for cluster and PvE-first communities.' },
     ],
@@ -35,7 +33,6 @@ const variantCatalog = [
     game: 'terraria',
     sourceEggName: 'Terraria',
     variants: [
-      { slug: 'vanilla', eggName: 'Terraria Vanilla', description: 'Standard Terraria dedicated server runtime.' },
       { slug: 'tmodloader', eggName: 'Terraria tModLoader', description: 'Terraria runtime profile for tModLoader communities.' },
       { slug: 'calamity-ready', eggName: 'Terraria Calamity Ready', description: 'Terraria runtime profile for Calamity-focused servers.' },
     ],
@@ -44,7 +41,6 @@ const variantCatalog = [
     game: 'factorio',
     sourceEggName: 'Factorio',
     variants: [
-      { slug: 'vanilla', eggName: 'Factorio Vanilla', description: 'Standard Factorio dedicated server runtime.' },
       { slug: 'space-age-ready', eggName: 'Factorio Space Age Ready', description: 'Factorio runtime profile for expansion-heavy play.' },
       { slug: 'bobs-angels-ready', eggName: "Factorio Bob's+Angel's Ready", description: "Factorio runtime profile for Bob's/Angel's ecosystems." },
     ],
@@ -53,7 +49,6 @@ const variantCatalog = [
     game: 'palworld',
     sourceEggName: 'Palworld',
     variants: [
-      { slug: 'vanilla', eggName: 'Palworld Vanilla', description: 'Standard Palworld dedicated server runtime.' },
       { slug: 'community-plus', eggName: 'Palworld Community Plus', description: 'Palworld runtime profile for larger community worlds.' },
       { slug: 'hardcore', eggName: 'Palworld Hardcore', description: 'Palworld runtime profile for higher difficulty communities.' },
     ],
@@ -62,7 +57,6 @@ const variantCatalog = [
     game: 'mindustry',
     sourceEggName: 'Mindustry',
     variants: [
-      { slug: 'vanilla', eggName: 'Mindustry Vanilla', description: 'Standard Mindustry server runtime.' },
       { slug: 'pvp', eggName: 'Mindustry PvP', description: 'Mindustry runtime profile for competitive PvP sessions.' },
       { slug: 'survival', eggName: 'Mindustry Survival', description: 'Mindustry runtime profile for co-op survival servers.' },
     ],
@@ -71,7 +65,6 @@ const variantCatalog = [
     game: 'rimworld',
     sourceEggName: 'Rimworld',
     variants: [
-      { slug: 'vanilla', eggName: 'Rimworld Vanilla', description: 'Standard Rimworld multiplayer runtime.' },
       { slug: 'multiplayer-ready', eggName: 'Rimworld Multiplayer Ready', description: 'Rimworld runtime profile for heavier multiplayer setups.' },
     ],
   },
@@ -79,7 +72,6 @@ const variantCatalog = [
     game: 'vintage-story',
     sourceEggName: 'Vintage Story',
     variants: [
-      { slug: 'vanilla', eggName: 'Vintage Story Vanilla', description: 'Standard Vintage Story server runtime.' },
       { slug: 'primitive-plus', eggName: 'Vintage Story Primitive Plus', description: 'Vintage Story profile for immersive survival communities.' },
     ],
   },
@@ -87,7 +79,6 @@ const variantCatalog = [
     game: 'teeworlds',
     sourceEggName: 'Teeworlds',
     variants: [
-      { slug: 'vanilla', eggName: 'Teeworlds Vanilla', description: 'Standard Teeworlds server runtime.' },
       { slug: 'instagib', eggName: 'Teeworlds Instagib', description: 'Teeworlds profile for fast Instagib rotations.' },
     ],
   },
@@ -95,7 +86,6 @@ const variantCatalog = [
     game: 'among-us',
     sourceEggName: 'Among Us',
     variants: [
-      { slug: 'vanilla', eggName: 'Among Us Vanilla', description: 'Standard Among Us private lobby runtime.' },
       { slug: 'proximity-chat-ready', eggName: 'Among Us Proximity Chat Ready', description: 'Among Us runtime profile for social/proximity-based communities.' },
     ],
   },
@@ -103,7 +93,6 @@ const variantCatalog = [
     game: 'veloren',
     sourceEggName: 'Veloren',
     variants: [
-      { slug: 'vanilla', eggName: 'Veloren Vanilla', description: 'Standard Veloren dedicated server runtime.' },
       { slug: 'rp-realm', eggName: 'Veloren RP Realm', description: 'Veloren runtime profile for roleplay-focused communities.' },
     ],
   },
@@ -111,7 +100,6 @@ const variantCatalog = [
     game: 'enshrouded',
     sourceEggName: 'Enshrouded',
     variants: [
-      { slug: 'vanilla', eggName: 'Enshrouded Vanilla', description: 'Official Enshrouded dedicated server. Up to 16 players.' },
       { slug: 'modded', eggName: 'Enshrouded Modded', description: 'Enshrouded server with mod support.' },
     ],
   },

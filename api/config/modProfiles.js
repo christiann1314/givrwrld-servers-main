@@ -55,6 +55,14 @@ const modProfiles = {
     'survival-4gb': { profileId: 'mindustry-survival', label: 'Mindustry Survival', env: { MOD_PROFILE: 'mindustry-survival' } },
   },
 
+  rimworld: {
+    'multiplayer-ready-8gb': {
+      profileId: 'rimworld-multiplayer-ready',
+      label: 'Rimworld Multiplayer Ready',
+      env: { MOD_PROFILE: 'rimworld-multiplayer-ready' },
+    },
+  },
+
   teeworlds: {
     'instagib-2gb': { profileId: 'teeworlds-instagib', label: 'Teeworlds Instagib', env: { MOD_PROFILE: 'teeworlds-instagib' } },
   },

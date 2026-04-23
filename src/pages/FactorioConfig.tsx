@@ -12,8 +12,8 @@ const FactorioConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('factorio-4gb');
-  const [gameType, setGameType] = useState('factorio');
+  const [planId, setPlanId] = useState('factorio-space-age-ready-4gb');
+  const [gameType, setGameType] = useState('factorio-space-age-ready');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,17 +34,11 @@ const FactorioConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'factorio-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 7.99, players: '2-8', description: '', serverType: 'factorio' },
-    { id: 'factorio-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '15 GB NVMe', price: 7.99, players: '2-8', description: '', serverType: 'factorio-vanilla' },
-    { id: 'factorio-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', recommended: true, serverType: 'factorio' },
-    { id: 'factorio-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-vanilla' },
     { id: 'factorio-space-age-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-space-age-ready' },
     { id: 'factorio-bobs-angels-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-bob-s-angel-s-ready' },
   ];
 
   const fallbackGameTypes = [
-    { id: 'factorio', name: 'Factorio', description: 'From $7.99/mo' },
-    { id: 'factorio-vanilla', name: 'Factorio (standard)', description: 'From $7.99/mo' },
     { id: 'factorio-space-age-ready', name: 'Factorio Space Age Ready', description: 'From $13.99/mo' },
     { id: 'factorio-bob-s-angel-s-ready', name: "Factorio Bob's+Angel's Ready", description: 'From $14.99/mo' },
   ];

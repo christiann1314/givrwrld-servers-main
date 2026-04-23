@@ -3,16 +3,17 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
-import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import {
+  useGamePlanCatalog,
+  planCardTitle,
+  planIncludesAutoBackups,
+  isRetailVanillaGameTypeId,
+} from '@/hooks/useGamePlanCatalog';
 import { useNavigate } from 'react-router-dom';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const minecraftWallpaper = 'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg';
 
 const fallbackPlans = [
-  { id: 'mc-vanilla-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', serverType: 'minecraft-vanilla' },
-  { id: 'mc-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 12.99, players: '4-16', description: '', serverType: 'minecraft-vanilla' },
-  { id: 'mc-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 26.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-vanilla' },
-  { id: 'mc-vanilla-12gb', name: '12 GB', ram: '12 GB', cpu: '2 vCPU', disk: '50 GB NVMe', price: 35.99, players: '8-32', description: '', serverType: 'minecraft-vanilla' },
   { id: 'mc-paper-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 6.99, players: '2-8', description: '', serverType: 'minecraft-paper' },
   { id: 'mc-paper-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', serverType: 'minecraft-paper' },
   { id: 'mc-paper-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 27.99, players: '8-32', description: '', recommended: true, serverType: 'minecraft-paper' },
@@ -30,7 +31,6 @@ const fallbackPlans = [
 ];
 
 const fallbackGameTypes = [
-  { id: 'minecraft-vanilla', name: 'Minecraft Vanilla', description: 'From $5.99/mo' },
   { id: 'minecraft-paper', name: 'Minecraft Paper', description: 'From $6.99/mo' },
   { id: 'minecraft-purpur', name: 'Minecraft Purpur', description: 'From $7.99/mo' },
   { id: 'minecraft-fabric', name: 'Minecraft Fabric', description: 'From $16.99/mo' },
@@ -42,12 +42,12 @@ const MinecraftConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('mc-vanilla-8gb');
-  const [gameType, setGameType] = useState(fallbackGameTypes[0].id);
+  const [planId, setPlanId] = useState('mc-paper-8gb');
+  const [gameType, setGameType] = useState('minecraft-paper');
   const [billingTerm, setBillingTerm] = useState('semiannual');
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('minecraft', fallbackPlans, fallbackGameTypes);
   const effectiveGameTypes = React.useMemo(
-    () => gameTypes.filter((g) => g.id !== 'minecraft'),
+    () => gameTypes.filter((g) => g.id !== 'minecraft' && !isRetailVanillaGameTypeId(g.id)),
     [gameTypes]
   );
 

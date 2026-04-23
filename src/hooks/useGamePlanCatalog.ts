@@ -54,6 +54,22 @@ export function planCardTitle(plan: CatalogPlanOption | undefined): string {
   return d || plan.name;
 }
 
+/** Legacy storefront SKUs we no longer sell (Minecraft Mojang jar + per-game *-vanilla-* plans). */
+export function isRetailVanillaPlanId(planId: string): boolean {
+  const id = String(planId || '');
+  if (!id) return false;
+  if (id.startsWith('mc-vanilla-')) return true;
+  return id.includes('-vanilla-');
+}
+
+/** Game-type / modpack grouping id for a hidden vanilla stack (API or fallback). */
+export function isRetailVanillaGameTypeId(gameTypeId: string): boolean {
+  const id = String(gameTypeId || '');
+  if (!id) return false;
+  if (id === 'minecraft-vanilla') return true;
+  return /(^|-)vanilla$/.test(id);
+}
+
 function normalizeGameSlug(value: string) {
   return String(value || '')
     .toLowerCase()
@@ -106,8 +122,12 @@ export function useGamePlanCatalog(
   fallbackPlans: CatalogPlanOption[],
   fallbackGameTypes: CatalogGameTypeOption[]
 ) {
-  const [plans, setPlans] = useState<CatalogPlanOption[]>(() => assignSingleRecommendedPerVariant(fallbackPlans));
-  const [gameTypes, setGameTypes] = useState<CatalogGameTypeOption[]>(fallbackGameTypes);
+  const [plans, setPlans] = useState<CatalogPlanOption[]>(() =>
+    assignSingleRecommendedPerVariant(fallbackPlans.filter((p) => !isRetailVanillaPlanId(p.id)))
+  );
+  const [gameTypes, setGameTypes] = useState<CatalogGameTypeOption[]>(() =>
+    fallbackGameTypes.filter((g) => !isRetailVanillaGameTypeId(g.id))
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -133,36 +153,42 @@ export function useGamePlanCatalog(
           return String(a.id).localeCompare(String(b.id));
         });
 
-        const mappedPlans: CatalogPlanOption[] = sortedRows.map((p: any) => {
-          const ramGb = Number(p.ram_gb || 0);
-          const vcores = Number(p.vcores || 0);
-          const ssdGb = Number(p.ssd_gb || 0);
-          const display = String(p.display_name || '').trim();
-          const variantName = display ? extractVariantName(display) : game;
-          const variantId = normalizeGameSlug(variantName);
-          return {
-            id: p.id,
-            name: `${ramGb} GB`,
-            displayName: display || `${ramGb} GB`,
-            serverType: variantId,
-            ram: `${ramGb} GB`,
-            ram_gb: ramGb,
-            cpu: `${vcores} vCPU`,
-            disk: `${ssdGb} GB NVMe`,
-            price: Number(p.price_monthly || 0),
-            players: '2–32',
-            description: '',
-            recommended: false,
-            pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
-            pteroEggName: p.ptero_egg_name || null,
-            pricing: {
-              monthly: Number(p.price_monthly || 0),
-              quarterly: Number(p.price_quarterly) || Number((Number(p.price_monthly || 0) * 3 * 0.95).toFixed(2)),
-              semiannual: Number(p.price_semiannual) || Number((Number(p.price_monthly || 0) * 6 * 0.90).toFixed(2)),
-              yearly: Number(p.price_yearly) || Number((Number(p.price_monthly || 0) * 12 * 0.80).toFixed(2)),
-            },
-          };
-        });
+        const mappedPlans: CatalogPlanOption[] = sortedRows
+          .map((p: any) => {
+            const ramGb = Number(p.ram_gb || 0);
+            const vcores = Number(p.vcores || 0);
+            const ssdGb = Number(p.ssd_gb || 0);
+            const display = String(p.display_name || '').trim();
+            const variantName = display ? extractVariantName(display) : game;
+            const variantId = normalizeGameSlug(variantName);
+            return {
+              id: p.id,
+              name: `${ramGb} GB`,
+              displayName: display || `${ramGb} GB`,
+              serverType: variantId,
+              ram: `${ramGb} GB`,
+              ram_gb: ramGb,
+              cpu: `${vcores} vCPU`,
+              disk: `${ssdGb} GB NVMe`,
+              price: Number(p.price_monthly || 0),
+              players: '2–32',
+              description: '',
+              recommended: false,
+              pteroEggId: p.ptero_egg_id ? Number(p.ptero_egg_id) : null,
+              pteroEggName: p.ptero_egg_name || null,
+              pricing: {
+                monthly: Number(p.price_monthly || 0),
+                quarterly: Number(p.price_quarterly) || Number((Number(p.price_monthly || 0) * 3 * 0.95).toFixed(2)),
+                semiannual: Number(p.price_semiannual) || Number((Number(p.price_monthly || 0) * 6 * 0.90).toFixed(2)),
+                yearly: Number(p.price_yearly) || Number((Number(p.price_monthly || 0) * 12 * 0.80).toFixed(2)),
+              },
+            };
+          })
+          .filter((p) => !isRetailVanillaPlanId(p.id));
+
+        if (mappedPlans.length === 0) {
+          return;
+        }
 
         const variantMap = new Map<string, { name: string; pteroEggId: number | null; minPrice: number; count: number }>();
         for (const p of mappedPlans) {

@@ -18,7 +18,6 @@ const baseMonthlyByRam = {
 };
 
 const variantConfig = [
-  { key: 'vanilla', eggName: 'Minecraft Vanilla', surcharge: -1.0, minRam: 2, copy: 'Vanilla survival and creative with one-click setup.' },
   { key: 'paper', eggName: 'Minecraft Paper', surcharge: 0, minRam: 2, copy: 'Best all-around plugin-friendly server type.' },
   { key: 'purpur', eggName: 'Minecraft Purpur', surcharge: 1, minRam: 2, copy: 'Paper-compatible with deeper gameplay customization.' },
   { key: 'fabric', eggName: 'Minecraft Fabric', surcharge: 3, minRam: 4, copy: 'Lightweight modded stack optimized for modern modpacks.' },
@@ -158,10 +157,16 @@ async function main() {
       WHERE game = 'minecraft'
         AND id REGEXP '^mc-[0-9]+gb$'
     `;
+    const deactivateMinecraftVanillaSql = `
+      UPDATE plans
+      SET is_active = 0, updated_at = NOW()
+      WHERE game = 'minecraft'
+        AND id LIKE 'mc-vanilla-%'
+    `;
 
     if (isDryRun) {
       console.log(`Would upsert ${statements.length} Minecraft variant plans.`);
-      console.log('Would deactivate legacy IDs matching ^mc-[0-9]+gb$.');
+      console.log('Would deactivate legacy IDs matching ^mc-[0-9]+gb$ and mc-vanilla-%.');
       return;
     }
 
@@ -170,6 +175,7 @@ async function main() {
       await conn.execute(s.sql, s.params);
     }
     await conn.execute(legacyDeactivateSql);
+    await conn.execute(deactivateMinecraftVanillaSql);
     await conn.commit();
     console.log(`✅ Upserted ${statements.length} Minecraft variant plans and deactivated legacy Minecraft defaults.`);
   } catch (error) {

@@ -12,8 +12,8 @@ const VelorenConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('veloren-vanilla-8gb');
-  const [gameType, setGameType] = useState('veloren-vanilla');
+  const [planId, setPlanId] = useState('veloren-rp-realm-8gb');
+  const [gameType, setGameType] = useState('veloren-rp-realm');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,18 +34,10 @@ const VelorenConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'veloren-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', serverType: 'veloren' },
-    { id: 'veloren-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 10.99, players: '4-16', description: '', serverType: 'veloren-vanilla' },
-    { id: 'veloren-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'veloren' },
-    { id: 'veloren-vanilla-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'veloren-vanilla' },
     { id: 'veloren-rp-realm-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.49, players: '8-32', description: '', recommended: true, serverType: 'veloren-rp-realm' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'veloren', name: 'Veloren', description: 'From $10.99/mo' },
-    { id: 'veloren-vanilla', name: 'Veloren (standard)', description: 'From $10.99/mo' },
-    { id: 'veloren-rp-realm', name: 'Veloren RP Realm', description: 'From $21.49/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'veloren-rp-realm', name: 'Veloren RP Realm', description: 'From $21.49/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('veloren', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {
