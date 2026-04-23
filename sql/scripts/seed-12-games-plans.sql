@@ -1,29 +1,69 @@
--- Seed one active game plan per game so the Deploy page shows all 12 games.
--- Run once after app_core schema is applied (e.g. after Docker MariaDB init or manually):
---   mysql -u app_rw -p app_core < sql/scripts/seed-12-games-plans.sql
--- Or from repo root: Get-Content sql/scripts/seed-12-games-plans.sql | docker exec -i givrwrld-mariadb mysql -u app_rw -pdevpass app_core
+-- Seed active game plans so the Deploy page and pricing anchors exist per RAM tier.
+-- Run from repo root: node api/scripts/seed-12-games-plans.js
+-- ptero_egg_id filled by migrations (e.g. 20260327120000_sync_plans_to_panel_egg_ids.sql).
 
 USE app_core;
 
 INSERT INTO plans (id, item_type, game, ram_gb, vcores, ssd_gb, price_monthly, ptero_egg_id, display_name, is_active)
 VALUES
-  ('minecraft-2gb',   'game', 'minecraft',      2, 1, 20,  9.99, NULL, 'Minecraft 2GB',   1),
-  ('rust-3gb',        'game', 'rust',            3, 1, 25, 12.99, NULL, 'Rust 3GB',        1),
-  ('palworld-4gb',    'game', 'palworld',        4, 2, 30, 14.99, NULL, 'Palworld 4GB',    1),
-  -- ARK: 6 GB is the real minimum; see migration 20260422120000_fix_ark_minimum_resources.sql.
-  -- Plan id `ark-4gb` is kept stable so existing Stripe subscriptions continue to bill.
-  ('ark-4gb',         'game', 'ark',              6, 2, 35, 14.99, NULL, 'ARK 6GB',        1),
-  ('terraria-2gb',    'game', 'terraria',        2, 1, 15,  6.99, NULL, 'Terraria 2GB',    1),
-  ('factorio-2gb',    'game', 'factorio',        2, 1, 15,  7.99, NULL, 'Factorio 2GB',    1),
-  ('mindustry-2gb',   'game', 'mindustry',       2, 1, 15,  5.99, NULL, 'Mindustry 2GB',   1),
-  ('rimworld-4gb',    'game', 'rimworld',        4, 2, 25, 12.99, NULL, 'Rimworld 4GB',    1),
-  ('vintage-story-4gb','game','vintage-story',   4, 2, 25, 11.99, NULL, 'Vintage Story 4GB',1),
-  ('teeworlds-2gb',   'game', 'teeworlds',       2, 1, 10,  4.99, NULL, 'Teeworlds 2GB',   1),
-  ('among-us-2gb',    'game', 'among-us',        2, 1, 10,  4.99, NULL, 'Among Us 2GB',    1),
-  ('veloren-4gb',     'game', 'veloren',         4, 2, 25, 10.99, NULL, 'Veloren 4GB',     1),
-  ('enshrouded-4gb',  'game', 'enshrouded',      4, 2, 30,  9.99, NULL, 'Enshrouded 4GB',  1),
-  ('enshrouded-6gb',  'game', 'enshrouded',      6, 2, 40, 14.99, NULL, 'Enshrouded 6GB',  1),
-  ('enshrouded-8gb',  'game', 'enshrouded',      8, 3, 50, 19.99, NULL, 'Enshrouded 8GB',  1)
+  ('minecraft-2gb',     'game', 'minecraft',      2, 1, 20,   9.99, NULL, 'Minecraft 2GB',       1),
+  ('minecraft-4gb',     'game', 'minecraft',      4, 2, 40,  13.99, NULL, 'Minecraft 4GB',       1),
+  ('minecraft-6gb',     'game', 'minecraft',      6, 2, 60,  20.99, NULL, 'Minecraft 6GB',       1),
+  ('minecraft-8gb',     'game', 'minecraft',      8, 3, 80,  27.99, NULL, 'Minecraft 8GB',       1),
+  ('minecraft-12gb',    'game', 'minecraft',     12, 4, 120, 36.99, NULL, 'Minecraft 12GB',      1),
+  ('rust-2gb',          'game', 'rust',           2, 1, 20,   9.99, NULL, 'Rust 2GB',            1),
+  ('rust-3gb',          'game', 'rust',           3, 1, 25,  12.99, NULL, 'Rust 3GB',            1),
+  ('rust-4gb',          'game', 'rust',           4, 2, 40,  12.99, NULL, 'Rust 4GB',            1),
+  ('rust-6gb',          'game', 'rust',           6, 2, 60,  15.49, NULL, 'Rust 6GB',            1),
+  ('rust-8gb',          'game', 'rust',           8, 3, 80,  18.99, NULL, 'Rust 8GB',            1),
+  ('rust-12gb',         'game', 'rust',          12, 4, 120, 26.99, NULL, 'Rust 12GB',           1),
+  ('palworld-4gb',      'game', 'palworld',       4, 2, 40,  14.99, NULL, 'Palworld 4GB',        1),
+  ('palworld-6gb',      'game', 'palworld',       6, 2, 60,  18.99, NULL, 'Palworld 6GB',        1),
+  ('palworld-8gb',      'game', 'palworld',       8, 3, 80,  28.99, NULL, 'Palworld 8GB',        1),
+  ('palworld-12gb',     'game', 'palworld',      12, 4, 120, 40.99, NULL, 'Palworld 12GB',       1),
+  -- ARK: plan id ark-4gb is legacy stable id for 6 GB RAM (see migration 20260422120000).
+  ('ark-4gb',           'game', 'ark',            6, 2, 35,  14.99, NULL, 'ARK 6GB',             1),
+  ('ark-8gb',           'game', 'ark',            8, 3, 80,  28.99, NULL, 'ARK 8GB',             1),
+  ('ark-12gb',          'game', 'ark',           12, 4, 120, 42.99, NULL, 'ARK 12GB',            1),
+  ('terraria-2gb',      'game', 'terraria',       2, 1, 20,   6.99, NULL, 'Terraria 2GB',        1),
+  ('terraria-4gb',      'game', 'terraria',       4, 2, 40,   8.99, NULL, 'Terraria 4GB',        1),
+  ('terraria-6gb',      'game', 'terraria',       6, 2, 60,  10.99, NULL, 'Terraria 6GB',        1),
+  ('terraria-8gb',      'game', 'terraria',       8, 3, 80,  14.99, NULL, 'Terraria 8GB',        1),
+  ('terraria-12gb',     'game', 'terraria',      12, 4, 120, 21.99, NULL, 'Terraria 12GB',       1),
+  ('factorio-2gb',      'game', 'factorio',       2, 1, 20,   7.99, NULL, 'Factorio 2GB',        1),
+  ('factorio-4gb',      'game', 'factorio',       4, 2, 40,  10.99, NULL, 'Factorio 4GB',        1),
+  ('factorio-6gb',      'game', 'factorio',       6, 2, 60,  13.49, NULL, 'Factorio 6GB',        1),
+  ('factorio-8gb',      'game', 'factorio',       8, 3, 80,  16.99, NULL, 'Factorio 8GB',        1),
+  ('factorio-12gb',     'game', 'factorio',      12, 4, 120, 24.99, NULL, 'Factorio 12GB',       1),
+  ('mindustry-2gb',     'game', 'mindustry',      2, 1, 20,   5.99, NULL, 'Mindustry 2GB',       1),
+  ('mindustry-4gb',     'game', 'mindustry',      4, 2, 40,   7.99, NULL, 'Mindustry 4GB',       1),
+  ('mindustry-6gb',     'game', 'mindustry',      6, 2, 60,   9.49, NULL, 'Mindustry 6GB',       1),
+  ('mindustry-8gb',     'game', 'mindustry',      8, 3, 80,  12.99, NULL, 'Mindustry 8GB',       1),
+  ('mindustry-12gb',    'game', 'mindustry',     12, 4, 120, 18.99, NULL, 'Mindustry 12GB',      1),
+  ('rimworld-4gb',      'game', 'rimworld',       4, 2, 40,  12.99, NULL, 'Rimworld 4GB',        1),
+  ('rimworld-6gb',      'game', 'rimworld',       6, 2, 60,  17.49, NULL, 'Rimworld 6GB',        1),
+  ('rimworld-8gb',      'game', 'rimworld',       8, 3, 80,  24.99, NULL, 'Rimworld 8GB',        1),
+  ('rimworld-12gb',     'game', 'rimworld',      12, 4, 120, 34.99, NULL, 'Rimworld 12GB',       1),
+  ('vintage-story-4gb', 'game', 'vintage-story',  4, 2, 40,  11.99, NULL, 'Vintage Story 4GB',   1),
+  ('vintage-story-6gb', 'game', 'vintage-story',  6, 2, 60,  15.49, NULL, 'Vintage Story 6GB',   1),
+  ('vintage-story-8gb', 'game', 'vintage-story',  8, 3, 80,  19.99, NULL, 'Vintage Story 8GB',   1),
+  ('vintage-story-12gb','game', 'vintage-story', 12, 4, 120, 28.99, NULL, 'Vintage Story 12GB',  1),
+  ('teeworlds-2gb',     'game', 'teeworlds',      2, 1, 20,   4.99, NULL, 'Teeworlds 2GB',       1),
+  ('teeworlds-4gb',     'game', 'teeworlds',      4, 2, 40,   5.99, NULL, 'Teeworlds 4GB',       1),
+  ('teeworlds-6gb',     'game', 'teeworlds',      6, 2, 60,   6.99, NULL, 'Teeworlds 6GB',       1),
+  ('teeworlds-8gb',     'game', 'teeworlds',      8, 3, 80,   8.99, NULL, 'Teeworlds 8GB',       1),
+  ('teeworlds-12gb',    'game', 'teeworlds',     12, 4, 120, 12.99, NULL, 'Teeworlds 12GB',      1),
+  ('among-us-4gb',      'game', 'among-us',       4, 2, 40,   6.99, NULL, 'Among Us 4GB',        1),
+  ('among-us-6gb',      'game', 'among-us',       6, 2, 60,   7.99, NULL, 'Among Us 6GB',        1),
+  ('among-us-8gb',      'game', 'among-us',       8, 3, 80,   9.49, NULL, 'Among Us 8GB',        1),
+  ('among-us-12gb',     'game', 'among-us',      12, 4, 120, 14.99, NULL, 'Among Us 12GB',       1),
+  ('veloren-4gb',       'game', 'veloren',        4, 2, 40,  10.99, NULL, 'Veloren 4GB',         1),
+  ('veloren-6gb',       'game', 'veloren',        6, 2, 60,  14.49, NULL, 'Veloren 6GB',         1),
+  ('veloren-8gb',       'game', 'veloren',        8, 3, 80,  19.99, NULL, 'Veloren 8GB',         1),
+  ('veloren-12gb',      'game', 'veloren',       12, 4, 120, 28.99, NULL, 'Veloren 12GB',        1),
+  ('enshrouded-6gb',    'game', 'enshrouded',     6, 2, 60,  14.99, NULL, 'Enshrouded 6GB',      1),
+  ('enshrouded-8gb',    'game', 'enshrouded',     8, 3, 80,  19.99, NULL, 'Enshrouded 8GB',      1),
+  ('enshrouded-12gb',   'game', 'enshrouded',    12, 4, 120, 29.99, NULL, 'Enshrouded 12GB',     1)
 ON DUPLICATE KEY UPDATE
   display_name = VALUES(display_name),
   ram_gb = VALUES(ram_gb),

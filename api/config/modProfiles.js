@@ -1,82 +1,78 @@
 // Mod profile configuration for game variants.
-// This is a lightweight, data‑only layer that lets us distinguish
-// modded offerings without needing a unique Pterodactyl egg per variant.
-//
-// Key shape:
-//   modProfiles[gameKey][variantKey] = {
-//     profileId: string;   // stable identifier used by backend tooling
-//     label: string;       // human‑readable label
-//     env?: Record<string, string>; // optional extra env vars to inject
-//   }
-//
-// gameKey is the normalized game slug (see normalizeGameKey in servers.js),
-// e.g. 'rust', 'terraria', 'palworld', 'enshrouded'.
-//
-// variantKey is derived from the plan id, usually the part after the
-// leading game prefix, e.g. for plan id 'rust-oxide-4gb' the variantKey
-// is 'oxide-4gb'.
+// variantKey = plan id with game prefix stripped (e.g. rust-oxide-6gb → oxide-6gb).
+
+/**
+ * @param {string} variantSlug e.g. oxide, tmodloader, primal-fear-ready
+ * @param {string} profileId stable MOD_PROFILE value
+ * @param {string} label
+ * @param {number[]} ramGbTiers
+ */
+function tiers(variantSlug, profileId, label, ramGbTiers) {
+  /** @type {Record<string, { profileId: string; label: string; env: Record<string, string> }>} */
+  const out = {};
+  for (const ram of ramGbTiers) {
+    out[`${variantSlug}-${ram}gb`] = {
+      profileId,
+      label,
+      env: { MOD_PROFILE: profileId },
+    };
+  }
+  return out;
+}
 
 const modProfiles = {
   rust: {
-    'oxide-2gb': { profileId: 'rust-oxide', label: 'Rust Oxide (uMod)', env: { MOD_PROFILE: 'rust-oxide' } },
-    'oxide-4gb': { profileId: 'rust-oxide', label: 'Rust Oxide (uMod)', env: { MOD_PROFILE: 'rust-oxide' } },
-    'oxide-8gb': { profileId: 'rust-oxide', label: 'Rust Oxide (uMod)', env: { MOD_PROFILE: 'rust-oxide' } },
-    'carbon-4gb': { profileId: 'rust-carbon', label: 'Rust Carbon', env: { MOD_PROFILE: 'rust-carbon' } },
-    'carbon-8gb': { profileId: 'rust-carbon', label: 'Rust Carbon', env: { MOD_PROFILE: 'rust-carbon' } },
+    ...tiers('oxide', 'rust-oxide', 'Rust Oxide (uMod)', [2, 4, 6, 8, 12]),
+    ...tiers('carbon', 'rust-carbon', 'Rust Carbon', [2, 4, 6, 8, 12]),
   },
 
   terraria: {
-    'tmodloader-4gb': { profileId: 'terraria-tmodloader', label: 'Terraria tModLoader', env: { MOD_PROFILE: 'terraria-tmodloader' } },
-    'calamity-ready-4gb': { profileId: 'terraria-calamity', label: 'Terraria Calamity Ready', env: { MOD_PROFILE: 'terraria-calamity' } },
+    ...tiers('tmodloader', 'terraria-tmodloader', 'Terraria tModLoader', [4, 6, 8, 12]),
+    ...tiers('calamity-ready', 'terraria-calamity', 'Terraria Calamity Ready', [4, 6, 8, 12]),
   },
 
   palworld: {
-    'community-plus-8gb': { profileId: 'palworld-community-plus', label: 'Palworld Community Plus', env: { MOD_PROFILE: 'palworld-community-plus' } },
-    'hardcore-8gb': { profileId: 'palworld-hardcore', label: 'Palworld Hardcore', env: { MOD_PROFILE: 'palworld-hardcore' } },
+    ...tiers('community-plus', 'palworld-community-plus', 'Palworld Community Plus', [4, 6, 8, 12]),
+    ...tiers('hardcore', 'palworld-hardcore', 'Palworld Hardcore', [4, 6, 8, 12]),
   },
 
   enshrouded: {
-    'modded-6gb': { profileId: 'enshrouded-modded', label: 'Enshrouded Modded', env: { MOD_PROFILE: 'enshrouded-modded' } },
-    'modded-8gb': { profileId: 'enshrouded-modded', label: 'Enshrouded Modded', env: { MOD_PROFILE: 'enshrouded-modded' } },
+    ...tiers('modded', 'enshrouded-modded', 'Enshrouded Modded', [6, 8, 12]),
   },
 
   ark: {
-    'primal-fear-ready-8gb': { profileId: 'ark-primal-fear', label: 'ARK Primal Fear Ready', env: { MOD_PROFILE: 'ark-primal-fear' } },
-    'pve-cluster-ready-8gb': { profileId: 'ark-pve-cluster', label: 'ARK PvE Cluster Ready', env: { MOD_PROFILE: 'ark-pve-cluster' } },
+    ...tiers('primal-fear-ready', 'ark-primal-fear', 'ARK Primal Fear Ready', [6, 8, 12]),
+    ...tiers('pve-cluster-ready', 'ark-pve-cluster', 'ARK PvE Cluster Ready', [6, 8, 12]),
   },
 
   factorio: {
-    'space-age-ready-4gb': { profileId: 'factorio-space-age', label: 'Factorio Space Age Ready', env: { MOD_PROFILE: 'factorio-space-age' } },
-    'bobs-angels-ready-4gb': { profileId: 'factorio-bobs-angels', label: "Factorio Bob's+Angel's Ready", env: { MOD_PROFILE: 'factorio-bobs-angels' } },
+    ...tiers('space-age-ready', 'factorio-space-age', 'Factorio Space Age Ready', [4, 6, 8, 12]),
+    ...tiers('bobs-angels-ready', 'factorio-bobs-angels', "Factorio Bob's+Angel's Ready", [4, 6, 8, 12]),
   },
 
   mindustry: {
-    'pvp-4gb': { profileId: 'mindustry-pvp', label: 'Mindustry PvP', env: { MOD_PROFILE: 'mindustry-pvp' } },
-    'survival-4gb': { profileId: 'mindustry-survival', label: 'Mindustry Survival', env: { MOD_PROFILE: 'mindustry-survival' } },
+    ...tiers('pvp', 'mindustry-pvp', 'Mindustry PvP', [4, 6, 8, 12]),
+    ...tiers('survival', 'mindustry-survival', 'Mindustry Survival', [4, 6, 8, 12]),
   },
 
   rimworld: {
-    'multiplayer-ready-8gb': {
-      profileId: 'rimworld-multiplayer-ready',
-      label: 'Rimworld Multiplayer Ready',
-      env: { MOD_PROFILE: 'rimworld-multiplayer-ready' },
-    },
+    ...tiers('multiplayer-ready', 'rimworld-multiplayer-ready', 'Rimworld Multiplayer Ready', [4, 6, 8, 12]),
   },
 
   teeworlds: {
-    'instagib-2gb': { profileId: 'teeworlds-instagib', label: 'Teeworlds Instagib', env: { MOD_PROFILE: 'teeworlds-instagib' } },
+    ...tiers('instagib', 'teeworlds-instagib', 'Teeworlds Instagib', [2, 4, 6, 8, 12]),
   },
 
   'among-us': {
-    'proximity-chat-ready-4gb': { profileId: 'among-us-proximity-chat', label: 'Among Us Proximity Chat Ready', env: { MOD_PROFILE: 'among-us-proximity-chat' } },
+    ...tiers('proximity-chat-ready', 'among-us-proximity-chat', 'Among Us Proximity Chat Ready', [4, 6, 8, 12]),
   },
 
   veloren: {
-    'rp-realm-8gb': { profileId: 'veloren-rp-realm', label: 'Veloren RP Realm', env: { MOD_PROFILE: 'veloren-rp-realm' } },
+    ...tiers('rp-realm', 'veloren-rp-realm', 'Veloren RP Realm', [4, 6, 8, 12]),
   },
 
   'vintage-story': {
-    'primitive-plus-8gb': { profileId: 'vintage-story-primitive-plus', label: 'Vintage Story Primitive Plus', env: { MOD_PROFILE: 'vintage-story-primitive-plus' } },
+    ...tiers('primitive-plus', 'vintage-story-primitive-plus', 'Vintage Story Primitive Plus', [4, 6, 8, 12]),
   },
 };
 
@@ -88,7 +84,6 @@ function normalizePlanId(planId) {
  * Derive a variant key from a plan id by stripping the game prefix.
  * e.g. planId "among-us-proximity-chat-ready-4gb" with gameKey "among-us"
  * → "proximity-chat-ready-4gb".
- * Falls back to stripping the first segment if no game key is provided.
  */
 function getVariantKeyFromPlanId(planId, gameKey) {
   const slug = normalizePlanId(planId);
@@ -123,4 +118,3 @@ export function getModProfileForOrder(order, gameKey) {
 }
 
 export default modProfiles;
-

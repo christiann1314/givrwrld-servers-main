@@ -13,6 +13,7 @@ const isDryRun = process.argv.includes('--dry-run');
 const baseMonthlyByRam = {
   2: 6.99,
   4: 13.99,
+  6: 20.99,
   8: 27.99,
   12: 36.99,
 };
