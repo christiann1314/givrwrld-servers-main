@@ -104,7 +104,7 @@ const GOAL_CARDS = [
   {
     icon: Film,
     title: "Smart polish",
-    body: "Captions, memes, zooms, and pacing tuned for social ΓÇö without a full NLE.",
+    body: "Captions, memes, zooms, and pacing tuned for social — without a full NLE.",
   },
   {
     icon: CalendarClock,
@@ -135,12 +135,16 @@ const StreamersPage: React.FC = () => {
   const [streamers, setStreamers] = React.useState<PublicStreamerDirectoryItem[]>([]);
   const [summary, setSummary] = React.useState<WorkspaceSummary>(DEFAULT_SUMMARY);
   const [analytics, setAnalytics] = React.useState<AnalyticsSummary>(DEFAULT_ANALYTICS);
+  const [workspaceFetchLoading, setWorkspaceFetchLoading] = React.useState(true);
+  const [workspaceUsingFallback, setWorkspaceUsingFallback] = React.useState(false);
+  const [workspaceRetryKey, setWorkspaceRetryKey] = React.useState(0);
 
   React.useEffect(() => {
     let active = true;
     const base = getApiBase().replace(/\/+$/, "");
 
     async function loadWorkspace() {
+      setWorkspaceFetchLoading(true);
       try {
         const [sRes, aRes] = await Promise.all([
           fetch(`${base}/api/streamers/summary`, { credentials: "include" }),
@@ -151,10 +155,24 @@ const StreamersPage: React.FC = () => {
         if (!active) return;
         if (sJson) setSummary({ ...DEFAULT_SUMMARY, ...sJson });
         if (aJson) setAnalytics({ ...DEFAULT_ANALYTICS, ...aJson });
+        const apiOk = sRes.ok || aRes.ok;
+        setWorkspaceUsingFallback(!apiOk);
       } catch {
-        /* defaults already set */
+        if (!active) return;
+        setWorkspaceUsingFallback(true);
+      } finally {
+        if (active) setWorkspaceFetchLoading(false);
       }
     }
+
+    void loadWorkspace();
+    return () => {
+      active = false;
+    };
+  }, [workspaceRetryKey]);
+
+  React.useEffect(() => {
+    let active = true;
 
     async function loadDirectory() {
       try {
@@ -171,7 +189,6 @@ const StreamersPage: React.FC = () => {
       }
     }
 
-    void loadWorkspace();
     void loadDirectory();
     return () => {
       active = false;
@@ -305,7 +322,7 @@ const StreamersPage: React.FC = () => {
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">Stream Station</h1>
                     <p className="mt-2 text-sm sm:text-base text-gray-400 max-w-3xl leading-relaxed">
-                      Clip long sessions, polish for short-form, and publish to every channel you care about ΓÇö in one
+                      Clip long sessions, polish for short-form, and publish to every channel you care about — in one
                       workspace styled for GIVRwrld creators.
                     </p>
                   </div>
@@ -331,7 +348,14 @@ const StreamersPage: React.FC = () => {
 
                   {/* Today's signal */}
                   <div className="rounded-xl border border-gray-800/90 bg-black/35 px-4 py-4">
-                    <div className="text-xs font-bold tracking-widest text-gray-500 mb-2">{signalHeadline}</div>
+                    <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+                      <div className="text-xs font-bold tracking-widest text-gray-400">{signalHeadline}</div>
+                      {workspaceUsingFallback && !workspaceFetchLoading && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300/90 border border-amber-500/35 rounded px-2 py-0.5">
+                          Preview
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-300 leading-relaxed">{signalNote}</p>
                     <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
                       <span>Clips today: {analytics.clips_today ?? 0}</span>
