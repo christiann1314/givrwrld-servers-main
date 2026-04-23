@@ -335,3 +335,10 @@ export const CATALOG_STARTERS: Record<string, CatalogStarterBundle> = {
     gameTypes: [{ id: 'enshrouded-standard', name: 'Enshrouded', description: 'From $14.99/mo' }],
   },
 };
+
+/** Lowest-tier monthly USD from catalog starters (Deploy fallback when plans API is empty). */
+export function starterMonthlyPriceUsd(game: string): number | null {
+  const bundle = (CATALOG_STARTERS as Record<string, CatalogStarterBundle | undefined>)[game];
+  const p = bundle?.plans?.[0]?.price;
+  return typeof p === 'number' && Number.isFinite(p) ? p : null;
+}

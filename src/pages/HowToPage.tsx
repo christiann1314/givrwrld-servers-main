@@ -12,6 +12,8 @@ import {
   Users,
   ExternalLink,
   CheckCircle2,
+  Clapperboard,
+  Sparkles,
 } from "lucide-react";
 
 const featureCards = [
@@ -22,8 +24,8 @@ const featureCards = [
   },
   {
     icon: Radio,
-    title: "Streamer pages",
-    body: "Turn on a public page for your server, connect Twitch or Kick, and share a branded page for your community.",
+    title: "Streamer pages & Stream Station",
+    body: "Enable a public server page, connect Twitch or Kick, then use /streamers (Stream Station) for the creator workspace and the discovery grid below it.",
   },
   {
     icon: CreditCard,
@@ -53,6 +55,7 @@ const quickSteps = [
   "Select a plan, term, and complete checkout.",
   "Go to your dashboard and open Game Panel to manage the server.",
   "Use the server settings tab to enable a public streamer page if you want to promote it.",
+  "Open /streamers for Stream Station: use the left nav and onboarding card for workflows, then scroll to Discover streamers for the public directory.",
 ];
 
 const dashboardSections = [
@@ -180,6 +183,93 @@ const HowToPage: React.FC = () => {
                     <p className="text-sm text-gray-300 leading-relaxed">{body}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="stream-station"
+            className="rounded-2xl border border-emerald-500/30 bg-gray-900/92 p-6 sm:p-8 shadow-xl mb-8 scroll-mt-24"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-black/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 mb-3">
+                  <Clapperboard size={14} />
+                  Stream Station
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  How the /streamers page is laid out
+                </h2>
+                <p className="text-sm sm:text-base text-gray-200 max-w-3xl leading-relaxed">
+                  The top of <span className="text-white font-medium">/streamers</span> is the Stream Station
+                  workspace — the same structure you see after signing in: status chips, quick actions, live feed
+                  preview, signal summary, and the &quot;Tell us what you&apos;re here for&quot; onboarding block.
+                  The <span className="text-white font-medium">Discover streamers</span> section on that same page
+                  is the public directory of GIVRwrld-hosted creators.
+                </p>
+              </div>
+              <Link
+                to="/streamers"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
+              >
+                Open Stream Station
+                <ExternalLink size={16} />
+              </Link>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="rounded-xl border border-gray-700/70 bg-black/30 p-5">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <Sparkles size={18} className="text-emerald-300" />
+                  Left navigation
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-200 leading-relaxed list-disc pl-5">
+                  <li>
+                    <span className="text-white font-medium">Home</span> — workspace overview, feed, and onboarding
+                    status.
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Library</span> — where long sessions and imported VODs
+                    will land once linked accounts sync.
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Edits</span> — vertical layouts, captions, and short-form
+                    polish (planned tooling hooks here).
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Publisher</span> — schedule and push clips to the
+                    channels you care about.
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Connections</span> — link Twitch, YouTube, Kick, or
+                    TikTok; mirrors what you set on your server&apos;s public page for discovery.
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-gray-700/70 bg-black/30 p-5">
+                <h3 className="text-lg font-semibold text-white mb-3">Top bar &amp; main panels</h3>
+                <ul className="space-y-2 text-sm text-gray-200 leading-relaxed list-disc pl-5">
+                  <li>
+                    <span className="text-white font-medium">FREE / GO PRO</span> — plan tier for future clip and
+                    publish limits (workspace loads even on the free tier).
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Linked</span> — shows which platforms are connected;
+                    connect at least one to drive the live feed and Today&apos;s signal widgets.
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Live feed</span> — preview the primary linked channel;
+                    full viewing stays on Twitch or Kick.
+                  </li>
+                  <li>
+                    <span className="text-white font-medium">Today&apos;s signal</span> — lightweight analytics from
+                    your linked accounts once data is flowing.
+                  </li>
+                  <li>
+                    Scroll past Stream Station for <span className="text-white font-medium">Discover streamers</span>{' '}
+                    — cards for every public GIVRwrld server page with watch links.
+                  </li>
+                </ul>
               </div>
             </div>
           </section>

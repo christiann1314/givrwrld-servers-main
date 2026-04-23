@@ -118,12 +118,6 @@ const GamePanelSection = () => {
               >
                 See hosting plans
               </Link>
-              <Link
-                to="/dashboard/services"
-                className="inline-flex justify-center items-center border border-gray-600/70 hover:border-emerald-500/50 bg-gray-900/60 hover:bg-gray-800/80 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-              >
-                Open panel
-              </Link>
             </div>
           </div>
         </div>

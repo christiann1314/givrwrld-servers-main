@@ -1,7 +1,37 @@
-
 import React from 'react';
-import { Star, Server } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { starterMonthlyPriceUsd } from '@/config/gamePlanStarters';
+
+const HERO_FEATURED_GAMES = [
+  {
+    id: 'minecraft',
+    name: 'Minecraft',
+    tagline: 'Build, explore, survive',
+    image:
+      'https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg',
+    href: '/configure/minecraft',
+  },
+  {
+    id: 'rust',
+    name: 'Rust',
+    tagline: 'Survival multiplayer',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
+    href: '/configure/rust',
+  },
+  {
+    id: 'palworld',
+    name: 'Palworld',
+    tagline: 'Creature survival',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg',
+    href: '/configure/palworld',
+  },
+] as const;
+
+function heroPriceLabel(gameId: string): string {
+  const p = starterMonthlyPriceUsd(gameId);
+  return p != null ? `From $${p.toFixed(2)}/mo` : 'Plans on Deploy';
+}
 
 const HeroSection = () => {
   return (
@@ -65,7 +95,7 @@ const HeroSection = () => {
           </div>
 
           <Link
-            to="/how-to"
+            to="/how-to#stream-station"
             className="block rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-r from-emerald-600/20 via-gray-900/90 to-blue-900/30 px-6 py-6 shadow-xl hover:border-emerald-300/60 hover:from-emerald-500/25 hover:to-blue-800/35 transition-all"
           >
             <div className="flex flex-col gap-3">
@@ -76,35 +106,62 @@ const HeroSection = () => {
                 New to GIVRwrld? Read the full user guide before you deploy.
               </h2>
               <p className="text-base sm:text-lg text-gray-100 leading-relaxed max-w-2xl">
-                Learn every major feature we offer, how the dashboard works, how to manage servers, and how
-                streamer pages and community tools fit into the platform.
+                The guide covers hosting, billing, and the Stream Station workspace on{' '}
+                <span className="text-white font-medium">/streamers</span> — clip-to-publish workflows, how the
+                sidebar maps to creator tasks, and where the public discovery grid lives on the same page.
               </p>
               <div className="inline-flex items-center text-emerald-300 font-semibold text-base">
-                Open the guide
+                Open the guide (Stream Station section)
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Right column: brand visual only (no priced plan tiles / add-on packages) */}
+        {/* Right column: three featured games */}
         <div className="flex items-center justify-center lg:justify-end">
-          <div className="relative w-full max-w-md rounded-2xl border border-gray-700/60 bg-gradient-to-br from-emerald-900/25 via-gray-900/90 to-gray-950 p-8 sm:p-10 shadow-xl shadow-black/30 overflow-hidden">
+          <div className="relative w-full max-w-lg rounded-2xl border border-gray-700/60 bg-gradient-to-br from-emerald-900/20 via-gray-900/92 to-gray-950 p-5 sm:p-6 shadow-xl shadow-black/30 overflow-hidden">
             <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" aria-hidden />
             <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" aria-hidden />
-            <div className="relative flex flex-col items-center text-center gap-4">
-              <div className="w-20 h-20 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                <Server className="w-10 h-10 text-emerald-400" aria-hidden />
+            <div className="relative space-y-4">
+              <div className="text-center lg:text-left">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/90">Featured titles</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Jump straight into configure — full catalog and pricing on Deploy.
+                </p>
               </div>
-              <p className="text-lg font-semibold text-white">Game servers, one flow</p>
-              <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-                Browse every supported title and current plans on Deploy — transparent pricing at checkout.
-              </p>
-              <Link
-                to="/deploy"
-                className="mt-1 inline-flex items-center justify-center bg-emerald-600/90 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg border border-emerald-500/40 transition-colors"
-              >
-                Browse games
-              </Link>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {HERO_FEATURED_GAMES.map((game) => (
+                  <Link
+                    key={game.id}
+                    to={game.href}
+                    className="group flex flex-col rounded-xl border border-gray-700/70 bg-black/40 overflow-hidden hover:border-emerald-500/45 hover:shadow-lg hover:shadow-emerald-900/20 transition-all duration-300 min-w-0"
+                  >
+                    <div className="relative h-24 sm:h-28 overflow-hidden">
+                      <img
+                        src={game.image}
+                        alt=""
+                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
+                    </div>
+                    <div className="p-2.5 sm:p-3 flex-1 flex flex-col">
+                      <p className="text-sm font-bold text-white leading-tight truncate">{game.name}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{game.tagline}</p>
+                      <p className="text-[11px] font-medium text-emerald-400/95 mt-auto pt-2">
+                        {heroPriceLabel(game.id)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="flex justify-center lg:justify-start pt-1">
+                <Link
+                  to="/deploy"
+                  className="inline-flex items-center justify-center bg-emerald-600/90 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg border border-emerald-500/40 transition-colors"
+                >
+                  Browse all games
+                </Link>
+              </div>
             </div>
           </div>
         </div>

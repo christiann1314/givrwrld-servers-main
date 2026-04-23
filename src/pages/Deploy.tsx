@@ -2,7 +2,7 @@ import React from 'react';
 // Header and Footer are included in App.tsx
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { GAME_MIN_RAM_GB } from '@/config/gamePlanStarters';
+import { GAME_MIN_RAM_GB, starterMonthlyPriceUsd } from '@/config/gamePlanStarters';
 
 type DeployCard = {
   id: string;
@@ -17,7 +17,7 @@ type DeployCard = {
 };
 
 /** Wedge games shown first on Deploy; game-specific bullets (RAM/slot, mod-friendly, etc.). */
-const WEDGE_GAME_IDS = ['minecraft', 'rust', 'palworld'];
+const WEDGE_GAME_IDS = ['minecraft', 'rust', 'palworld', 'ark-asa', 'counter-strike'];
 
 const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   minecraft: {
@@ -151,17 +151,21 @@ function featuresWithMinRam(game: string, meta: Partial<DeployCard>): string[] {
 
 /** Fallback cards from GAME_DISPLAY when API returns no plans (all 12 games always show). */
 function getFallbackCards(): DeployCard[] {
-  return Object.entries(GAME_DISPLAY).map(([game, meta]) => ({
-    id: game,
-    name: meta.name || game.charAt(0).toUpperCase() + game.slice(1),
-    subtitle: meta.subtitle || 'Premium game server hosting',
-    image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: featuresWithMinRam(game, meta),
-    price: 'See plans',
-    buttonText: `Deploy ${meta.name || game} Server`,
-    buttonColor: meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
-    configPath: meta.configPath || `/configure/${game}`,
-  }));
+  return Object.entries(GAME_DISPLAY).map(([game, meta]) => {
+    const starter = starterMonthlyPriceUsd(game);
+    return {
+      id: game,
+      name: meta.name || game.charAt(0).toUpperCase() + game.slice(1),
+      subtitle: meta.subtitle || 'Premium game server hosting',
+      image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
+      features: featuresWithMinRam(game, meta),
+      price: starter != null ? `$${starter.toFixed(2)}` : 'See plans',
+      buttonText: `Deploy ${meta.name || game} Server`,
+      buttonColor:
+        meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
+      configPath: meta.configPath || `/configure/${game}`,
+    };
+  });
 }
 
 const Deploy = () => {
@@ -207,8 +211,12 @@ const Deploy = () => {
         });
 
         if (active) {
-          const list = cards.length > 0 ? cards : getFallbackCards();
-          const wedgeFirst = [...list].sort((a, b) => {
+          const apiIds = new Set(cards.map((c) => c.id));
+          const merged =
+            cards.length > 0
+              ? [...cards, ...getFallbackCards().filter((c) => !apiIds.has(c.id))]
+              : getFallbackCards();
+          const wedgeFirst = [...merged].sort((a, b) => {
             const aIdx = WEDGE_GAME_IDS.indexOf(a.id);
             const bIdx = WEDGE_GAME_IDS.indexOf(b.id);
             if (aIdx >= 0 && bIdx >= 0) return aIdx - bIdx;
@@ -322,8 +330,14 @@ const Deploy = () => {
                   {/* Pricing */}
                   <div className="mb-6">
                     <div className="text-2xl font-bold text-white mb-1">
-                      Starting at {server.price}
-                      <span className="text-base font-normal text-gray-200 ml-1">/month</span>
+                      {/^\$\d+(\.\d{1,2})?$/.test(server.price.trim()) ? (
+                        <>
+                          Starting at {server.price}
+                          <span className="text-base font-normal text-gray-200 ml-1">/month</span>
+                        </>
+                      ) : (
+                        <span>{server.price}</span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-400">
                       NVMe • Ryzen 9 5900X • US East (Vinthill)
