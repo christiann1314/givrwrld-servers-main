@@ -15,6 +15,14 @@ const COMMANDS_PER_WINDOW = 10;
 const MAX_MESSAGE_BYTES = 4096;
 const PANEL_CLIENT_KEY = (process.env.PTERO_CLIENT_KEY || '').trim();
 const PANEL_URL = (process.env.PANEL_URL || '').trim();
+/** Public panel HTTPS origin — required when PANEL_URL is http://127.0.0.1:8000 (common on co-located API+Panel). */
+const PANEL_PUBLIC_URL = (process.env.PANEL_PUBLIC_URL || '').trim();
+/**
+ * Origin sent on the Node→Wings WebSocket handshake. Wings only allows `remote` (panel URL) and
+ * allowed_origins; it does NOT accept http://127.0.0.1:8000 even if the Panel listens there.
+ * Prefer this over PANEL_URL when the API talks to Panel on loopback but connects to Wings locally.
+ */
+const PTERO_WINGS_WS_ORIGIN = (process.env.PTERO_WINGS_WS_ORIGIN || '').trim();
 const PANEL_RATE_LIMIT_COOLDOWN_MS = 120000;
 const PANEL_OPEN_TIMEOUT_MS = 20000;
 /**
@@ -221,6 +229,32 @@ function rewriteSocketUrl(originalUrl) {
   }
 }
 
+/**
+ * Wings' websocket upgrader checks Origin === panel `remote` URL (see wings config) or entries in
+ * `allowed_origins`. Using PANEL_URL=http://127.0.0.1:8000 would send Origin: http://127.0.0.1:8000
+ * and every console connection fails with a generic client-side error.
+ */
+function wingsWebsocketOrigin() {
+  const explicit = (PTERO_WINGS_WS_ORIGIN || PANEL_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (explicit) return explicit;
+  const panel = PANEL_URL.replace(/\/+$/, '');
+  try {
+    const host = new URL(panel).hostname;
+    if (host === '127.0.0.1' || host === 'localhost') {
+      logger.warn(
+        {
+          PANEL_URL: panel,
+          hint: 'Set PTERO_WINGS_WS_ORIGIN=https://panel.yourdomain.com (must match Wings `remote:`)',
+        },
+        'Wings websocket Origin will not match panel remote; console streaming will fail until fixed',
+      );
+    }
+  } catch {
+    // ignore
+  }
+  return panel;
+}
+
 async function createPanelSocket(order, onMessage, onClose) {
   if (!PANEL_URL || !PANEL_CLIENT_KEY || !order.ptero_identifier) {
     throw new Error('Panel client API not configured for console streaming');
@@ -232,7 +266,7 @@ async function createPanelSocket(order, onMessage, onClose) {
   return new Promise((resolve, reject) => {
     const wsOptions = {
       headers: {
-        Origin: PANEL_URL.replace(/\/+$/, ''),
+        Origin: wingsWebsocketOrigin(),
       },
     };
     if (effectiveUrl.startsWith('ws://')) {
