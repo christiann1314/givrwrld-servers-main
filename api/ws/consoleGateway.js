@@ -21,7 +21,8 @@ const PANEL_OPEN_TIMEOUT_MS = 20000;
  * When the API server lives on the same host as Wings, the Panel returns a public
  * wss:// URL that the server can't reach (hairpin NAT).  WINGS_LOCAL_WS_BASE lets
  * us rewrite that URL to a localhost address that skips the public network hop.
- * Example: ws://127.0.0.1:8082
+ * Example: ws://127.0.0.1:8080 (must match the **host** publish port in
+ * pterodactyl/docker-compose.yml for Wings, e.g. "8080:8080", not the old 8082 mapping)
  */
 const WINGS_LOCAL_WS_BASE = (process.env.WINGS_LOCAL_WS_BASE || '').trim();
 /** Browser→API pings so nginx/proxies do not treat the console stream as idle and RST it. */
