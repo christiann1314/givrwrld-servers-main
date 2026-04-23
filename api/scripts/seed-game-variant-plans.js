@@ -18,6 +18,36 @@ dotenv.config({ path: join(__dirname, '../.env') });
 
 const isDryRun = process.argv.includes('--dry-run');
 
+/**
+ * Panel egg `name` strings differ between imports/nests. Values are tried in order; any DB match wires all keys.
+ * @type {Record<string, string[]>}
+ */
+const EGG_NAME_ALTERNATES = {
+  'Terraria tModLoader': ['Terraria tModLoader', 'tModLoader'],
+  Rimworld: ['Rimworld', 'Rimworld Together'],
+  'Among Us - Impostor Server': ['Among Us - Impostor Server', 'Among Us Impostor Server'],
+};
+
+function expandEggQueryNames(primary) {
+  const list = EGG_NAME_ALTERNATES[primary] || [primary];
+  return [...new Set(list)];
+}
+
+function wireEggNameAliases(eggByName) {
+  for (const [, alts] of Object.entries(EGG_NAME_ALTERNATES)) {
+    let found = null;
+    for (const a of alts) {
+      if (eggByName.has(a)) {
+        found = eggByName.get(a);
+        break;
+      }
+    }
+    if (found != null) {
+      for (const a of alts) eggByName.set(a, found);
+    }
+  }
+}
+
 /** Monthly base price before variant surcharge (USD). Keys must cover each game's tierRams. */
 const PRICING = {
   rust: { 2: 9.99, 4: 12.99, 6: 15.49, 8: 18.99, 12: 26.99 },
@@ -335,10 +365,14 @@ async function main() {
     const hasSemiannual = termCols.some((r) => r.column_name === 'price_semiannual');
     const hasYearly = termCols.some((r) => r.column_name === 'price_yearly');
 
-    const allEggNames = [...new Set([
-      ...catalog.map((g) => g.sourceEggName),
-      ...catalog.flatMap((g) => g.variants.map((v) => v.eggName)),
-    ])];
+    const allEggNames = [
+      ...new Set(
+        catalog.flatMap((g) => [
+          ...expandEggQueryNames(g.sourceEggName),
+          ...g.variants.flatMap((v) => expandEggQueryNames(v.eggName)),
+        ]),
+      ),
+    ];
     const placeholders = allEggNames.map(() => '?').join(', ');
     const [eggRows] = await conn.execute(
       `SELECT ptero_egg_id, name
@@ -347,8 +381,12 @@ async function main() {
       allEggNames
     );
     const eggByName = new Map(eggRows.map((r) => [r.name, Number(r.ptero_egg_id)]));
+    wireEggNameAliases(eggByName);
 
-    const missingEggs = allEggNames.filter((name) => !eggByName.has(name));
+    const requiredCanonicalNames = [
+      ...new Set([...catalog.map((g) => g.sourceEggName), ...catalog.flatMap((g) => g.variants.map((v) => v.eggName))]),
+    ];
+    const missingEggs = requiredCanonicalNames.filter((name) => !eggByName.has(name));
     if (missingEggs.length > 0) {
       throw new Error(
         `Missing eggs in app catalog: ${missingEggs.join(', ')}. Run ptero:bootstrap-eggs, ptero:upgrade-eggs, ptero:sync, and ensure panel egg names match seed (e.g. Terraria Vanilla, ARK: Survival Ascended, Counter-Strike: Global Offensive).`

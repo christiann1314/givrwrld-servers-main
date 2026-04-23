@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * Sync nests/eggs from the Panel MariaDB into app `ptero_nests` / `ptero_eggs`.
+ *
+ * After moving eggs to another nest (new numeric ids), run:
+ *   node scripts/sync-pterodactyl-catalog.js --apply --chain-seed-plans
+ * so plan rows get correct `ptero_egg_id` again (chain runs seed-game-variant-plans + minecraft seed).
+ */
 import { spawnSync } from 'node:child_process';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
@@ -82,11 +89,11 @@ function chooseEggForGame(game, eggs) {
     ark: [/survival evolved/i, /ark:?\s*survival\s*evolved/i],
     'ark-asa': [/survival ascended/i, /\bascended\b/i],
     'counter-strike': [/counter-strike:\s*global offensive/i, /\bcsgo\b/i, /global offensive/i],
-    terraria: [/terraria/i],
+    terraria: [/terraria vanilla/i, /tmodloader/i, /\bterraria\b/i],
     factorio: [/factorio/i],
     palworld: [/palworld/i],
     mindustry: [/mindustry/i],
-    rimworld: [/rimworld/i],
+    rimworld: [/rimworld together/i, /\brimworld\b/i],
     'vintage-story': [/vintage/i],
     teeworlds: [/teeworlds/i],
     // Impostor only: prefer eggs whose name includes Impostor; otherwise match "Among Us" but
@@ -105,6 +112,28 @@ function chooseEggForGame(game, eggs) {
     if (match) return match;
   }
   return null;
+}
+
+function chainSeedPlanScripts() {
+  const apiRoot = join(__dirname, '..');
+  const node = process.execPath;
+
+  console.log('\n🔗 Chaining: node scripts/seed-game-variant-plans.js');
+  const r1 = spawnSync(node, ['scripts/seed-game-variant-plans.js'], { cwd: apiRoot, stdio: 'inherit', env: process.env });
+  if (r1.status !== 0) {
+    throw new Error(`Chained script failed: seed-game-variant-plans.js (exit ${r1.status})`);
+  }
+
+  console.log('\n🔗 Chaining: node scripts/seed-minecraft-variant-plans.js');
+  const r2 = spawnSync(node, ['scripts/seed-minecraft-variant-plans.js'], { cwd: apiRoot, stdio: 'inherit', env: process.env });
+  if (r2.status !== 0) {
+    console.warn(
+      '\n⚠ seed-minecraft-variant-plans.js failed (often: Minecraft eggs not in Panel yet). Other games are already remapped; fix Panel eggs and run:\n' +
+        '  cd api && node scripts/seed-minecraft-variant-plans.js\n'
+    );
+  }
+
+  console.log('\n✅ Chained plan seeds finished (non-Minecraft games refreshed from Panel egg names).');
 }
 
 async function main() {
@@ -162,6 +191,7 @@ async function main() {
   console.log(`Found ${nests.length} nests and ${eggs.length} eggs in panel DB.`);
 
   const conn = await pool.getConnection();
+  let didCommit = false;
   try {
     if (!isDryRun) {
       await conn.beginTransaction();
@@ -261,6 +291,7 @@ async function main() {
 
     if (!isDryRun) {
       await conn.commit();
+      didCommit = true;
     }
 
     console.log('\n✅ Sync Summary');
@@ -292,6 +323,10 @@ async function main() {
   } finally {
     conn.release();
     await pool.end();
+  }
+
+  if (didCommit && process.argv.includes('--chain-seed-plans')) {
+    chainSeedPlanScripts();
   }
 }
 

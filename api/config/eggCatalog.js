@@ -563,6 +563,9 @@ const EGG_ID_ALIASES = {
   23: 67,  // Terraria Vanilla
   24: 76,  // Enshrouded
   25: 79,  // ARK: Survival Ascended (panel-specific)
+  26: 68,  // Terraria tModLoader (short name in some nests)
+  // Legacy nest egg ids (before moving eggs) — keep validation working if a row still references them.
+  42: 74,  // Among Us Impostor (old panel id → catalog 74)
 };
 
 export function getCatalogEntry(eggId) {
