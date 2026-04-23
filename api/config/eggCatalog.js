@@ -564,6 +564,14 @@ const EGG_ID_ALIASES = {
   24: 76,  // Enshrouded
   25: 79,  // ARK: Survival Ascended (panel-specific)
   26: 68,  // Terraria tModLoader (short name in some nests)
+  // Minecraft nest eggs (post-import; separate ids per variant).
+  28: 61,  // Minecraft Paper
+  29: 64,  // Minecraft Purpur
+  30: 63,  // Minecraft Fabric
+  31: 60,  // Minecraft Forge
+  // Terraria + Rimworld post-import ids.
+  36: 68,  // Terraria tModLoader (current panel id)
+  39: 78,  // Rimworld (Together variant mapping reused — same runtime profile)
   // Legacy nest egg ids (before moving eggs) — keep validation working if a row still references them.
   42: 74,  // Among Us Impostor (old panel id → catalog 74)
 };
