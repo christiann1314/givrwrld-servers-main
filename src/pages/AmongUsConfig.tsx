@@ -40,7 +40,7 @@ const AmongUsConfig = () => {
   ];
 
   const fallbackGameTypes = [
-    { id: 'among-us-vanilla', name: 'Among Us Vanilla', description: 'From $4.99/mo' },
+    { id: 'among-us-vanilla', name: 'Among Us (standard)', description: 'From $4.99/mo' },
     { id: 'among-us-proximity-chat-ready', name: 'Among Us Proximity Chat Ready', description: 'From $8.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('among-us', fallbackPlans, fallbackGameTypes);

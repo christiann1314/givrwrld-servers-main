@@ -43,7 +43,7 @@ const VelorenConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'veloren', name: 'Veloren', description: 'From $10.99/mo' },
-    { id: 'veloren-vanilla', name: 'Veloren Vanilla', description: 'From $10.99/mo' },
+    { id: 'veloren-vanilla', name: 'Veloren (standard)', description: 'From $10.99/mo' },
     { id: 'veloren-rp-realm', name: 'Veloren RP Realm', description: 'From $21.49/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('veloren', fallbackPlans, fallbackGameTypes);

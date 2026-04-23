@@ -44,7 +44,7 @@ const MindustryConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'mindustry', name: 'Mindustry', description: 'From $5.99/mo' },
-    { id: 'mindustry-vanilla', name: 'Mindustry Vanilla', description: 'From $5.99/mo' },
+    { id: 'mindustry-vanilla', name: 'Mindustry (standard)', description: 'From $5.99/mo' },
     { id: 'mindustry-pvp', name: 'Mindustry PvP', description: 'From $8.99/mo' },
     { id: 'mindustry-survival', name: 'Mindustry Survival', description: 'From $9.49/mo' },
   ];

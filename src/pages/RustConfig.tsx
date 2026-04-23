@@ -44,7 +44,7 @@ const RustConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'rust', name: 'Rust', description: 'From $12.99/mo' },
-    { id: 'rust-vanilla', name: 'Rust Vanilla', description: 'From $12.99/mo' },
+    { id: 'rust-vanilla', name: 'Rust (standard)', description: 'From $12.99/mo' },
     { id: 'rust-oxide-u-mod', name: 'Rust Oxide (uMod)', description: 'From $17.99/mo' },
     { id: 'rust-carbon', name: 'Rust Carbon', description: 'From $18.99/mo' },
   ];

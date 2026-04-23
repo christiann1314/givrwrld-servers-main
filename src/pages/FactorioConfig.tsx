@@ -44,7 +44,7 @@ const FactorioConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'factorio', name: 'Factorio', description: 'From $7.99/mo' },
-    { id: 'factorio-vanilla', name: 'Factorio Vanilla', description: 'From $7.99/mo' },
+    { id: 'factorio-vanilla', name: 'Factorio (standard)', description: 'From $7.99/mo' },
     { id: 'factorio-space-age-ready', name: 'Factorio Space Age Ready', description: 'From $13.99/mo' },
     { id: 'factorio-bob-s-angel-s-ready', name: "Factorio Bob's+Angel's Ready", description: 'From $14.99/mo' },
   ];

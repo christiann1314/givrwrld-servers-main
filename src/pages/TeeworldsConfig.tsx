@@ -41,7 +41,7 @@ const TeeworldsConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'teeworlds', name: 'Teeworlds', description: 'From $4.99/mo' },
-    { id: 'teeworlds-vanilla', name: 'Teeworlds Vanilla', description: 'From $4.99/mo' },
+    { id: 'teeworlds-vanilla', name: 'Teeworlds (standard)', description: 'From $4.99/mo' },
     { id: 'teeworlds-instagib', name: 'Teeworlds Instagib', description: 'From $5.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('teeworlds', fallbackPlans, fallbackGameTypes);

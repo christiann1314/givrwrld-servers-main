@@ -44,7 +44,7 @@ const PalworldConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'palworld', name: 'Palworld', description: 'From $14.99/mo' },
-    { id: 'palworld-vanilla', name: 'Palworld Vanilla', description: 'From $14.99/mo' },
+    { id: 'palworld-vanilla', name: 'Palworld (standard)', description: 'From $14.99/mo' },
     { id: 'palworld-hardcore', name: 'Palworld Hardcore', description: 'From $29.99/mo' },
     { id: 'palworld-community-plus', name: 'Palworld Community Plus', description: 'From $30.99/mo' },
   ];

@@ -47,7 +47,7 @@ const EnshroudedConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'enshrouded', name: 'Enshrouded', description: 'From $9.99/mo' },
-    { id: 'enshrouded-vanilla', name: 'Enshrouded Vanilla', description: 'From $9.99/mo' },
+    { id: 'enshrouded-vanilla', name: 'Enshrouded (official)', description: 'From $9.99/mo' },
     { id: 'enshrouded-modded', name: 'Enshrouded Modded', description: 'From $16.99/mo' },
   ];
 
@@ -112,7 +112,7 @@ const EnshroudedConfig = () => {
           </h1>
 
           <p className="text-lg text-gray-100 max-w-3xl mb-8">
-            Survival, crafting, and action RPG — up to 16 players. Vanilla or modded.
+            Survival, crafting, and action RPG — up to 16 players. Official or modded.
           </p>
 
           <div className="bg-amber-500 text-white px-6 py-3 rounded-lg mb-8 inline-block">

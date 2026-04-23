@@ -2,6 +2,8 @@
 
 Run these on **ns1015681** (or wherever Wings and Panel run). Adjust paths if your deploy is different (e.g. `/opt/givrwrld/pterodactyl`).
 
+See also: [EGGS_AND_VARIANTS.md](./EGGS_AND_VARIANTS.md) — full egg import pipeline (`npm run catalog:variants:all`) and what “Vanilla” means per game.
+
 ---
 
 ## 1. Expose daemon port 8080 on the host

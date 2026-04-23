@@ -43,7 +43,7 @@ const VintageStoryConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'vintage-story', name: 'Vintage Story', description: 'From $11.99/mo' },
-    { id: 'vintage-story-vanilla', name: 'Vintage Story Vanilla', description: 'From $11.99/mo' },
+    { id: 'vintage-story-vanilla', name: 'Vintage Story (standard)', description: 'From $11.99/mo' },
     { id: 'vintage-story-primitive-plus', name: 'Vintage Story Primitive Plus', description: 'From $21.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('vintage-story', fallbackPlans, fallbackGameTypes);

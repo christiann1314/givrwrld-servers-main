@@ -44,7 +44,7 @@ const ArkConfig = () => {
 
   const fallbackGameTypes = [
     { id: 'ark', name: 'ARK', description: 'From $14.99/mo' },
-    { id: 'ark-vanilla', name: 'ARK Vanilla', description: 'From $14.99/mo' },
+    { id: 'ark-vanilla', name: 'ARK (standard dedicated)', description: 'From $14.99/mo' },
     { id: 'ark-primal-fear-ready', name: 'ARK Primal Fear Ready', description: 'From $34.99/mo' },
     { id: 'ark-pve-cluster-ready', name: 'ARK PvE Cluster Ready', description: 'From $32.99/mo' },
   ];

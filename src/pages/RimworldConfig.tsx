@@ -40,7 +40,7 @@ const RimworldConfig = () => {
   ];
 
   const fallbackGameTypes = [
-    { id: 'rimworld-vanilla', name: 'Rimworld Vanilla', description: 'From $12.99/mo' },
+    { id: 'rimworld-vanilla', name: 'Rimworld (standard)', description: 'From $12.99/mo' },
     { id: 'rimworld-multiplayer-ready', name: 'Rimworld Multiplayer Ready', description: 'From $28.99/mo' },
   ];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rimworld', fallbackPlans, fallbackGameTypes);

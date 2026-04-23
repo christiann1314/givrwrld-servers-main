@@ -16,7 +16,7 @@ const variantCatalog = [
     sourceEggName: 'Rust',
     display: 'Rust',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Rust Vanilla', surcharge: 0, minRam: 2, description: 'Pure Rust dedicated server runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Rust Vanilla', surcharge: 0, minRam: 2, description: 'Pure Rust dedicated server runtime.' },
       { slug: 'oxide', label: 'Oxide (uMod)', eggName: 'Rust Oxide (uMod)', surcharge: 3, minRam: 4, description: 'One-click Rust profile for Oxide/uMod communities.' },
       { slug: 'carbon', label: 'Carbon', eggName: 'Rust Carbon', surcharge: 4, minRam: 4, description: 'One-click Rust profile for Carbon framework communities.' },
     ],
@@ -26,7 +26,7 @@ const variantCatalog = [
     sourceEggName: 'Ark: Survival Evolved',
     display: 'ARK',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'ARK Vanilla', surcharge: 0, minRam: 4, description: 'Standard ARK Survival Evolved runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'ARK Vanilla', surcharge: 0, minRam: 4, description: 'Standard ARK Survival Evolved runtime.' },
       { slug: 'primal-fear-ready', label: 'Primal Fear Ready', eggName: 'ARK Primal Fear Ready', surcharge: 6, minRam: 8, description: 'One-click ARK profile for larger overhaul modpacks.' },
       { slug: 'pve-cluster-ready', label: 'PvE Cluster Ready', eggName: 'ARK PvE Cluster Ready', surcharge: 4, minRam: 8, description: 'One-click ARK profile for cluster/PvE-first communities.' },
     ],
@@ -46,7 +46,7 @@ const variantCatalog = [
     sourceEggName: 'Factorio',
     display: 'Factorio',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Factorio Vanilla', surcharge: 0, minRam: 2, description: 'Standard Factorio dedicated runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Factorio Vanilla', surcharge: 0, minRam: 2, description: 'Standard Factorio dedicated runtime.' },
       { slug: 'space-age-ready', label: 'Space Age Ready', eggName: 'Factorio Space Age Ready', surcharge: 3, minRam: 4, description: 'One-click Space Age-ready Factorio profile.' },
       { slug: 'bobs-angels-ready', label: "Bob's+Angel's Ready", eggName: "Factorio Bob's+Angel's Ready", surcharge: 4, minRam: 4, description: "One-click Bob's/Angel's-ready Factorio profile." },
     ],
@@ -56,7 +56,7 @@ const variantCatalog = [
     sourceEggName: 'Palworld',
     display: 'Palworld',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Palworld Vanilla', surcharge: 0, minRam: 4, description: 'Standard Palworld dedicated runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Palworld Vanilla', surcharge: 0, minRam: 4, description: 'Standard Palworld dedicated runtime.' },
       { slug: 'community-plus', label: 'Community Plus', eggName: 'Palworld Community Plus', surcharge: 2, minRam: 8, description: 'One-click Palworld profile for larger communities.' },
       { slug: 'hardcore', label: 'Hardcore', eggName: 'Palworld Hardcore', surcharge: 1, minRam: 8, description: 'One-click Palworld hardcore-focused profile.' },
     ],
@@ -66,7 +66,7 @@ const variantCatalog = [
     sourceEggName: 'Mindustry',
     display: 'Mindustry',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Mindustry Vanilla', surcharge: 0, minRam: 2, description: 'Standard Mindustry runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Mindustry Vanilla', surcharge: 0, minRam: 2, description: 'Standard Mindustry runtime.' },
       { slug: 'pvp', label: 'PvP', eggName: 'Mindustry PvP', surcharge: 1, minRam: 4, description: 'One-click Mindustry PvP profile.' },
       { slug: 'survival', label: 'Survival', eggName: 'Mindustry Survival', surcharge: 1.5, minRam: 4, description: 'One-click Mindustry survival profile.' },
     ],
@@ -76,7 +76,7 @@ const variantCatalog = [
     sourceEggName: 'Rimworld',
     display: 'Rimworld',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Rimworld Vanilla', surcharge: 0, minRam: 4, description: 'Standard Rimworld multiplayer runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Rimworld Vanilla', surcharge: 0, minRam: 4, description: 'Standard Rimworld multiplayer runtime.' },
       { slug: 'multiplayer-ready', label: 'Multiplayer Ready', eggName: 'Rimworld Multiplayer Ready', surcharge: 4, minRam: 8, description: 'One-click Rimworld profile for larger multiplayer setups.' },
     ],
   },
@@ -85,7 +85,7 @@ const variantCatalog = [
     sourceEggName: 'Vintage Story',
     display: 'Vintage Story',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Vintage Story Vanilla', surcharge: 0, minRam: 4, description: 'Standard Vintage Story runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Vintage Story Vanilla', surcharge: 0, minRam: 4, description: 'Standard Vintage Story runtime.' },
       { slug: 'primitive-plus', label: 'Primitive Plus', eggName: 'Vintage Story Primitive Plus', surcharge: 2, minRam: 8, description: 'One-click Vintage Story immersive profile.' },
     ],
   },
@@ -94,7 +94,7 @@ const variantCatalog = [
     sourceEggName: 'Teeworlds',
     display: 'Teeworlds',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Teeworlds Vanilla', surcharge: 0, minRam: 2, description: 'Standard Teeworlds runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Teeworlds Vanilla', surcharge: 0, minRam: 2, description: 'Standard Teeworlds runtime.' },
       { slug: 'instagib', label: 'Instagib', eggName: 'Teeworlds Instagib', surcharge: 1, minRam: 2, description: 'One-click Teeworlds Instagib profile.' },
     ],
   },
@@ -103,7 +103,7 @@ const variantCatalog = [
     sourceEggName: 'Among Us',
     display: 'Among Us',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Among Us Vanilla', surcharge: 0, minRam: 2, description: 'Standard Among Us private lobby runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Among Us Vanilla', surcharge: 0, minRam: 2, description: 'Standard Among Us private lobby runtime.' },
       { slug: 'proximity-chat-ready', label: 'Proximity Chat Ready', eggName: 'Among Us Proximity Chat Ready', surcharge: 2, minRam: 4, description: 'One-click social/proximity-chat Among Us profile.' },
     ],
   },
@@ -112,7 +112,7 @@ const variantCatalog = [
     sourceEggName: 'Veloren',
     display: 'Veloren',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Veloren Vanilla', surcharge: 0, minRam: 4, description: 'Standard Veloren dedicated runtime.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Veloren Vanilla', surcharge: 0, minRam: 4, description: 'Standard Veloren dedicated runtime.' },
       { slug: 'rp-realm', label: 'RP Realm', eggName: 'Veloren RP Realm', surcharge: 1.5, minRam: 8, description: 'One-click Veloren roleplay-focused profile.' },
     ],
   },
@@ -121,7 +121,7 @@ const variantCatalog = [
     sourceEggName: 'Enshrouded',
     display: 'Enshrouded',
     variants: [
-      { slug: 'vanilla', label: 'Vanilla', eggName: 'Enshrouded Vanilla', surcharge: 0, minRam: 4, description: 'Official Enshrouded dedicated server. Up to 16 players.' },
+      { slug: 'vanilla', label: 'Standard', eggName: 'Enshrouded Vanilla', surcharge: 0, minRam: 4, description: 'Official Enshrouded dedicated server. Up to 16 players.' },
       { slug: 'modded', label: 'Modded', eggName: 'Enshrouded Modded', surcharge: 2, minRam: 6, description: 'Enshrouded server with mod support. Add QoL and content mods via panel.' },
     ],
   },
