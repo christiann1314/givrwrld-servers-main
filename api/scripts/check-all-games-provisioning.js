@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const apiDir = join(__dirname, '..');
 const games = [
-  'rust', 'ark', 'among-us', 'factorio', 'mindustry', 'rimworld',
+  'rust', 'ark', 'ark-asa', 'counter-strike', 'among-us', 'factorio', 'mindustry', 'rimworld',
   'palworld', 'teeworlds', 'terraria', 'veloren', 'vintage-story'
 ];
 

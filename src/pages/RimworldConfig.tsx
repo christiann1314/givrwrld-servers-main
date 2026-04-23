@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const rimworldBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/294100/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const RimworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rimworld-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.rimworld.defaultPlanId);
   const [gameType, setGameType] = useState('rimworld-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const RimworldConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'rimworld-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 24.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'rimworld-standard', name: 'Rimworld', description: 'From $24.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.rimworld.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.rimworld.gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rimworld', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

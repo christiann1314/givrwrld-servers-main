@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const palworldWallpaper = 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const PalworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('palworld-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.palworld.defaultPlanId);
   const [gameType, setGameType] = useState('palworld-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const PalworldConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'palworld-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'palworld-standard', name: 'Palworld', description: 'From $28.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.palworld.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.palworld.gameTypes;
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('palworld', fallbackPlans, fallbackGameTypes);
 

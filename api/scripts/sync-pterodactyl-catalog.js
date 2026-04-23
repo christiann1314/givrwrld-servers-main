@@ -78,7 +78,10 @@ function chooseEggForGame(game, eggs) {
     // ptero_egg_id. Prefer a neutral Paper match; never use this to infer Fabric.
     minecraft: [/paper/i, /vanilla minecraft/i, /forge/i, /sponge/i],
     rust: [/^rust$/i, /\brust\b/i],
-    ark: [/ark.*survival/i, /\bark\b/i],
+    // Prefer Evolved over Ascended — avoid /\bark\b/ alone (matches the "ARK" token in ASA too).
+    ark: [/survival evolved/i, /ark:?\s*survival\s*evolved/i],
+    'ark-asa': [/survival ascended/i, /\bascended\b/i],
+    'counter-strike': [/counter-strike:\s*global offensive/i, /\bcsgo\b/i, /global offensive/i],
     terraria: [/terraria/i],
     factorio: [/factorio/i],
     palworld: [/palworld/i],
@@ -86,7 +89,12 @@ function chooseEggForGame(game, eggs) {
     rimworld: [/rimworld/i],
     'vintage-story': [/vintage/i],
     teeworlds: [/teeworlds/i],
-    'among-us': [/among\s*us/i],
+    // Impostor only: prefer eggs whose name includes Impostor; otherwise match "Among Us" but
+    // never proximity / Crewlink / BetterCrewlink panel eggs.
+    'among-us': [
+      /impostor/i,
+      /\bamong\s*us\b(?!.*\bproximity\b)(?!.*\bcrewlink\b)(?!.*better\s*crewlink)/i,
+    ],
     veloren: [/veloren/i],
     enshrouded: [/enshrouded/i],
   };

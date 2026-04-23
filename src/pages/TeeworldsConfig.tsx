@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const teeworldsBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/380840/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const TeeworldsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('teeworlds-standard-2gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.teeworlds.defaultPlanId);
   const [gameType, setGameType] = useState('teeworlds-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const TeeworldsConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'teeworlds-standard-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 4.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'teeworlds-standard', name: 'Teeworlds', description: 'From $4.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.teeworlds.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.teeworlds.gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('teeworlds', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

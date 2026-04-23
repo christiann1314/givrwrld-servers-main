@@ -3,6 +3,9 @@
  * Upserts game plans for every RAM tier we sell.
  * One stock SKU per game (base Panel egg), except Terraria: Vanilla + tModLoader.
  * Pricing is defined here so re-runs work even after legacy rows are deactivated.
+ *
+ * When changing minimum RAM tiers or starter prices, update `src/config/gamePlanStarters.ts`
+ * so configure-page fallbacks and Deploy “From NGB RAM” copy stay aligned.
  */
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +22,8 @@ const isDryRun = process.argv.includes('--dry-run');
 const PRICING = {
   rust: { 2: 9.99, 4: 12.99, 6: 15.49, 8: 18.99, 12: 26.99 },
   ark: { 6: 14.99, 8: 28.99, 12: 42.99 },
+  'ark-asa': { 8: 32.99, 12: 48.99 },
+  'counter-strike': { 2: 7.99, 4: 10.49, 6: 13.99, 8: 17.99, 12: 25.99 },
   terraria: { 2: 6.99, 4: 8.99, 6: 10.99, 8: 14.99, 12: 21.99 },
   factorio: { 2: 7.99, 4: 10.99, 6: 13.49, 8: 16.99, 12: 24.99 },
   palworld: { 4: 14.99, 6: 18.99, 8: 28.99, 12: 40.99 },
@@ -41,6 +46,7 @@ function vcoresForRam(ram) {
 
 function ssdGbForRam(game, ram) {
   if (game === 'ark' && ram >= 6) return Math.max(ram * 10, 35);
+  if (game === 'ark-asa' && ram >= 8) return Math.max(ram * 10, 60);
   return ram * 10;
 }
 
@@ -73,7 +79,7 @@ const variantCatalog = [
   {
     game: 'ark',
     sourceEggName: 'Ark: Survival Evolved',
-    display: 'ARK',
+    display: 'ARK: Survival Evolved',
     tierRams: [6, 8, 12],
     variants: [
       {
@@ -83,6 +89,38 @@ const variantCatalog = [
         surcharge: 0,
         minRam: 6,
         description: 'Dedicated ARK: Survival Evolved server.',
+      },
+    ],
+  },
+  {
+    game: 'ark-asa',
+    sourceEggName: 'ARK: Survival Ascended',
+    display: 'ARK: Survival Ascended',
+    tierRams: [8, 12],
+    variants: [
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'ARK: Survival Ascended',
+        surcharge: 0,
+        minRam: 8,
+        description: 'Dedicated ARK: Survival Ascended (UE5) server.',
+      },
+    ],
+  },
+  {
+    game: 'counter-strike',
+    sourceEggName: 'Counter-Strike: Global Offensive',
+    display: 'Counter-Strike',
+    tierRams: [2, 4, 6, 8, 12],
+    variants: [
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Counter-Strike: Global Offensive',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Dedicated Counter-Strike: Global Offensive server.',
       },
     ],
   },
@@ -208,17 +246,17 @@ const variantCatalog = [
   },
   {
     game: 'among-us',
-    sourceEggName: 'Among Us',
+    sourceEggName: 'Among Us - Impostor Server',
     display: 'Among Us',
     tierRams: [4, 6, 8, 12],
     variants: [
       {
         slug: 'standard',
         label: '',
-        eggName: 'Among Us',
+        eggName: 'Among Us - Impostor Server',
         surcharge: 0,
         minRam: 4,
-        description: 'Dedicated Among Us (Impostor) server.',
+        description: 'Dedicated Among Us Impostor server (not proximity/Crewlink eggs).',
       },
     ],
   },
@@ -312,7 +350,9 @@ async function main() {
 
     const missingEggs = allEggNames.filter((name) => !eggByName.has(name));
     if (missingEggs.length > 0) {
-      throw new Error(`Missing eggs in app catalog: ${missingEggs.join(', ')}. Run ptero:bootstrap-eggs, ptero:upgrade-eggs, ptero:sync, and ensure Terraria Vanilla + Terraria tModLoader exist on the panel.`);
+      throw new Error(
+        `Missing eggs in app catalog: ${missingEggs.join(', ')}. Run ptero:bootstrap-eggs, ptero:upgrade-eggs, ptero:sync, and ensure panel egg names match seed (e.g. Terraria Vanilla, ARK: Survival Ascended, Counter-Strike: Global Offensive).`
+      );
     }
 
     const upserts = [];

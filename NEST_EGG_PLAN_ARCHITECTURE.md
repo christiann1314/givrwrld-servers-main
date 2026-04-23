@@ -11,7 +11,7 @@ The GIVRwrld system uses a three-tier architecture:
 ## Current Nests (Games)
 
 ### Custom Nests
-- **Among Us** (ID 15) - 3 eggs
+- **Among Us** (ID 15) — Panel may list multiple eggs; **storefront + `sync-pterodactyl-catalog` bind only the Impostor egg** (`Among Us - Impostor Server`), not proximity/Crewlink eggs.
 - **Ark Survival** (ID 5) - 1 egg
 - **Factorio** (ID 9) - 3 eggs
 - **Mindustry** (ID 10) - 1 egg

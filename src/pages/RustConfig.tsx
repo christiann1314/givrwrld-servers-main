@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const rustWallpaper = 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const RustConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rust-standard-4gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.rust.defaultPlanId);
   const [gameType, setGameType] = useState('rust-standard');
   const [billingTerm, setBillingTerm] = useState<string>('semiannual');
 
@@ -33,11 +34,8 @@ const RustConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'rust-standard-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 12.99, players: '4-16', description: '', recommended: true, serverType: 'rust-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'rust-standard', name: 'Rust', description: 'From $12.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.rust.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.rust.gameTypes;
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rust', fallbackPlans, fallbackGameTypes);
 

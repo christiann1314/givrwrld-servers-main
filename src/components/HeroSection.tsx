@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star, Server } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ServerCard from './ServerCard';
 
 const HeroSection = () => {
   return (
@@ -87,29 +86,27 @@ const HeroSection = () => {
           </Link>
         </div>
 
-        {/* Right Column - Server Cards */}
-        <div className="space-y-6">
-          <ServerCard
-            game="Minecraft"
-            image="https://minecraft.wiki/images/thumb/MC_key_art_2024_no_logo.jpg/1280px-MC_key_art_2024_no_logo.jpg"
-            subtitle="Build, explore, survive"
-            price="$3.99"
-          />
-          
-          <ServerCard
-            game="Rust"
-            image="https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg"
-            subtitle="Survival multiplayer game"
-            price="$8.99"
-          />
-          
-          <ServerCard
-            game="Palworld"
-            image="https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg"
-            subtitle="Creature collection survival"
-            price="$11.99"
-          />
-
+        {/* Right column: brand visual only (no priced plan tiles / add-on packages) */}
+        <div className="flex items-center justify-center lg:justify-end">
+          <div className="relative w-full max-w-md rounded-2xl border border-gray-700/60 bg-gradient-to-br from-emerald-900/25 via-gray-900/90 to-gray-950 p-8 sm:p-10 shadow-xl shadow-black/30 overflow-hidden">
+            <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" aria-hidden />
+            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" aria-hidden />
+            <div className="relative flex flex-col items-center text-center gap-4">
+              <div className="w-20 h-20 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                <Server className="w-10 h-10 text-emerald-400" aria-hidden />
+              </div>
+              <p className="text-lg font-semibold text-white">Game servers, one flow</p>
+              <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
+                Browse every supported title and current plans on Deploy — transparent pricing at checkout.
+              </p>
+              <Link
+                to="/deploy"
+                className="mt-1 inline-flex items-center justify-center bg-emerald-600/90 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg border border-emerald-500/40 transition-colors"
+              >
+                Browse games
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

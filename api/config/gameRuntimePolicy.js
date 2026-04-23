@@ -8,7 +8,7 @@
  * Cloudflare API (`proxied: false` for `node.*` game ports; `proxied: true` optional for `among-http-*`
  * only if you terminate TLS at Cloudflare or use origin certs).
  *
- * Egg IDs: sql/migrations/20260327120000_sync_plans_to_panel_egg_ids.sql
+ * Egg IDs: sql/migrations/20260327120000_sync_plans_to_panel_egg_ids.sql (79 ASA, 80 CS:GO — see api/config/eggCatalog.js EGG_ID_ALIASES for panel-specific ids).
  */
 
 /** Public suffix for auto-generated Impostor HTTPS hostnames (override in env for staging). */
@@ -119,6 +119,20 @@ export const EGG_RUNTIME_POLICY = {
     requiredDockerImage: null,
     https: { required: false },
     startup: { successLogPatterns: [/Commandline:/i] },
+  },
+  79: {
+    gameKey: 'ark-asa',
+    capabilityClass: 'B',
+    allocationsNeeded: 3,
+    allocationStrategy: 'contiguous',
+    network: {
+      game: { protocol: 'udp', usesPrimaryAllocation: true },
+      query: { protocol: 'udp', usesExtraAllocationIndex: 1 },
+      rcon: { protocol: 'tcp', usesExtraAllocationIndex: 2 },
+    },
+    requiredDockerImage: null,
+    https: { required: false },
+    startup: { successLogPatterns: [/Waiting commands for 127\.0\.0\.1:/i] },
   },
   67: {
     gameKey: 'terraria',
@@ -256,6 +270,16 @@ export const EGG_RUNTIME_POLICY = {
     https: { required: false },
     startup: { successLogPatterns: [] },
   },
+  80: {
+    gameKey: 'counter-strike',
+    capabilityClass: 'A',
+    allocationsNeeded: 1,
+    allocationStrategy: 'single',
+    network: { game: { protocol: 'udp', usesPrimaryAllocation: true } },
+    requiredDockerImage: null,
+    https: { required: false },
+    startup: { successLogPatterns: [/gameserver Steam ID/i, /Connection to Steam servers successful/i] },
+  },
 };
 
 /**
@@ -264,6 +288,7 @@ export const EGG_RUNTIME_POLICY = {
  */
 const EGG_ID_ALIASES = {
   4: 61,
+  9: 80,
   11: 66,
   14: 65,
   15: 71,
@@ -276,6 +301,7 @@ const EGG_ID_ALIASES = {
   22: 78,
   23: 67,
   24: 76,
+  25: 79,
 };
 
 function canonicalEggId(eggId) {

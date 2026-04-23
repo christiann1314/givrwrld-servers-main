@@ -7,6 +7,8 @@ const PREFIX_BY_GAME = Object.freeze({
   rust: 'rust',
   palworld: 'pal',
   ark: 'ark',
+  'ark-asa': 'asa',
+  'counter-strike': 'csgo',
   enshrouded: 'ensh',
   factorio: 'fac',
   mindustry: 'mind',

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const mindustryBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/1127400/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const MindustryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('mindustry-standard-4gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.mindustry.defaultPlanId);
   const [gameType, setGameType] = useState('mindustry-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const MindustryConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'mindustry-standard-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'mindustry-standard', name: 'Mindustry', description: 'From $7.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.mindustry.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.mindustry.gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('mindustry', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

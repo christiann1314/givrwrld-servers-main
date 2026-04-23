@@ -32,7 +32,7 @@ UPDATE plans SET ptero_egg_id = 71 WHERE item_type = 'game' AND game = 'mindustr
 UPDATE plans SET ptero_egg_id = 72 WHERE item_type = 'game' AND game IN ('vintage-story', 'vintagestory');
 UPDATE plans SET ptero_egg_id = 73 WHERE item_type = 'game' AND game = 'teeworlds';
 
--- All Among Us storefront plans use Impostor egg until a separate Crewlink/BetterCrewlink egg exists in Panel.
+-- All Among Us storefront plans use the Impostor egg only (we do not sell proximity/Crewlink Panel eggs).
 UPDATE plans SET ptero_egg_id = 74 WHERE item_type = 'game' AND game = 'among-us';
 
 UPDATE plans SET ptero_egg_id = 75 WHERE item_type = 'game' AND game = 'veloren';

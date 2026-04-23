@@ -46,10 +46,22 @@ const DashboardOrder = () => {
       configPath: '/configure/palworld',
     },
     ark: {
-      name: 'ARK',
+      name: 'ARK: Survival Evolved',
       subtitle: 'Dinosaurs, tribes, and survival',
       image: 'https://cdn.akamai.steamstatic.com/steam/apps/2399830/library_hero.jpg',
       configPath: '/configure/ark',
+    },
+    'ark-asa': {
+      name: 'ARK: Survival Ascended',
+      subtitle: 'UE5 dinosaurs and survival',
+      image: 'https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg',
+      configPath: '/configure/ark-asa',
+    },
+    'counter-strike': {
+      name: 'Counter-Strike',
+      subtitle: 'CS:GO dedicated servers',
+      image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
+      configPath: '/configure/counter-strike',
     },
     terraria: {
       name: 'Terraria',
@@ -89,7 +101,7 @@ const DashboardOrder = () => {
     },
     'among-us': {
       name: 'Among Us',
-      subtitle: 'Social deduction game hosting',
+      subtitle: 'Impostor dedicated server',
       image: 'https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg',
       configPath: '/configure/among-us',
     },

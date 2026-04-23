@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 
 const enshroudedWallpaper = 'https://cdn.akamai.steamstatic.com/steam/apps/1203620/library_hero.jpg';
@@ -13,7 +14,7 @@ const EnshroudedConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('enshrouded-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.enshrouded.defaultPlanId);
   const [gameType, setGameType] = useState('enshrouded-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -34,11 +35,8 @@ const EnshroudedConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'enshrouded-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'enshrouded-standard', name: 'Enshrouded', description: 'From $19.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.enshrouded.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.enshrouded.gameTypes;
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('enshrouded', fallbackPlans, fallbackGameTypes);
 

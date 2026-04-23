@@ -221,7 +221,16 @@ function buildPteroLimitsForGame(gameKey, { memoryMb, diskMb, cpuPercent }) {
       oom_disabled: true,
     };
   }
-  if (key === 'palworld' || key === 'rust' || key === 'enshrouded' || key === 'valheim') {
+  if (key === 'ark-asa') {
+    const minAsaMb = 12288;
+    return {
+      ...base,
+      memory: Math.max(memoryMb, minAsaMb),
+      swap: 3072,
+      oom_disabled: true,
+    };
+  }
+  if (key === 'palworld' || key === 'rust' || key === 'enshrouded' || key === 'valheim' || key === 'counter-strike') {
     // Heavier steam-based worlds benefit from swap headroom during world gen,
     // but do not need a baseline RAM bump.
     return {
@@ -254,8 +263,15 @@ function inferRequiredEnvValue(key, rules, context) {
   if (upper === 'SERVER_NAME' || upper === 'HOSTNAME' || upper === 'SESSION_NAME' || upper === 'SRV_NAME') {
     return String(order.server_name || 'GIVRwrld Server').slice(0, 80);
   }
-  if (upper === 'WINDOWS_INSTALL') return '1';
-  if (upper === 'SERVER_MAP' || upper === 'MAP') return 'TheIsland';
+  if (upper === 'WINDOWS_INSTALL') {
+    if (gameKey === 'ark-asa' || gameKey === 'enshrouded') return '1';
+    return '0';
+  }
+  if (upper === 'SERVER_MAP' || upper === 'MAP') {
+    if (gameKey === 'ark-asa') return 'TheIsland_WP';
+    return 'TheIsland';
+  }
+  if (upper === 'SRCDS_MAP' && gameKey === 'counter-strike') return 'de_dust2';
   if (upper === 'ARK_ADMIN_PASSWORD' || upper === 'SERVER_ADMIN_PASSWORD') {
     return buildSafeToken('Ark', order.id, 32);
   }
@@ -1321,7 +1337,11 @@ function buildEnvironmentForAllocationGroup(ctx) {
   const gameKey = normalizeGameKey(order.game);
   const estimatedPlayersRaw = Math.max(4, Math.min(64, Number(order.ram_gb || 1) * 4));
   const estimatedPlayers =
-    gameKey === 'palworld' ? Math.min(32, estimatedPlayersRaw) : estimatedPlayersRaw;
+    gameKey === 'palworld'
+      ? Math.min(32, estimatedPlayersRaw)
+      : gameKey === 'counter-strike'
+        ? Math.min(16, estimatedPlayersRaw)
+        : estimatedPlayersRaw;
 
   applyMultiAllocationEnv(pteroEggId, selectedAllocs, environment);
 
@@ -1360,7 +1380,9 @@ function buildEnvironmentForAllocationGroup(ctx) {
     teeworlds: '380840',
     rust: '258550',
     ark: '376030',
+    'ark-asa': '2430930',
     enshrouded: '2278520',
+    'counter-strike': '740',
   };
   const rimworldUrl =
     process.env.RIMWORLD_SERVER_PACKAGE_URL || 'https://example.com/rimworld-server.zip';
@@ -1379,6 +1401,8 @@ function buildEnvironmentForAllocationGroup(ctx) {
   if (modProfile?.label && !environment.MOD_PROFILE_LABEL) {
     environment.MOD_PROFILE_LABEL = String(modProfile.label);
   }
+
+  const defaultArkMap = gameKey === 'ark-asa' ? 'TheIsland_WP' : 'TheIsland';
 
   const staticDefaults = {
     SERVER_JARFILE: 'server.jar',
@@ -1400,8 +1424,8 @@ function buildEnvironmentForAllocationGroup(ctx) {
     JVM_ARGS: '',
     WORLD_NAME: 'givrwrld',
     SERVER_WORLD: 'world',
-    MAP: 'TheIsland',
-    SERVER_MAP: 'TheIsland',
+    MAP: defaultArkMap,
+    SERVER_MAP: defaultArkMap,
     ARK_ADMIN_PASSWORD: arkAdminPassword,
     SERVER_ADMIN_PASSWORD: arkAdminPassword,
     BATTLE_EYE: 'true',
@@ -1481,11 +1505,47 @@ function buildEnvironmentForAllocationGroup(ctx) {
     environment.STEAM_SDK = '0';
   }
 
+  if (gameKey === 'ark-asa') {
+    const battleEye = String(environment.BATTLE_EYE ?? '').trim().toLowerCase();
+    environment.BATTLE_EYE = ['1', 'true', 'on', 'yes'].includes(battleEye) ? '1' : '0';
+    const serverPve = String(environment.SERVER_PVE ?? '').trim().toLowerCase();
+    environment.SERVER_PVE = ['1', 'true', 'on', 'yes'].includes(serverPve) ? '1' : '0';
+    environment.SERVER_MAP = String(environment.SERVER_MAP || environment.MAP || 'TheIsland_WP');
+    environment.MAP = environment.SERVER_MAP;
+    environment.ARK_ADMIN_PASSWORD = String(environment.ARK_ADMIN_PASSWORD || arkAdminPassword).replace(
+      /[^a-zA-Z0-9_-]/g,
+      '',
+    );
+    if (!environment.ARK_ADMIN_PASSWORD) {
+      environment.ARK_ADMIN_PASSWORD = buildSafeToken('Ark', order.id, 32);
+    }
+    environment.SRCDS_APPID = '2430930';
+    environment.APP_ID = '2430930';
+    environment.WINDOWS_INSTALL = '1';
+    if (/app_update/i.test(String(environment.EXTRA_FLAGS || ''))) {
+      environment.EXTRA_FLAGS = 'validate';
+    } else if (!environment.EXTRA_FLAGS) {
+      environment.EXTRA_FLAGS = 'validate';
+    }
+    environment.STEAM_SDK = '0';
+  }
+
   // Palworld dedicated server is always Steam app 2394010. Some Panel/egg rows have been
   // seen with wrong SRCDS_APPID (e.g. 1007), which makes SteamCMD fail with 0x2 and leaves no binary.
   if (gameKey === 'palworld') {
     environment.SRCDS_APPID = '2394010';
     environment.APP_ID = '2394010';
+  }
+
+  if (gameKey === 'counter-strike') {
+    environment.SRCDS_APPID = '740';
+    environment.APP_ID = '740';
+    if (/app_update/i.test(String(environment.EXTRA_FLAGS || ''))) {
+      environment.EXTRA_FLAGS = 'validate';
+    } else if (!environment.EXTRA_FLAGS) {
+      environment.EXTRA_FLAGS = 'validate';
+    }
+    environment.STEAM_SDK = '0';
   }
 
   if (gameKey === 'enshrouded') {
@@ -1567,11 +1627,13 @@ function buildEnvironmentForAllocationGroup(ctx) {
       environment[key] = defaultTruthy ? '1' : '0';
     }
   };
-  if (gameKey === 'palworld' || gameKey === 'ark') {
+  if (gameKey === 'palworld' || gameKey === 'ark' || gameKey === 'ark-asa' || gameKey === 'counter-strike') {
     ensureBoolDefault('AUTO_UPDATE', true);
   }
-  if (gameKey === 'enshrouded') {
+  if (gameKey === 'enshrouded' || gameKey === 'ark-asa') {
     ensureBoolDefault('WINDOWS_INSTALL', true);
+  }
+  if (gameKey === 'enshrouded') {
     ensureBoolDefault('AUTO_UPDATE', true);
     ensureBoolDefault('VALIDATE', false);
   }

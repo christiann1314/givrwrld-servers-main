@@ -10,6 +10,8 @@ const GAME_HERO_IMAGES: Record<string, string> = {
   palworld: 'https://cdn.akamai.steamstatic.com/steam/apps/1623730/library_hero.jpg',
   rust: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
   ark: 'https://cdn.akamai.steamstatic.com/steam/apps/2399830/library_hero.jpg',
+  'ark-asa': 'https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg',
+  'counter-strike': 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
   terraria: 'https://cdn.akamai.steamstatic.com/steam/apps/105600/library_hero.jpg',
   factorio: 'https://cdn.akamai.steamstatic.com/steam/apps/427520/library_hero.jpg',
   mindustry: 'https://cdn.akamai.steamstatic.com/steam/apps/1127400/library_hero.jpg',
@@ -26,6 +28,8 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   palworld: 'Palworld',
   rust: 'Rust',
   ark: 'ARK: Survival Evolved',
+  'ark-asa': 'ARK: Survival Ascended',
+  'counter-strike': 'Counter-Strike: Global Offensive',
   terraria: 'Terraria',
   factorio: 'Factorio',
   mindustry: 'Mindustry',
@@ -39,7 +43,11 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
 
 function normalizeSlug(game: string): string {
   const s = (game || 'minecraft').toLowerCase().replace(/\s+/g, '-');
-  const aliases: Record<string, string> = { amongus: 'among-us', vintagestory: 'vintage-story' };
+  const aliases: Record<string, string> = {
+    amongus: 'among-us',
+    vintagestory: 'vintage-story',
+    csgo: 'counter-strike',
+  };
   return aliases[s] || s;
 }
 

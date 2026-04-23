@@ -5,6 +5,8 @@
 const gamesWithEmptyEnv = [
   'terraria',
   'ark',
+  'ark-asa',
+  'counter-strike',
   'factorio',
   'mindustry',
   'rimworld',

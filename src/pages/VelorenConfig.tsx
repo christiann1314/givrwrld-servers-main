@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const velorenBackdrop = '/images/veloren-hero.jpg';
 
@@ -12,7 +13,7 @@ const VelorenConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('veloren-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.veloren.defaultPlanId);
   const [gameType, setGameType] = useState('veloren-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const VelorenConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'veloren-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'veloren-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'veloren-standard', name: 'Veloren', description: 'From $19.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.veloren.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.veloren.gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('veloren', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

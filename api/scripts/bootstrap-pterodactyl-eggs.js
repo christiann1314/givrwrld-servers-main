@@ -19,6 +19,8 @@ const gameEggNames = [
   'Minecraft Forge',
   'Rust',
   'Ark: Survival Evolved',
+  'ARK: Survival Ascended',
+  'Counter-Strike: Global Offensive',
   'Palworld',
   'Terraria Vanilla',
   'Terraria tModLoader',
@@ -27,7 +29,7 @@ const gameEggNames = [
   'Rimworld',
   'Vintage Story',
   'Teeworlds',
-  'Among Us',
+  'Among Us - Impostor Server',
   'Veloren',
   'Enshrouded',
 ];

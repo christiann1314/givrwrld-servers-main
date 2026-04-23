@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const arkBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/2399830/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const ArkConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('ark-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.ark.defaultPlanId);
   const [gameType, setGameType] = useState('ark-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const ArkConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'ark-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'ark-standard', name: 'ARK: Survival Evolved', description: 'From $28.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS.ark.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.ark.gameTypes;
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('ark', fallbackPlans, fallbackGameTypes);
 
@@ -98,7 +96,7 @@ const ArkConfig = () => {
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
             <span className="text-gray-100">Configure Your</span>{' '}
             <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-sky-400 bg-clip-text text-transparent">
-              Ark Server
+              ARK: Survival Evolved
             </span>
           </h1>
           

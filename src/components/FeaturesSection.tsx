@@ -1,25 +1,37 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Headphones, Zap } from 'lucide-react';
+import { Shield, Headphones, Zap, LayoutDashboard, Clapperboard } from 'lucide-react';
 
 const FeaturesSection = () => {
   const serviceFeatures = [
     {
       icon: Shield,
-      title: "DDoS Protection",
-      description: "Enterprise-grade protection keeps your server safe from attacks 24/7."
+      title: 'DDoS Protection',
+      description: 'Enterprise-grade protection keeps your server safe from attacks 24/7.',
     },
     {
       icon: Headphones,
-      title: "24/7 Expert Support",
-      description: "Our gaming experts are always available to help with any issues or questions."
+      title: '24/7 Expert Support',
+      description: 'Our gaming experts are always available to help with any issues or questions.',
     },
     {
       icon: Zap,
-      title: "99.9% Uptime",
-      description: "Guaranteed uptime with redundant systems and automatic failover protection."
-    }
+      title: '99.9% Uptime',
+      description: 'Guaranteed uptime with redundant systems and automatic failover protection.',
+    },
+    {
+      icon: LayoutDashboard,
+      title: 'Game server panel',
+      description:
+        'Start, stop, and restart from one place — live console, file manager, and server details without juggling SSH or raw VPS tools.',
+    },
+    {
+      icon: Clapperboard,
+      title: 'Stream Station',
+      description:
+        'Clip long sessions, prep verticals for Shorts and Reels, and line up publishing — a creator workspace alongside your hosting.',
+    },
   ];
 
   return (
@@ -37,13 +49,16 @@ const FeaturesSection = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 mb-16">
-        {serviceFeatures.map((feature, index) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        {serviceFeatures.map((feature) => {
           const Icon = feature.icon;
           return (
-            <div key={index} className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 text-center hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10">
+            <div
+              key={feature.title}
+              className="bg-gray-800/90 backdrop-blur-md border border-gray-600/30 rounded-xl p-8 text-center hover:border-emerald-500/50 transition-all duration-300 group hover:shadow-xl hover:shadow-emerald-500/10"
+            >
               <div className="w-16 h-16 bg-gray-700/50 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-500/20 transition-colors">
-                <Icon size={32} className="text-emerald-400" />
+                <Icon size={32} className="text-emerald-400" aria-hidden />
               </div>
               <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
               <p className="text-gray-100 text-base leading-relaxed">{feature.description}</p>

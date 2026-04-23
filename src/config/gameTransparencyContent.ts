@@ -132,19 +132,50 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
     rust: rust,
     palworld: palworld,
     ark: () => genericGame(
-      'ARK',
+      'ARK: Survival Evolved',
       ['ARK: Survival Evolved', 'Config editing', 'Panel console & file manager', 'NVMe storage'],
-      'We provide an ARK dedicated server. You can edit all standard config options and mods via the panel.',
+      'We provide an ARK: Survival Evolved dedicated server. You can edit all standard config options and mods via the panel.',
       [
         { title: 'Pick your plan', body: 'Choose a plan above based on player count and map size. Complete checkout; the server will be provisioned in minutes.' },
         { title: 'Configure and start', body: 'Set server name, password, and game options in the panel. Start the server and install mods if needed via the file manager.' },
         { title: 'Share your server', body: 'Give your community the connection details. They can join via the in-game server browser.' },
       ],
       [
-        { question: 'Do you support ARK mods?', answer: 'You have file manager access to add mods. Install and configure mods through the panel as you would on any dedicated server.' },
-        { question: 'What ARK maps are supported?', answer: 'You can run the official maps and modded maps that work with the dedicated server. Config and startup are under your control.' },
+        { question: 'Do you support ARK: Survival Evolved mods?', answer: 'You have file manager access to add mods. Install and configure mods through the panel as you would on any dedicated server.' },
+        { question: 'What ARK: Survival Evolved maps are supported?', answer: 'You can run the official maps and modded maps that work with the dedicated server. Config and startup are under your control.' },
       ],
-      ['ARK hosting at GIVRwrld gives you a dedicated server for ARK: Survival Evolved. Full panel access for config, mods, and updates.', 'ARK is a survival game with dinosaurs and tribes. A dedicated server lets you control maps, rates, and who can join.']
+      ['ARK: Survival Evolved hosting at GIVRwrld gives you a dedicated server. Full panel access for config, mods, and updates.', 'ARK: Survival Evolved is a survival game with dinosaurs and tribes. A dedicated server lets you control maps, rates, and who can join.']
+    ),
+    'ark-asa': () => genericGame(
+      'ARK: Survival Ascended',
+      ['UE5 dedicated server', 'Proton + Windows build', 'Panel console & file manager', 'Multi-port (game / query / RCON)'],
+      'We host ARK: Survival Ascended on high-RAM tiers. Crossplay, CurseForge mod IDs, and standard ASA map defaults are supported via egg variables.',
+      [
+        { title: 'Pick your plan', body: 'ASA needs more RAM than ASE — start at 8GB. Complete checkout; provisioning allocates three consecutive ports.' },
+        { title: 'Configure in the panel', body: 'Set map (e.g. TheIsland_WP), session name, admin password, PvE/PvP, BattleEye, and optional mod IDs. Use a Steam GSLT only if your workflow requires it.' },
+        { title: 'Share join info', body: 'Players find the server via Steam and in-game browser using your node IP and the primary game port from the panel.' },
+      ],
+      [
+        { question: 'Is ASA the same egg as ARK: Survival Evolved?', answer: 'No. ASA uses the Unreal 5 Windows dedicated build under Proton with different ports and variables. Pick ASA plans for Survival Ascended.' },
+        { question: 'What maps are supported?', answer: 'Official ASA maps such as TheIsland_WP and other maps supported by the dedicated server build you install on the instance.' },
+      ],
+      ['ARK: Survival Ascended hosting at GIVRwrld gives you a dedicated UE5 ASA server with full panel access.', 'ASA is the upgraded ARK experience. A dedicated server gives you control over mods, session settings, and performance.']
+    ),
+    'counter-strike': () => genericGame(
+      'Counter-Strike: Global Offensive',
+      ['Linux dedicated (App 740)', 'SRCDS / srcds_run', 'Panel & file manager', 'Workshop & plugins'],
+      'We provide a standard CS:GO Linux dedicated server. Configure map, hostname, and optional Steam Game Server Login Token (GSLT) for public listing.',
+      [
+        { title: 'Pick plan', body: 'Choose RAM based on tickrate and plugins. Complete checkout.' },
+        { title: 'Panel setup', body: 'Set SRCDS_MAP, hostname, and GSLT in egg variables. Install MetaMod / SourceMod via the file manager if you use them.' },
+        { title: 'Go live', body: 'Start the server from the panel and share your IP:port or connect string with players.' },
+      ],
+      [
+        { question: 'Do I need a GSLT?', answer: 'For a public Internet listing, Valve expects a GSLT tied to your Steam account. LAN or private IP testing can work without it.' },
+        { question: 'Is this Counter-Strike 2?', answer: 'This SKU targets CS:GO (classic SRCDS). CS2 uses a different server stack; contact support if you need CS2.' },
+        { question: 'Can I run 128 tick?', answer: 'Performance depends on CPU share and plugins. Higher RAM tiers give more headroom for tickrate and SourceMod workloads.' },
+      ],
+      ['CS:GO hosting at GIVRwrld gives you a dedicated SRCDS instance with full panel access.', 'Counter-Strike: Global Offensive remains popular for community servers, retakes, and practice.']
     ),
     terraria: () => genericGame(
       'Terraria',
@@ -180,7 +211,22 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
     rimworld: () => genericGame('RimWorld', ['RimWorld', 'Mod support', 'Panel & file manager'], 'We offer RimWorld dedicated server support. Add mods via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set up mods and config in the panel; share connection details with players.' }], [{ question: 'Do you support RimWorld mods?', answer: 'You can add mods via the file manager. Sync mod list with your players for compatibility.' }], ['RimWorld hosting at GIVRwrld gives you a dedicated server for RimWorld multiplayer. Panel access for mods and config.']),
     'vintage-story': () => genericGame('Vintage Story', ['Vintage Story', 'Panel & file manager'], 'We offer a Vintage Story server. Manage config and mods via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set options and add mods in the panel; share the server details.' }], [{ question: 'Can I use mods?', answer: 'Yes. Add mods via the panel file manager and configure the server as needed.' }], ['Vintage Story hosting at GIVRwrld gives you a dedicated server. Full panel access.']),
     teeworlds: () => genericGame('Teeworlds', ['Teeworlds', 'Panel & config'], 'We offer a Teeworlds server. Edit config and run the server from the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set server name and options in the panel; share the connection details.' }], [{ question: 'What can I configure?', answer: 'You have full access to server config via the panel.' }], ['Teeworlds hosting at GIVRwrld gives you a dedicated server. Panel control and config.']),
-    'among-us': () => genericGame('Among Us', ['Among Us', 'Panel & config'], 'We offer an Among Us server. Configure and run from the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set options and share the server code or IP with players.' }], [{ question: 'How do players join?', answer: 'Players can join using the server code or connection details from the panel.' }], ['Among Us hosting at GIVRwrld gives you a dedicated server for private lobbies.']),
+    'among-us': () =>
+      genericGame(
+        'Among Us (Impostor)',
+        ['Impostor dedicated server', 'Panel & file manager', 'HTTPS matchmaker hostname (class C)'],
+        'We only provision the Impostor open-source stack — not proximity-voice or Crewlink/BetterCrewlink Panel eggs.',
+        [
+          { title: 'Pick plan', body: 'Choose a RAM tier (4GB+) and complete checkout.' },
+          { title: 'Panel & networking', body: 'Set Impostor version and public IP/port in egg variables. The provisioner sets a reachable PublicIp when possible.' },
+          { title: 'Share with crew', body: 'Players connect with your server IP and game port from the panel; use the matchmaker HTTPS hostname where applicable.' },
+        ],
+        [
+          { question: 'Do you sell proximity chat or Crewlink eggs?', answer: 'No. Only the Impostor dedicated server egg is sold and synced for this game slug.' },
+          { question: 'How do players join?', answer: 'They use your host and port (and any matchmaker URL your Impostor config advertises).' },
+        ],
+        ['Among Us hosting at GIVRwrld is Impostor-based private lobby hosting with full panel access.'],
+      ),
     veloren: () => genericGame('Veloren', ['Veloren', 'Panel & file manager'], 'We offer a Veloren server. Manage config and updates via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set server options in the panel and share connection details.' }], [{ question: 'What can I configure?', answer: 'You have full access to server config via the panel.' }], ['Veloren hosting at GIVRwrld gives you a dedicated server for the Veloren voxel RPG.']),
     enshrouded: () => genericGame(
       'Enshrouded',

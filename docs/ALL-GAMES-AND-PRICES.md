@@ -126,11 +126,14 @@ Complete list of every game, every variant/mod, and every price as defined by th
 
 ## Among Us
 
-*Base: 2 GB $4.99. Proximity Chat Ready requires min 4 GB.*
+*Retail catalog is **Impostor only** (`among-us-standard-*` → Panel egg **Among Us - Impostor Server**). Proximity / Crewlink-style eggs are not sold.*
 
 | Variant | RAM | Monthly | Quarterly | Semiannual | Yearly |
 |--------|-----|---------|-----------|------------|--------|
-| Vanilla | 2 GB | $4.99 | $14.22 | $26.95 | $47.90 |
+| Impostor (standard) | 4 GB | $6.99 | $19.92 | $37.75 | $67.10 |
+| Impostor (standard) | 6 GB | $7.99 | $22.77 | $43.15 | $76.70 |
+| Impostor (standard) | 8 GB | $9.49 | $27.05 | $51.25 | $91.10 |
+| Impostor (standard) | 12 GB | $14.99 | $42.72 | $80.95 | $143.90 |
 
 ---
 
@@ -172,7 +175,7 @@ Complete list of every game, every variant/mod, and every price as defined by th
 | **Rimworld** | Rimworld Vanilla | Rimworld Multiplayer Ready |
 | **Vintage Story** | Vintage Story Vanilla | Vintage Story Primitive Plus |
 | **Teeworlds** | Teeworlds Vanilla | Teeworlds Instagib |
-| **Among Us** | Among Us Vanilla | Among Us Proximity Chat Ready |
+| **Among Us** | Among Us (Impostor) | — |
 | **Veloren** | Veloren Vanilla | Veloren RP Realm |
 | **Enshrouded** | Enshrouded Vanilla | Enshrouded Modded |
 
@@ -192,7 +195,7 @@ Complete list of every game, every variant/mod, and every price as defined by th
 | **Rimworld** | Vanilla, Multiplayer Ready | 4 GB Vanilla; 8 GB both |
 | **Vintage Story** | Vanilla, Primitive Plus | 4 GB Vanilla; 8 GB both |
 | **Teeworlds** | Vanilla, Instagib | 2 GB both |
-| **Among Us** | Vanilla, Proximity Chat Ready | 2 GB Vanilla; 4 GB both |
+| **Among Us** | Impostor (standard) | 4 / 6 / 8 / 12 GB |
 | **Veloren** | Vanilla, RP Realm | 4 GB Vanilla; 8 GB both |
 | **Enshrouded** | Vanilla, Modded | 4/6/8 GB Vanilla; 6/8 GB Modded |
 

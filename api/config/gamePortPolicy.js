@@ -83,7 +83,7 @@ export function applyMultiAllocationEnv(eggId, selectedAllocs, environment) {
     environment.APP_PORT = String(ports[0]);
     return;
   }
-  if ((n === 66 || n === 11) && ports.length >= 3) {
+  if ((n === 66 || n === 11 || n === 79 || n === 25) && ports.length >= 3) {
     environment.QUERY_PORT = String(ports[1]);
     environment.RCON_PORT = String(ports[2]);
     return;

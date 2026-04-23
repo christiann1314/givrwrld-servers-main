@@ -38,6 +38,8 @@ import MinecraftConfig from "@/pages/MinecraftConfig";
 import RustConfig from "@/pages/RustConfig";
 import PalworldConfig from "@/pages/PalworldConfig";
 import ArkConfig from "@/pages/ArkConfig";
+import ArkAscendedConfig from "@/pages/ArkAscendedConfig";
+import CounterStrikeConfig from "@/pages/CounterStrikeConfig";
 import TerrariaConfig from "@/pages/TerrariaConfig";
 import FactorioConfig from "@/pages/FactorioConfig";
 import MindustryConfig from "@/pages/MindustryConfig";
@@ -113,6 +115,8 @@ const App = () => (
                 <Route path="/configure/rust" element={<RustConfig />} />
                 <Route path="/configure/palworld" element={<PalworldConfig />} />
                 <Route path="/configure/ark" element={<ArkConfig />} />
+                <Route path="/configure/ark-asa" element={<ArkAscendedConfig />} />
+                <Route path="/configure/counter-strike" element={<CounterStrikeConfig />} />
                 <Route path="/configure/terraria" element={<TerrariaConfig />} />
                 <Route path="/configure/factorio" element={<FactorioConfig />} />
                 <Route path="/configure/mindustry" element={<MindustryConfig />} />

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const amongUsBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const AmongUsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('among-us-standard-4gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS['among-us'].defaultPlanId);
   const [gameType, setGameType] = useState('among-us-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,22 +34,8 @@ const AmongUsConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    {
-      id: 'among-us-standard-4gb',
-      name: '4 GB',
-      ram: '4 GB',
-      cpu: '1 vCPU',
-      disk: '40 GB NVMe',
-      price: 6.99,
-      players: '4-16',
-      description: '',
-      recommended: true,
-      serverType: 'among-us-standard',
-    },
-  ];
-
-  const fallbackGameTypes = [{ id: 'among-us-standard', name: 'Among Us', description: 'From $6.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS['among-us'].plans;
+  const fallbackGameTypes = CATALOG_STARTERS['among-us'].gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('among-us', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {
@@ -107,17 +94,17 @@ const AmongUsConfig = () => {
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
             <span className="text-gray-100">Configure Your</span>{' '}
             <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 bg-clip-text text-transparent">
-              Among Us Server
+              Among Us (Impostor)
             </span>
           </h1>
           
           <p className="text-lg text-gray-100 max-w-3xl mb-8">
-            Customize your server settings to match your gaming needs
+            Private lobbies on the open-source Impostor dedicated server — we do not sell proximity-chat or Crewlink panel eggs.
           </p>
 
           {/* Current Selection Banner */}
           <div className="bg-pink-500 text-white px-6 py-3 rounded-lg mb-8 inline-block">
-            High-performance, moddable server, 100+ players
+            Impostor · HTTPS matchmaker port · Panel + file manager
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">

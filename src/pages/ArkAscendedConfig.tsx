@@ -6,15 +6,16 @@ import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
 import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
-const factorioBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/427520/library_hero.jpg';
 
-const FactorioConfig = () => {
+const asaBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg';
+
+const ArkAscendedConfig = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState(CATALOG_STARTERS.factorio.defaultPlanId);
-  const [gameType, setGameType] = useState('factorio-standard');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS['ark-asa'].defaultPlanId);
+  const [gameType, setGameType] = useState('ark-asa-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -28,19 +29,21 @@ const FactorioConfig = () => {
       modpack_id: gameType,
       term: billingTerm as 'monthly' | 'quarterly' | 'semiannual' | 'yearly',
       success_url: `${window.location.origin}/purchase-success`,
-      cancel_url: `${window.location.origin}/configure/factorio`
+      cancel_url: `${window.location.origin}/configure/ark-asa`,
     });
 
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = CATALOG_STARTERS.factorio.plans;
-  const fallbackGameTypes = CATALOG_STARTERS.factorio.gameTypes;
-  const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('factorio', fallbackPlans, fallbackGameTypes);
+  const fallbackPlans = CATALOG_STARTERS['ark-asa'].plans;
+  const fallbackGameTypes = CATALOG_STARTERS['ark-asa'].gameTypes;
+
+  const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('ark-asa', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {
     if (plans.length > 0 && !plans.some((p) => p.id === planId)) setPlanId(plans[0].id);
   }, [plans, planId]);
+
   React.useEffect(() => {
     if (gameTypes.length > 0 && !gameTypes.some((g) => g.id === gameType)) setGameType(gameTypes[0].id);
   }, [gameTypes, gameType]);
@@ -49,7 +52,7 @@ const FactorioConfig = () => {
     { id: 'monthly', name: 'Monthly', discount: 0 },
     { id: 'quarterly', name: '3 Months', discount: 5 },
     { id: 'semiannual', name: '6 Months', discount: 10 },
-    { id: 'yearly', name: 'Yearly', discount: 20 }
+    { id: 'yearly', name: 'Yearly', discount: 20 },
   ];
 
   const visiblePlans = React.useMemo(() => {
@@ -60,67 +63,63 @@ const FactorioConfig = () => {
     if (visiblePlans.length > 0 && !visiblePlans.some((p) => p.id === planId)) setPlanId(visiblePlans[0].id);
   }, [visiblePlans, planId]);
 
-  const selectedPlan = visiblePlans.find(p => p.id === planId) || visiblePlans[0];
-  const selectedTerm = billingTerms.find(t => t.id === billingTerm);
-  const monthlyBaseline = (selectedPlan?.price || 0) * (selectedTerm?.id === 'quarterly' ? 3 : selectedTerm?.id === 'semiannual' ? 6 : selectedTerm?.id === 'yearly' ? 12 : 1);
+  const selectedPlan = visiblePlans.find((p) => p.id === planId) || visiblePlans[0];
+  const selectedTerm = billingTerms.find((t) => t.id === billingTerm);
+  const monthlyBaseline =
+    (selectedPlan?.price || 0) *
+    (selectedTerm?.id === 'quarterly' ? 3 : selectedTerm?.id === 'semiannual' ? 6 : selectedTerm?.id === 'yearly' ? 12 : 1);
   const finalPrice = getPriceForTerm(selectedPlan, billingTerm);
   const savings = Math.max(0, monthlyBaseline - finalPrice);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-      {/* Background */}
-      <div 
+      <div
         className="fixed inset-0 z-0 bg-no-repeat"
-        style={{ 
-          backgroundImage: `url(${factorioBackdrop})`,
+        style={{
+          backgroundImage: `url(${asaBackdrop})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/40 via-gray-900/30 to-gray-900/50"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/50 via-gray-900/35 to-gray-900/55"></div>
       </div>
-      
-      {/* Mobile responsive background */}
-      
+
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
-            <Link to="/deploy" className="inline-flex items-center text-emerald-400 hover:text-emerald-300 transition-colors mb-4">
+            <Link to="/deploy" className="inline-flex items-center text-teal-400 hover:text-teal-300 transition-colors mb-4">
               ← Back to Servers
             </Link>
           </div>
-          
+
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
             <span className="text-gray-100">Configure Your</span>{' '}
-            <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
-              Factorio Server
+            <span className="bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent">
+              ARK: Survival Ascended
             </span>
           </h1>
-          
+
           <p className="text-lg text-gray-100 max-w-3xl mb-8">
-            Customize your server settings to match your gaming needs
+            Unreal Engine 5 hosting with higher RAM floors — pick a tier that fits your tribe and map.
           </p>
 
-          {/* Current Selection Banner */}
-          <div className="bg-yellow-500 text-white px-6 py-3 rounded-lg mb-8 inline-block">
-            High-performance, moddable server, 100+ players
+          <div className="bg-teal-600 text-white px-6 py-3 rounded-lg mb-8 inline-block">
+            Proton + Windows build · 8GB+ recommended · Mod-ready
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Configuration */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Server Configuration */}
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-6 h-6 bg-yellow-500 rounded mr-3 flex items-center justify-center">
+                  <div className="w-6 h-6 bg-teal-500 rounded mr-3 flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                     </svg>
                   </div>
                   <h2 className="text-xl font-bold text-white">Server Configuration</h2>
                 </div>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-white font-semibold mb-2">Server Name</label>
@@ -129,30 +128,27 @@ const FactorioConfig = () => {
                       value={serverName}
                       onChange={(e) => setServerName(e.target.value)}
                       placeholder="Enter your server name"
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-white font-semibold mb-2">Server Location</label>
-                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-100">
-                      US East
-                    </div>
+                    <div className="px-4 py-3 rounded-lg bg-gray-700 text-gray-100">US East</div>
                   </div>
                 </div>
               </div>
 
-              {/* Game Type Selection */}
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-6 h-6 bg-yellow-500 rounded mr-3 flex items-center justify-center">
+                  <div className="w-6 h-6 bg-teal-500 rounded mr-3 flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <h2 className="text-xl font-bold text-white">Game Type</h2>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {gameTypes.map((type) => (
                     <button
@@ -160,7 +156,7 @@ const FactorioConfig = () => {
                       onClick={() => setGameType(type.id)}
                       className={`p-4 rounded-lg border-2 transition-all text-left ${
                         gameType === type.id
-                          ? 'border-yellow-500 bg-yellow-500/20'
+                          ? 'border-teal-500 bg-teal-500/20'
                           : 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
                       }`}
                     >
@@ -171,10 +167,9 @@ const FactorioConfig = () => {
                 </div>
               </div>
 
-              {/* Choose Your Plan */}
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Choose Your Plan</h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   {visiblePlans.map((plan) => (
                     <div
@@ -182,7 +177,7 @@ const FactorioConfig = () => {
                       onClick={() => setPlanId(plan.id)}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         planId === plan.id
-                          ? 'border-yellow-500 bg-yellow-500/10'
+                          ? 'border-teal-500 bg-teal-500/10'
                           : 'border-gray-600 hover:border-gray-500'
                       }`}
                     >
@@ -190,7 +185,9 @@ const FactorioConfig = () => {
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-white">{plan.name}</h3>
                           {plan.recommended && (
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Recommended</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              Recommended
+                            </span>
                           )}
                         </div>
                         <div className="text-right">
@@ -198,40 +195,33 @@ const FactorioConfig = () => {
                           <div className="text-gray-200 text-sm">per month</div>
                         </div>
                       </div>
-                      {plan.description?.trim() ? (
-                        <p className="text-gray-100 text-sm mb-2">{plan.description}</p>
-                      ) : null}
-                      <div className="text-yellow-400 text-sm font-semibold">
+                      {plan.description?.trim() ? <p className="text-gray-100 text-sm mb-2">{plan.description}</p> : null}
+                      <div className="text-teal-400 text-sm font-semibold">
                         {plan.ram} RAM • {plan.cpu} • {plan.disk}
                       </div>
-                      {planIncludesAutoBackups(plan) ? (
-                        <div className="mt-2 text-xs text-gray-200">Auto backups included</div>
-                      ) : null}
+                      {planIncludesAutoBackups(plan) ? <div className="mt-2 text-xs text-gray-200">Auto backups included</div> : null}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Billing Period */}
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Billing Period</h2>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {billingTerms.map((term) => (
                     <button
                       key={term.id}
                       onClick={() => setBillingTerm(term.id)}
                       className={`px-4 py-3 rounded-lg transition-colors text-center ${
-                        billingTerm === term.id
-                          ? 'bg-yellow-500 text-white'
-                          : 'bg-gray-700 text-gray-100 hover:bg-gray-600'
+                        billingTerm === term.id ? 'bg-teal-500 text-white' : 'bg-gray-700 text-gray-100 hover:bg-gray-600'
                       }`}
                     >
                       <div className="font-semibold">{term.name}</div>
                       {term.id === 'semiannual' ? (
                         <div className="text-xs text-amber-300 font-medium">Best value · Save {term.discount}%</div>
                       ) : term.discount > 0 ? (
-                        <div className="text-xs text-yellow-300">Save {term.discount}%</div>
+                        <div className="text-xs text-teal-300">Save {term.discount}%</div>
                       ) : null}
                     </button>
                   ))}
@@ -239,22 +229,21 @@ const FactorioConfig = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6 sticky top-8">
                 <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
-                
+
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-100">Server Plan ({planCardTitle(selectedPlan)})</span>
                     <span className="text-white">${selectedPlan?.price}/mo</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span className="text-gray-100">Game Type</span>
-                    <span className="text-white">{gameTypes.find(t => t.id === gameType)?.name}</span>
+                    <span className="text-white">{gameTypes.find((t) => t.id === gameType)?.name}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span className="text-gray-100">Billing</span>
                     <span className="text-white">{selectedTerm?.name}</span>
@@ -264,10 +253,10 @@ const FactorioConfig = () => {
                 <div className="border-t border-gray-600 pt-4 mb-6">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-yellow-400">${finalPrice.toFixed(2)}</span>
+                    <span className="text-teal-400">${finalPrice.toFixed(2)}</span>
                   </div>
                   {selectedTerm?.id !== 'monthly' && savings > 0 && (
-                    <div className="text-sm text-yellow-300 text-right mt-1">
+                    <div className="text-sm text-teal-300 text-right mt-1">
                       Save ${savings.toFixed(2)} ({selectedTerm?.discount}% off)
                     </div>
                   )}
@@ -282,12 +271,16 @@ const FactorioConfig = () => {
                       'Instant setup & NVMe',
                       'Ryzen 9 5900X',
                       '24/7 support and Discord community access',
-                      ...(selectedPlan && planIncludesAutoBackups(selectedPlan) ? ['Daily auto backups'] : [])
+                      ...(selectedPlan && planIncludesAutoBackups(selectedPlan) ? ['Daily auto backups'] : []),
                     ].map((feature, index) => (
                       <div key={index} className="flex items-center">
-                        <div className="w-4 h-4 bg-yellow-500 rounded-full mr-3 flex items-center justify-center">
+                        <div className="w-4 h-4 bg-teal-500 rounded-full mr-3 flex items-center justify-center">
                           <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </div>
                         <span className="text-white text-base">{feature}</span>
@@ -299,24 +292,24 @@ const FactorioConfig = () => {
                 <button
                   onClick={() => {
                     if (!user) {
-                      navigate('/auth', { state: { returnTo: location.pathname + location.search } });
+                      navigate('/auth');
                       return;
                     }
                     createCheckout();
                   }}
                   disabled={loading || !serverName.trim()}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:transform-none disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:transform-none disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Creating Server...' : (user ? 'Deploy Your Server' : 'Sign Up to Deploy Server')}
+                  {loading ? 'Creating Server...' : user ? 'Deploy Your Server' : 'Sign Up to Deploy Server'}
                 </button>
               </div>
             </div>
           </div>
-          <GameTransparencySection gameSlug="factorio" accentColor="amber" />
+          <GameTransparencySection gameSlug="ark-asa" accentColor="cyan" />
         </div>
       </div>
     </div>
   );
 };
 
-export default FactorioConfig;
+export default ArkAscendedConfig;

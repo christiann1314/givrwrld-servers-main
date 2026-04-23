@@ -384,7 +384,8 @@ export const EGG_CATALOG = {
       IMPOSTOR_VERSION: { default: 'latest', rules: 'required|string|max:20' },
     },
     expectedFiles: ['Impostor.Server'],
-    notes: 'Override: uses dotnet_8. Requires PublicIp set to node public IP, not 127.0.0.1.',
+    notes:
+      'Override: uses dotnet_8. Requires PublicIp set to node public IP, not 127.0.0.1. Storefront + sync (`chooseEggForGame`) intentionally bind only Impostor — not proximity/Crewlink Panel eggs.',
   },
 
   // ───────────────────────────────── Veloren ──────────────────────────────────
@@ -473,6 +474,71 @@ export const EGG_CATALOG = {
     },
     expectedFiles: ['GameServer'],
   },
+
+  // ───────────────────────────── ARK: Survival Ascended ───────────────────────
+
+  79: {
+    gameKey: 'ark-asa',
+    variant: 'survival-ascended',
+    displayName: 'ARK: Survival Ascended',
+    source: { repo: 'pelican-eggs/eggs', path: 'game_eggs/steamcmd_servers/ark_survival_ascended', ref: 'master' },
+    dockerImages: {
+      'Proton': 'ghcr.io/parkervcp/steamcmd:proton',
+    },
+    defaultImage: 'ghcr.io/parkervcp/steamcmd:proton',
+    startup:
+      'rmv() { echo "stopping server"; rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} KeepAlive && rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD} DoExit && wait ${ARK_PID}; echo "Server Closed"; exit; }; trap rmv 15 2; proton run ./ShooterGame/Binaries/Win64/ArkAscendedServer.exe {{SERVER_MAP}}?listen?MaxPlayers={{MAX_PLAYERS}}?SessionName=\\"{{SESSION_NAME}}\\"?Port={{SERVER_PORT}}?QueryPort={{QUERY_PORT}}?RCONPort={{RCON_PORT}}?RCONEnabled=True$( [  "$SERVER_PVE" == "0" ] || printf %s \'?ServerPVE=True\' )?ServerPassword=\\"{{SERVER_PASSWORD}}\\"{{ARGS_PARAMS}}?ServerAdminPassword=\\"{{ARK_ADMIN_PASSWORD}}\\" -WinLiveMaxPlayers={{MAX_PLAYERS}} -oldconsole -servergamelog$( [ -z "$MOD_IDS" ] || printf %s \' -mods=\' $MOD_IDS )$( [ "$BATTLE_EYE" == "1" ] || printf %s \' -NoBattlEye\' ) -Port={{SERVER_PORT}} {{ARGS_FLAGS}} & ARK_PID=$! ; tail -c0 -F ./ShooterGame/Saved/Logs/ShooterGame.log --pid=$ARK_PID & until echo "waiting for rcon connection..."; (rcon -t rcon -a 127.0.0.1:${RCON_PORT} -p ${ARK_ADMIN_PASSWORD})<&0 & wait $!; do sleep 5; done',
+    configStartupDone: 'Waiting commands for 127.0.0.1:',
+    stopCommand: '^C',
+    requiredEnvVars: {
+      SERVER_MAP: { default: 'TheIsland_WP', rules: 'required|string|max:64' },
+      SESSION_NAME: { default: 'A GIVRwrld ARK ASA Server', rules: 'required|string|max:256' },
+      AUTO_UPDATE: { default: '1', rules: 'required|boolean' },
+      BATTLE_EYE: { default: '1', rules: 'required|boolean' },
+      SRCDS_APPID: { default: '2430930', rules: 'required|numeric', description: 'ASA dedicated server Steam app id' },
+      ARGS_PARAMS: { default: '', rules: 'nullable|string|max:1024' },
+      MAX_PLAYERS: { default: '32', rules: 'required|integer|min:1|max:200' },
+      ARK_ADMIN_PASSWORD: { default: 'CHANGEME', rules: 'required|alpha_dash|max:128' },
+      QUERY_PORT: { default: '{{SERVER_PORT}}', rules: 'required|string' },
+      ARGS_FLAGS: { default: '', rules: 'nullable|string|max:1024' },
+      SERVER_PVE: { default: '1', rules: 'required|boolean' },
+      SERVER_PASSWORD: { default: '', rules: 'nullable|alpha_dash|max:128' },
+      RCON_PORT: { default: '{{SERVER_PORT}}', rules: 'required|string' },
+      MOD_IDS: { default: '', rules: 'nullable|string|max:512' },
+      WINDOWS_INSTALL: { default: '1', rules: 'required|boolean' },
+    },
+    expectedFiles: ['ShooterGame/Binaries/Win64/ArkAscendedServer.exe'],
+    notes: 'Windows build under Proton; SteamCMD install uses WINDOWS_INSTALL=1. Needs game + query + RCON ports.',
+  },
+
+  // ───────────────────────── Counter-Strike: Global Offensive ─────────────────
+
+  80: {
+    gameKey: 'counter-strike',
+    variant: 'csgo',
+    displayName: 'Counter-Strike: Global Offensive',
+    source: { repo: 'pelican-eggs/eggs', path: 'game_eggs/steamcmd_servers/counter_strike/counter_strike_source', ref: 'master' },
+    dockerImages: {
+      'Source': 'ghcr.io/parkervcp/games:source',
+    },
+    defaultImage: 'ghcr.io/parkervcp/games:source',
+    startup:
+      './srcds_run -game csgo -console -usercon +game_type 0 +game_mode 0 +mapgroup mg_active +map {{SRCDS_MAP}} +sv_setsteamaccount {{STEAM_TOKEN}} +ip 0.0.0.0 -port {{SERVER_PORT}} -strictportbind -norestart',
+    configStartupDone: 'gameserver Steam ID',
+    stopCommand: 'quit',
+    requiredEnvVars: {
+      SRCDS_APPID: { default: '740', rules: 'required|numeric', description: 'CS:GO Linux dedicated server app id' },
+      SRCDS_MAP: { default: 'de_dust2', rules: 'required|string|max:64' },
+      AUTO_UPDATE: { default: '1', rules: 'required|boolean' },
+      STEAM_TOKEN: { default: '', rules: 'nullable|string|max:128', description: 'Steam GSLT (optional for LAN)' },
+      STEAM_USER: { default: '', rules: 'nullable|string' },
+      STEAM_PASS: { default: '', rules: 'nullable|string' },
+      STEAM_AUTH: { default: '', rules: 'nullable|string' },
+      MAX_PLAYERS: { default: '16', rules: 'required|integer|min:1|max:64' },
+    },
+    expectedFiles: ['srcds_run'],
+    notes: 'SRCDS classic layout (srcds_run, -game csgo). App 740.',
+  },
 };
 
 /**
@@ -483,6 +549,7 @@ export const EGG_CATALOG = {
 const EGG_ID_ALIASES = {
   // Current panel egg ids -> legacy catalog ids used by this file.
   4: 61,   // Paper -> legacy paper catalog
+  9: 80,   // Counter-Strike: Global Offensive (panel-specific)
   11: 66,  // ARK
   14: 65,  // Rust
   15: 71,  // Mindustry
@@ -495,6 +562,7 @@ const EGG_ID_ALIASES = {
   22: 78,  // Rimworld Together
   23: 67,  // Terraria Vanilla
   24: 76,  // Enshrouded
+  25: 79,  // ARK: Survival Ascended (panel-specific)
 };
 
 export function getCatalogEntry(eggId) {

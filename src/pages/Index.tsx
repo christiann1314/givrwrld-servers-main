@@ -1,6 +1,8 @@
 
 import React from 'react';
 import HeroSection from '../components/HeroSection';
+import GamePanelSection from '../components/GamePanelSection';
+import StreamStationSection from '../components/StreamStationSection';
 import FeaturesSection from '../components/FeaturesSection';
 // Footer is included in App.tsx
 
@@ -20,6 +22,8 @@ const Index = () => {
       
       <div className="relative z-10">
         <HeroSection />
+        <GamePanelSection />
+        <StreamStationSection />
         <FeaturesSection />
         {/* Footer is included in App.tsx */}
       </div>

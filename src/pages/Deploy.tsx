@@ -2,6 +2,7 @@ import React from 'react';
 // Header and Footer are included in App.tsx
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { GAME_MIN_RAM_GB } from '@/config/gamePlanStarters';
 
 type DeployCard = {
   id: string;
@@ -44,12 +45,28 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     configPath: '/configure/palworld',
   },
   ark: {
-    name: 'ARK',
+    name: 'ARK: Survival Evolved',
     subtitle: 'Dinosaurs, tribes, and survival',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/2399830/library_hero.jpg',
     features: ['PvE and PvP clusters', 'Fast storage', 'Instant deployment'],
     buttonColor: 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500',
     configPath: '/configure/ark',
+  },
+  'ark-asa': {
+    name: 'ARK: Survival Ascended',
+    subtitle: 'UE5 dinosaurs and survival',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg',
+    features: ['Crossplay-ready profiles', 'High RAM tiers (8GB+)', 'Ryzen 9 5900X', 'NVMe storage'],
+    buttonColor: 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500',
+    configPath: '/configure/ark-asa',
+  },
+  'counter-strike': {
+    name: 'Counter-Strike',
+    subtitle: 'Competitive CS:GO dedicated',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
+    features: ['128-tick friendly hardware', 'Workshop & plugins via panel', 'Low-latency hosting'],
+    buttonColor: 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500',
+    configPath: '/configure/counter-strike',
   },
   terraria: {
     name: 'Terraria',
@@ -101,7 +118,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   },
   'among-us': {
     name: 'Among Us',
-    subtitle: 'Social deduction game hosting',
+    subtitle: 'Impostor dedicated servers (no proximity egg)',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/945360/library_hero.jpg',
     features: ['Private lobby hosting', 'Simple setup', 'Low monthly cost'],
     buttonColor: 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500',
@@ -125,6 +142,13 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   },
 };
 
+function featuresWithMinRam(game: string, meta: Partial<DeployCard>): string[] {
+  const base = meta.features || ['Instant setup', '24/7 support', 'Premium hardware'];
+  const minGb = GAME_MIN_RAM_GB[game];
+  if (minGb) return [`From ${minGb}GB RAM`, ...base];
+  return base;
+}
+
 /** Fallback cards from GAME_DISPLAY when API returns no plans (all 12 games always show). */
 function getFallbackCards(): DeployCard[] {
   return Object.entries(GAME_DISPLAY).map(([game, meta]) => ({
@@ -132,7 +156,7 @@ function getFallbackCards(): DeployCard[] {
     name: meta.name || game.charAt(0).toUpperCase() + game.slice(1),
     subtitle: meta.subtitle || 'Premium game server hosting',
     image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: meta.features || ['Instant setup', '24/7 support', 'Premium hardware'],
+    features: featuresWithMinRam(game, meta),
     price: 'See plans',
     buttonText: `Deploy ${meta.name || game} Server`,
     buttonColor: meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',
@@ -169,7 +193,12 @@ const Deploy = () => {
             name: title,
             subtitle: meta.subtitle || 'Premium game server hosting',
             image: meta.image || 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-            features: meta.features || [`Starts with ${starter.ram_gb}GB RAM`, `${starter.vcores} vCPU`, `${starter.ssd_gb}GB NVMe`],
+            features: featuresWithMinRam(game, {
+              ...meta,
+              features:
+                meta.features ||
+                [`Starts with ${starter.ram_gb}GB RAM`, `${starter.vcores} vCPU`, `${starter.ssd_gb}GB NVMe`],
+            }),
             price: `$${Number(starter.price_monthly || 0).toFixed(2)}`,
             buttonText: `Deploy ${title} Server`,
             buttonColor: meta.buttonColor || 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500',

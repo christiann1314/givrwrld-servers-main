@@ -370,7 +370,7 @@ EOF`,
       ['Max Players', 'Maximum player slots', 'MAX_PLAYERS', '16', 1, 1, 'required|integer|min:1|max:64'],
     ],
   },
-  'Among Us': {
+  'Among Us - Impostor Server': {
     dockerImage: 'ghcr.io/parkervcp/yolks:dotnet_8',
     startup: 'dotnet Impostor.Server.dll --port {{SERVER_PORT}} {{ADDITIONAL_ARGS}}',
     stop: '^C',

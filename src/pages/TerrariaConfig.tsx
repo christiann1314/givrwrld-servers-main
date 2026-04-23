@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const terrariaBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/105600/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const TerrariaConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('terraria-vanilla-4gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS.terraria.defaultPlanId);
   const [gameType, setGameType] = useState('terraria-vanilla');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,15 +34,8 @@ const TerrariaConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'terraria-vanilla-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 8.99, players: '4-16', description: '', recommended: true, serverType: 'terraria-vanilla' },
-    { id: 'terraria-tmodloader-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 11.99, players: '4-16', description: '', recommended: false, serverType: 'terraria-tmodloader' },
-  ];
-
-  const fallbackGameTypes = [
-    { id: 'terraria-vanilla', name: 'Terraria Vanilla', description: 'From $8.99/mo' },
-    { id: 'terraria-tmodloader', name: 'Terraria tModLoader', description: 'From $11.99/mo' },
-  ];
+  const fallbackPlans = CATALOG_STARTERS.terraria.plans;
+  const fallbackGameTypes = CATALOG_STARTERS.terraria.gameTypes;
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('terraria', fallbackPlans, fallbackGameTypes);
 

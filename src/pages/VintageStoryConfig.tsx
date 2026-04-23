@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAction } from '../hooks/useAction';
 import { stripeService } from '../services/stripeService';
 import { useGamePlanCatalog, planCardTitle, planIncludesAutoBackups } from '@/hooks/useGamePlanCatalog';
+import { CATALOG_STARTERS } from '@/config/gamePlanStarters';
 import { GameTransparencySection } from '@/components/GameTransparencySection';
 const vintageStoryBackdrop = 'https://cdn.akamai.steamstatic.com/steam/apps/1608230/library_hero.jpg';
 
@@ -12,7 +13,7 @@ const VintageStoryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('vintage-story-standard-8gb');
+  const [planId, setPlanId] = useState(CATALOG_STARTERS['vintage-story'].defaultPlanId);
   const [gameType, setGameType] = useState('vintage-story-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
@@ -33,11 +34,8 @@ const VintageStoryConfig = () => {
     window.location.href = response.checkout_url;
   });
 
-  const fallbackPlans = [
-    { id: 'vintage-story-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story-standard' },
-  ];
-
-  const fallbackGameTypes = [{ id: 'vintage-story-standard', name: 'Vintage Story', description: 'From $19.99/mo' }];
+  const fallbackPlans = CATALOG_STARTERS['vintage-story'].plans;
+  const fallbackGameTypes = CATALOG_STARTERS['vintage-story'].gameTypes;
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('vintage-story', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

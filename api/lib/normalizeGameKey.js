@@ -13,6 +13,11 @@ export function normalizeGameKey(value) {
     'among-us': 'among-us',
     among: 'among-us',
     vintagestory: 'vintage-story',
+    csgo: 'counter-strike',
+    'counter-strike-global-offensive': 'counter-strike',
+    'counter-strike-go': 'counter-strike',
+    'ark-survival-ascended': 'ark-asa',
+    'ark-ascended': 'ark-asa',
   };
   return aliases[slug] || slug;
 }
