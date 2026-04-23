@@ -27,6 +27,12 @@ export interface CheckoutSessionResponse {
  */
 const MULTIWORD_GAME_SLUGS = ['counter-strike', 'ark-asa', 'among-us', 'vintage-story'] as const;
 
+/** MySQL / drivers may return tinyint as number, string, or boolean. */
+function isPlanRowActive(p: { is_active?: unknown }): boolean {
+  const v = p?.is_active;
+  return v === true || v === 1 || v === '1' || Number(v) === 1;
+}
+
 function resolveDbGameKeyForCheckout(data: CheckoutSessionData): string {
   const planId = String(data.plan_id || '').toLowerCase();
   const modpackId = String(data.modpack_id || '').toLowerCase();
@@ -54,7 +60,7 @@ export const stripeService = {
       try {
         const plansResponse = await api.getPlans();
         if (plansResponse?.success) {
-          const activePlans = (plansResponse?.plans || []).filter((p: any) => Number(p?.is_active) === 1);
+          const activePlans = (plansResponse?.plans || []).filter((p: any) => isPlanRowActive(p));
           const exact = activePlans.find((p: any) => p?.id === data.plan_id);
 
           if (!exact) {
