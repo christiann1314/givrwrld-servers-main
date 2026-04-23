@@ -240,45 +240,70 @@ export async function getNodeForRegion(regionCode, requiredRamGb = null, require
     }
 
     // Capacity-aware selection: lock candidate nodes and their ledger rows in a transaction context.
-    const [nodes] = await db.execute(
-      `SELECT n.*
-       FROM ptero_nodes n
-       INNER JOIN region_node_map rnm ON n.ptero_node_id = rnm.ptero_node_id
-       WHERE rnm.region_code = ? AND n.enabled = 1
-       ORDER BY rnm.weight DESC, n.ptero_node_id ASC
-       FOR UPDATE`,
-      [regionCode],
-    );
+    // Under concurrent provisioning, FOR UPDATE can deadlock; retry a few times so orders don't fail spuriously.
+    const lockRetries = connection
+      ? Math.max(1, Math.min(12, Number(process.env.PTERO_NODE_LOCK_RETRY_ATTEMPTS || 6)))
+      : 1;
 
-    for (const node of nodes) {
-      const [caps] = await db.execute(
-        `SELECT 
-           COALESCE(SUM(ram_gb), 0)  AS reserved_ram_gb,
-           COALESCE(SUM(disk_gb), 0) AS reserved_disk_gb
-         FROM ptero_node_capacity_ledger
-         WHERE ptero_node_id = ?
-         FOR UPDATE`,
-        [node.ptero_node_id],
-      );
-      const reserved = caps?.[0] || {};
-      const reservedRam = Number(reserved.reserved_ram_gb || 0);
-      const reservedDisk = Number(reserved.reserved_disk_gb || 0);
+    for (let lockAttempt = 1; lockAttempt <= lockRetries; lockAttempt += 1) {
+      try {
+        const [nodes] = await db.execute(
+          `SELECT n.*
+           FROM ptero_nodes n
+           INNER JOIN region_node_map rnm ON n.ptero_node_id = rnm.ptero_node_id
+           WHERE rnm.region_code = ? AND n.enabled = 1
+           ORDER BY rnm.weight DESC, n.ptero_node_id ASC
+           FOR UPDATE`,
+          [regionCode],
+        );
 
-      const maxRam = Number(node.max_ram_gb || 0);
-      const headroom = Number(node.reserved_headroom || 0);
-      const maxDisk = Number(node.max_disk_gb || 0);
+        for (const node of nodes) {
+          const [caps] = await db.execute(
+            `SELECT 
+               COALESCE(SUM(ram_gb), 0)  AS reserved_ram_gb,
+               COALESCE(SUM(disk_gb), 0) AS reserved_disk_gb
+             FROM ptero_node_capacity_ledger
+             WHERE ptero_node_id = ?
+             FOR UPDATE`,
+            [node.ptero_node_id],
+          );
+          const reserved = caps?.[0] || {};
+          const reservedRam = Number(reserved.reserved_ram_gb || 0);
+          const reservedDisk = Number(reserved.reserved_disk_gb || 0);
 
-      const remainingRam = maxRam - headroom - reservedRam;
-      const remainingDisk = maxDisk - reservedDisk;
+          const maxRam = Number(node.max_ram_gb || 0);
+          const headroom = Number(node.reserved_headroom || 0);
+          const maxDisk = Number(node.max_disk_gb || 0);
 
-      if (remainingRam >= requiredRamGb && remainingDisk >= requiredDiskGb) {
-        return node;
+          const remainingRam = maxRam - headroom - reservedRam;
+          const remainingDisk = maxDisk - reservedDisk;
+
+          if (remainingRam >= requiredRamGb && remainingDisk >= requiredDiskGb) {
+            return node;
+          }
+        }
+
+        return null;
+      } catch (error) {
+        const isDeadlock =
+          error?.code === 'ER_LOCK_DEADLOCK' ||
+          error?.errno === 1213 ||
+          String(error?.sqlMessage || '').toLowerCase().includes('deadlock');
+        if (connection && isDeadlock && lockAttempt < lockRetries) {
+          const delayMs = 50 + Math.floor(Math.random() * 120) + lockAttempt * 25;
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+        console.error(`Error fetching node for region ${regionCode}:`, error);
+        if (connection) throw error;
+        return null;
       }
     }
 
     return null;
   } catch (error) {
     console.error(`Error fetching node for region ${regionCode}:`, error);
+    if (connection) throw error;
     return null;
   }
 }
