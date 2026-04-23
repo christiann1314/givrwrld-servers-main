@@ -151,7 +151,7 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
       ['UE5 dedicated server', 'Proton + Windows build', 'Panel console & file manager', 'Multi-port (game / query / RCON)'],
       'We host ARK: Survival Ascended on high-RAM tiers. Crossplay, CurseForge mod IDs, and standard ASA map defaults are supported via egg variables.',
       [
-        { title: 'Pick your plan', body: 'ASA needs more RAM than ASE — start at 8GB. Complete checkout; provisioning allocates three consecutive ports.' },
+        { title: 'Pick your plan', body: 'ASA needs more RAM than ASE — choose 6, 8, or 12 GB to match map and mods. Complete checkout; provisioning allocates three consecutive ports.' },
         { title: 'Configure in the panel', body: 'Set map (e.g. TheIsland_WP), session name, admin password, PvE/PvP, BattleEye, and optional mod IDs. Use a Steam GSLT only if your workflow requires it.' },
         { title: 'Share join info', body: 'Players find the server via Steam and in-game browser using your node IP and the primary game port from the panel.' },
       ],

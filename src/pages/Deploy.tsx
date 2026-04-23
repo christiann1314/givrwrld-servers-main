@@ -56,7 +56,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'ARK: Survival Ascended',
     subtitle: 'UE5 dinosaurs and survival',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg',
-    features: ['Crossplay-ready profiles', 'High RAM tiers (8GB+)', 'Ryzen 9 5900X', 'NVMe storage'],
+    features: ['Crossplay-ready profiles', '6–12 GB RAM tiers', 'Ryzen 9 5900X', 'NVMe storage'],
     buttonColor: 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500',
     configPath: '/configure/ark-asa',
   },

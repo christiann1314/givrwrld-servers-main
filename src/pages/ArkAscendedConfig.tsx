@@ -105,7 +105,7 @@ const ArkAscendedConfig = () => {
           </p>
 
           <div className="bg-teal-600 text-white px-6 py-3 rounded-lg mb-8 inline-block">
-            Proton + Windows build · 8GB+ recommended · Mod-ready
+            Proton + Windows build · 6–12 GB tiers · 8 GB sweet spot for most maps · Mod-ready
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">

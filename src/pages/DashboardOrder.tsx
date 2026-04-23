@@ -43,7 +43,7 @@ function vcoresForRamGb(ram: number): number {
 
 function diskGbFallback(game: string, ram: number): number {
   if (game === 'ark' && ram >= 6) return Math.max(ram * 10, 35);
-  if (game === 'ark-asa' && ram >= 8) return Math.max(ram * 10, 60);
+  if (game === 'ark-asa' && ram >= 6) return Math.max(ram * 10, 60);
   return ram * 10;
 }
 
