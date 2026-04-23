@@ -13,8 +13,8 @@ const EnshroudedConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('enshrouded-modded-6gb');
-  const [gameType, setGameType] = useState('enshrouded-modded');
+  const [planId, setPlanId] = useState('enshrouded-standard-8gb');
+  const [gameType, setGameType] = useState('enshrouded-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -35,11 +35,10 @@ const EnshroudedConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'enshrouded-modded-6gb', name: '6 GB', ram: '6 GB', cpu: '2 vCPU', disk: '25 GB NVMe', price: 16.99, players: '8-32', description: '', serverType: 'enshrouded-modded' },
-    { id: 'enshrouded-modded-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded-modded' },
+    { id: 'enshrouded-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'enshrouded-standard' },
   ];
 
-  const fallbackGameTypes = [{ id: 'enshrouded-modded', name: 'Enshrouded Modded', description: 'From $16.99/mo' }];
+  const fallbackGameTypes = [{ id: 'enshrouded-standard', name: 'Enshrouded', description: 'From $19.99/mo' }];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('enshrouded', fallbackPlans, fallbackGameTypes);
 

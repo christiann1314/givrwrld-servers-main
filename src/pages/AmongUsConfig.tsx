@@ -12,8 +12,8 @@ const AmongUsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('among-us-proximity-chat-ready-4gb');
-  const [gameType, setGameType] = useState('among-us-proximity-chat-ready');
+  const [planId, setPlanId] = useState('among-us-standard-4gb');
+  const [gameType, setGameType] = useState('among-us-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -25,7 +25,7 @@ const AmongUsConfig = () => {
       region,
       server_name: serverName.trim(),
       modpack_id: gameType,
-       term: billingTerm as 'monthly' | 'quarterly' | 'yearly',
+      term: billingTerm as 'monthly' | 'quarterly' | 'semiannual' | 'yearly',
       success_url: `${window.location.origin}/purchase-success`,
       cancel_url: `${window.location.origin}/configure/among-us`
     });
@@ -35,22 +35,20 @@ const AmongUsConfig = () => {
 
   const fallbackPlans = [
     {
-      id: 'among-us-proximity-chat-ready-4gb',
+      id: 'among-us-standard-4gb',
       name: '4 GB',
       ram: '4 GB',
       cpu: '1 vCPU',
-      disk: '20 GB NVMe',
-      price: 8.99,
+      disk: '40 GB NVMe',
+      price: 6.99,
       players: '4-16',
       description: '',
       recommended: true,
-      serverType: 'among-us-proximity-chat-ready',
+      serverType: 'among-us-standard',
     },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'among-us-proximity-chat-ready', name: 'Among Us Proximity Chat Ready', description: 'From $8.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'among-us-standard', name: 'Among Us', description: 'From $6.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('among-us', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

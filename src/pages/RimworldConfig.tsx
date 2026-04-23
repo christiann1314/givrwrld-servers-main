@@ -12,8 +12,8 @@ const RimworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rimworld-multiplayer-ready-8gb');
-  const [gameType, setGameType] = useState('rimworld-multiplayer-ready');
+  const [planId, setPlanId] = useState('rimworld-standard-8gb');
+  const [gameType, setGameType] = useState('rimworld-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,12 +34,10 @@ const RimworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rimworld-multiplayer-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-multiplayer-ready' },
+    { id: 'rimworld-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 24.99, players: '8-32', description: '', recommended: true, serverType: 'rimworld-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'rimworld-multiplayer-ready', name: 'Rimworld Multiplayer Ready', description: 'From $28.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'rimworld-standard', name: 'Rimworld', description: 'From $24.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rimworld', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

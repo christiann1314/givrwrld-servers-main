@@ -191,7 +191,7 @@ fi`,
       ['Additional Args', 'Extra launch arguments', 'ADDITIONAL_ARGS', '', 1, 1, 'nullable|string|max:512'],
     ],
   },
-  'Terraria': {
+  'Terraria Vanilla': {
     dockerImage: 'ghcr.io/pterodactyl/games:source',
     startup: './TerrariaServer.bin.x86_64 -config serverconfig.txt',
     stop: 'exit',
@@ -219,6 +219,29 @@ EOF`,
       ['World Name', 'Terraria world name', 'WORLD_NAME', 'GIVRwrldWorld', 1, 1, 'required|string|max:48'],
       ['Max Players', 'Maximum player slots', 'MAX_PLAYERS', '16', 1, 1, 'required|integer|min:1|max:128'],
       ['Server Port', 'Game port (Terraria default 7777; do not use 25565)', 'SERVER_PORT', '7777', 1, 1, 'required|numeric'],
+    ],
+  },
+  'Terraria tModLoader': {
+    dockerImage: 'ghcr.io/parkervcp/yolks:dotnet_6',
+    startup:
+      './tModLoaderServer -port {{SERVER_PORT}} -maxplayers {{MAX_PLAYERS}} -worldname "{{WORLD_NAME}}" -autocreate 2 -difficulty 1',
+    stop: 'exit',
+    startupDone: 'Type "help" for a list of commands',
+    scriptContainer: 'ghcr.io/pterodactyl/installers:debian',
+    scriptInstall: `#!/bin/bash
+set -e
+apt update
+apt -y install curl wget file tar bzip2 gzip unzip lib32gcc-s1 lib32stdc++6
+mkdir -p /mnt/server
+cd /mnt/server
+if [[ "\${AUTO_UPDATE}" == "1" ]] || [[ ! -f ./tModLoaderServer ]]; then
+  ./steamcmd/steamcmd.sh +force_install_dir /mnt/server +login anonymous +app_update \${APP_ID} validate +quit
+fi`,
+    variables: [
+      ['App ID', 'Steam application ID (tModLoader dedicated)', 'APP_ID', '1826330', 1, 0, 'required|numeric'],
+      ['Auto Update', 'Auto update on install', 'AUTO_UPDATE', '1', 1, 1, 'required|boolean'],
+      ['World Name', 'World name', 'WORLD_NAME', 'GIVRwrldWorld', 1, 1, 'required|string|max:48'],
+      ['Max Players', 'Maximum player slots', 'MAX_PLAYERS', '16', 1, 1, 'required|integer|min:1|max:128'],
     ],
   },
   'Factorio': {
@@ -556,7 +579,8 @@ async function main() {
   for (const eggName of names) {
     const eggId = getEggIdByName({ user, password, database, nestId, eggName });
     if (!eggId) {
-      throw new Error(`Egg "${eggName}" not found in nest ${targetNestName}.`);
+      console.warn(`⚠️  Skipping "${eggName}" — not found in nest ${targetNestName} (rename egg or run bootstrap).`);
+      continue;
     }
     if (isDryRun) {
       console.log(`Would update egg ${eggId}: ${eggName}`);

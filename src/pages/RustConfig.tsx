@@ -12,8 +12,8 @@ const RustConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('rust-oxide-4gb');
-  const [gameType, setGameType] = useState('rust-oxide-u-mod');
+  const [planId, setPlanId] = useState('rust-standard-4gb');
+  const [gameType, setGameType] = useState('rust-standard');
   const [billingTerm, setBillingTerm] = useState<string>('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,10 @@ const RustConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'rust-oxide-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 17.99, players: '4-16', description: '', recommended: true, serverType: 'rust-oxide-u-mod' },
-    { id: 'rust-carbon-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 18.99, players: '4-16', description: '', recommended: true, serverType: 'rust-carbon' },
+    { id: 'rust-standard-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 12.99, players: '4-16', description: '', recommended: true, serverType: 'rust-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'rust-oxide-u-mod', name: 'Rust Oxide (uMod)', description: 'From $17.99/mo' },
-    { id: 'rust-carbon', name: 'Rust Carbon', description: 'From $18.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'rust-standard', name: 'Rust', description: 'From $12.99/mo' }];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('rust', fallbackPlans, fallbackGameTypes);
 

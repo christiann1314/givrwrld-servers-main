@@ -12,8 +12,8 @@ const FactorioConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('factorio-space-age-ready-4gb');
-  const [gameType, setGameType] = useState('factorio-space-age-ready');
+  const [planId, setPlanId] = useState('factorio-standard-4gb');
+  const [gameType, setGameType] = useState('factorio-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,10 @@ const FactorioConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'factorio-space-age-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 13.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-space-age-ready' },
-    { id: 'factorio-bobs-angels-ready-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 14.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-bob-s-angel-s-ready' },
+    { id: 'factorio-standard-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 10.99, players: '4-16', description: '', recommended: true, serverType: 'factorio-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'factorio-space-age-ready', name: 'Factorio Space Age Ready', description: 'From $13.99/mo' },
-    { id: 'factorio-bob-s-angel-s-ready', name: "Factorio Bob's+Angel's Ready", description: 'From $14.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'factorio-standard', name: 'Factorio', description: 'From $10.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('factorio', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

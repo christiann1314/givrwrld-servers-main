@@ -47,9 +47,6 @@ import TeeworldsConfig from "@/pages/TeeworldsConfig";
 import AmongUsConfig from "@/pages/AmongUsConfig";
 import VelorenConfig from "@/pages/VelorenConfig";
 import EnshroudedConfig from "@/pages/EnshroudedConfig";
-import CommunityPack from "@/pages/CommunityPack";
-import GameExpansionPack from "@/pages/GameExpansionPack";
-import GivrwrldEssentials from "@/pages/GivrwrldEssentials";
 import PurchaseSuccess from "@/pages/PurchaseSuccess";
 import PurchaseConfirmed from "@/pages/PurchaseConfirmed";
 import VerifyEmail from "@/pages/VerifyEmail";
@@ -125,9 +122,6 @@ const App = () => (
                 <Route path="/configure/among-us" element={<AmongUsConfig />} />
                 <Route path="/configure/veloren" element={<VelorenConfig />} />
                 <Route path="/configure/enshrouded" element={<EnshroudedConfig />} />
-                <Route path="/community-pack" element={<CommunityPack />} />
-                <Route path="/game-expansion-pack" element={<GameExpansionPack />} />
-                <Route path="/givrwrld-essentials" element={<GivrwrldEssentials />} />
                 <Route path="/purchase-success" element={<PurchaseSuccess />} />
                 <Route path="/purchase-confirmed" element={<PurchaseConfirmed />} />
                 <Route path="*" element={<NotFound />} />

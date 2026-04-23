@@ -31,7 +31,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
     name: 'Rust',
     subtitle: 'Survival multiplayer game',
     image: 'https://cdn.akamai.steamstatic.com/steam/apps/252490/library_hero.jpg',
-    features: ['Small to large servers', 'Mod-friendly, Oxide/uMod', 'Ryzen 9 5900X', 'NVMe storage'],
+    features: ['Small to large servers', 'Dedicated Rust hosting', 'Ryzen 9 5900X', 'NVMe storage'],
     buttonColor: 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500',
     configPath: '/configure/rust',
   },
@@ -318,7 +318,7 @@ const Deploy = () => {
             <h2 className="text-2xl font-bold text-white mb-4">Not sure which to choose?</h2>
             <p className="text-gray-100 text-base mb-8 max-w-2xl mx-auto">
               All options come with 24/7 support, instant setup, and premium hardware. You 
-              can always upgrade or switch plans later.
+              can switch plans later from your dashboard when you need more resources.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -12,8 +12,8 @@ const VintageStoryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('vintage-story-primitive-plus-8gb');
-  const [gameType, setGameType] = useState('vintage-story-primitive-plus');
+  const [planId, setPlanId] = useState('vintage-story-standard-8gb');
+  const [gameType, setGameType] = useState('vintage-story-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,12 +34,10 @@ const VintageStoryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'vintage-story-primitive-plus-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 21.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story-primitive-plus' },
+    { id: 'vintage-story-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 19.99, players: '8-32', description: '', recommended: true, serverType: 'vintage-story-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'vintage-story-primitive-plus', name: 'Vintage Story Primitive Plus', description: 'From $21.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'vintage-story-standard', name: 'Vintage Story', description: 'From $19.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('vintage-story', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

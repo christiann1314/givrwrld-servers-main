@@ -12,8 +12,8 @@ const PalworldConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('palworld-community-plus-8gb');
-  const [gameType, setGameType] = useState('palworld-community-plus');
+  const [planId, setPlanId] = useState('palworld-standard-8gb');
+  const [gameType, setGameType] = useState('palworld-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,10 @@ const PalworldConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'palworld-hardcore-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 29.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-hardcore' },
-    { id: 'palworld-community-plus-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 30.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-community-plus' },
+    { id: 'palworld-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'palworld-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'palworld-hardcore', name: 'Palworld Hardcore', description: 'From $29.99/mo' },
-    { id: 'palworld-community-plus', name: 'Palworld Community Plus', description: 'From $30.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'palworld-standard', name: 'Palworld', description: 'From $28.99/mo' }];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('palworld', fallbackPlans, fallbackGameTypes);
 

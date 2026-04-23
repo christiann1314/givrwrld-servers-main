@@ -54,11 +54,12 @@ export function planCardTitle(plan: CatalogPlanOption | undefined): string {
   return d || plan.name;
 }
 
-/** Legacy storefront SKUs we no longer sell (Minecraft Mojang jar + per-game *-vanilla-* plans). */
+/** Legacy storefront SKUs we no longer sell (Minecraft Mojang jar + deprecated *-vanilla-* clones except Terraria Vanilla). */
 export function isRetailVanillaPlanId(planId: string): boolean {
   const id = String(planId || '');
   if (!id) return false;
   if (id.startsWith('mc-vanilla-')) return true;
+  if (id.startsWith('terraria-vanilla-')) return false;
   return id.includes('-vanilla-');
 }
 
@@ -67,6 +68,7 @@ export function isRetailVanillaGameTypeId(gameTypeId: string): boolean {
   const id = String(gameTypeId || '');
   if (!id) return false;
   if (id === 'minecraft-vanilla') return true;
+  if (id === 'terraria-vanilla') return false;
   return /(^|-)vanilla$/.test(id);
 }
 

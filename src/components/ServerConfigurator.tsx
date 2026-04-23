@@ -1,15 +1,12 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Server, MapPin, Zap, Package, Info } from 'lucide-react';
+import { Check, Server, MapPin, Package, Info } from 'lucide-react';
 import { Button } from './ui/button';
-import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { useAuth } from '../hooks/useAuth';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
-import { serviceBundles, getBundleEnvVars } from '../utils/bundleUtils';
-import PaymentModal from './PaymentModal';
 
 type BillingPeriodValue = 'monthly' | '3months' | '6months' | '12months';
 type BillingTerm = 'monthly' | 'quarterly' | 'semiannual' | 'yearly';
@@ -61,8 +58,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriodValue>('monthly');
   const [serverName, setServerName] = useState('');
   const [location, setLocation] = useState('us-east');
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  
   // Server Type state
   const [selectedServerType, setSelectedServerType] = useState(
     () => gameData.serverTypes.find((type) => type.key !== 'vanilla') || gameData.serverTypes[0]
@@ -73,44 +68,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
     () => gameData.modpacks.find((pack) => pack.key !== 'vanilla') || gameData.modpacks[0]
   );
   const [customModpackUrl, setCustomModpackUrl] = useState('');
-  
-  // Add-ons state
-  const [addOns, setAddOns] = useState({
-    'automatic-backups': false,
-    'discord-integration': false,
-    'advanced-analytics': false,
-    'additional-ssd': false
-  });
-
-  // Service Bundle state
-  const [selectedBundle, setSelectedBundle] = useState<string>('none');
-
-  const addOnOptions = [
-    {
-      key: 'automatic-backups',
-      name: 'Automatic Backups',
-      description: 'Daily backups with 7-day retention',
-      price: 2.99
-    },
-    {
-      key: 'discord-integration', 
-      name: 'Discord Integration',
-      description: 'Sync server status with Discord',
-      price: 1.49
-    },
-    {
-      key: 'advanced-analytics',
-      name: 'Advanced Analytics',
-      description: 'Real-time player and performance stats',
-      price: 3.99
-    },
-    {
-      key: 'additional-ssd',
-      name: 'Additional SSD Storage (+50GB)',
-      description: 'Expand your storage capacity',
-      price: 2.50
-    }
-  ];
 
   const billingOptions = [
     { value: 'monthly', label: 'Monthly', discountPercent: 0 },
@@ -155,17 +112,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
     // Add modpack surcharge
     total += selectedModpack.surcharge;
     
-    // Add service bundle
-    const bundle = serviceBundles.find(b => b.id === selectedBundle);
-    if (bundle) total += bundle.price;
-    
-    // Add-ons
-    Object.entries(addOns).forEach(([key, enabled]) => {
-      if (enabled) {
-        const addOn = addOnOptions.find(option => option.key === key);
-        if (addOn) total += addOn.price;
-      }
-    });
     return total;
   };
 
@@ -188,13 +134,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
     return totalBeforeDiscount - discountAmount;
   };
 
-  const handleAddOnToggle = (key: string) => {
-    setAddOns(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
   const handleDeploy = async () => {
     // Check if user is authenticated before allowing deployment
     if (!isAuthenticated) {
@@ -214,11 +153,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
     }
 
     try {
-      const bundleEnv = getBundleEnvVars(selectedBundle);
-      const enabledAddons = Object.entries(addOns)
-        .filter(([_, enabled]) => enabled)
-        .map(([key, _]) => key);
-      
       await createCheckoutSession({
         item_type: 'game',
         plan_id: selectedPlan.id || `${gameType}-${selectedPlan.ram.toLowerCase().replace(' ', '')}`,
@@ -226,7 +160,7 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
         server_name: serverName,
         modpack_id: selectedModpack.key === 'vanilla' ? undefined : selectedModpack.key,
         term: mapBillingPeriodToTerm(),
-        addons: enabledAddons,
+        addons: [],
         success_url: `${window.location.origin}/success?plan=${gameData.name}&ram=${selectedPlan.ram}`,
         cancel_url: `${window.location.origin}/dashboard`,
       });
@@ -342,86 +276,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Service Bundles */}
-          <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
-            <h3 className="text-xl font-bold text-white mb-2">Service Bundles</h3>
-            <p className="text-gray-400 text-sm mb-6">Bundles are optional. You can add or change them later.</p>
-            
-            <div className="grid md:grid-cols-3 gap-4">
-              {serviceBundles.map((bundle) => (
-                <div
-                  key={bundle.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={selectedBundle === bundle.id}
-                  onClick={() => setSelectedBundle(bundle.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedBundle(bundle.id);
-                    }
-                  }}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all hover:scale-105 ${
-                    selectedBundle === bundle.id
-                      ? 'border-emerald-500 bg-emerald-500/10'
-                      : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
-                  } ${bundle.id === 'none' ? 'md:col-span-3' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xl">{bundle.icon}</span>
-                      <h4 className="font-semibold text-white text-sm">{bundle.name}</h4>
-                      {selectedBundle === bundle.id && (
-                        <Check className="w-4 h-4 text-emerald-400" />
-                      )}
-                    </div>
-                    {bundle.price > 0 && (
-                      <span className="font-bold text-emerald-400 text-sm">
-                        ${bundle.price.toFixed(2)}/mo
-                      </span>
-                    )}
-                  </div>
-                  
-                  {bundle.inclusions.length > 0 && (
-                    <>
-                      <div className="space-y-1 mb-3">
-                        {bundle.inclusions.slice(0, 3).map((inclusion, index) => (
-                          <div key={index} className="text-xs text-gray-300 flex items-start">
-                            <span className="text-emerald-400 mr-1">•</span>
-                            <span className="leading-tight">{inclusion}</span>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center text-xs text-emerald-400 hover:text-emerald-300 cursor-help">
-                            <Info size={12} className="mr-1" />
-                            What's included?
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-gray-700 border-gray-600 text-white max-w-xs">
-                          <div className="space-y-1">
-                            {bundle.inclusions.map((inclusion, index) => (
-                              <div key={index} className="text-xs flex items-start">
-                                <span className="text-emerald-400 mr-1">•</span>
-                                <span>{inclusion}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
-                  
-                  {bundle.id === 'none' && (
-                    <p className="text-gray-400 text-xs">{bundle.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Server Type Selection */}
@@ -595,28 +449,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
             </div>
           </div>
 
-          {/* Add-ons */}
-          <div className="bg-gray-800/60 backdrop-blur-md border border-gray-600/50 rounded-xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-              <Zap className="mr-2 text-emerald-400" size={20} />
-              Optional Add-ons
-            </h3>
-            <div className="space-y-4">
-              {addOnOptions.map((addOn) => (
-                <div key={addOn.key} className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-white">{addOn.name}</h4>
-                    <p className="text-gray-400 text-sm">{addOn.description}</p>
-                    <span className="text-emerald-400 font-semibold text-sm">+${addOn.price.toFixed(2)}/month</span>
-                  </div>
-                  <Switch
-                    checked={addOns[addOn.key]}
-                    onCheckedChange={() => handleAddOnToggle(addOn.key)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Order Summary */}
@@ -654,27 +486,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
                 </div>
               )}
 
-              {selectedBundle !== 'none' && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">
-                    {serviceBundles.find(b => b.id === selectedBundle)?.name}
-                  </span>
-                  <span className="text-emerald-400">+${serviceBundles.find(b => b.id === selectedBundle)?.price.toFixed(2)}/mo</span>
-                </div>
-              )}
-              
-              {Object.entries(addOns).map(([key, enabled]) => {
-                if (!enabled) return null;
-                const addOn = addOnOptions.find(option => option.key === key);
-                if (!addOn) return null;
-                return (
-                  <div key={key} className="flex justify-between text-sm">
-                    <span className="text-gray-400">{addOn.name}</span>
-                    <span className="text-white">${addOn.price.toFixed(2)}/mo</span>
-                  </div>
-                );
-              })}
-              
               <div className="border-t border-gray-600 pt-4">
                 <div className="flex justify-between">
                   <span className="text-white font-semibold">Total</span>
@@ -697,21 +508,6 @@ const ServerConfigurator: React.FC<ServerConfiguratorProps> = ({ gameType, gameD
                 </div>
               ))}
               
-              {selectedBundle !== 'none' && (
-                <>
-                  <div className="pt-3 border-t border-gray-600">
-                    <h5 className="text-emerald-400 font-medium text-sm mb-2">
-                      {serviceBundles.find(b => b.id === selectedBundle)?.name} Benefits:
-                    </h5>
-                    {serviceBundles.find(b => b.id === selectedBundle)?.inclusions.map((inclusion, index) => (
-                      <div key={index} className="flex items-center text-gray-300 text-sm mb-1">
-                        <Check size={16} className="text-emerald-400 mr-2 flex-shrink-0" />
-                        <span>{inclusion}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
 
             <Button

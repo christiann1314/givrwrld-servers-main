@@ -12,8 +12,8 @@ const ArkConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('ark-primal-fear-ready-8gb');
-  const [gameType, setGameType] = useState('ark-primal-fear-ready');
+  const [planId, setPlanId] = useState('ark-standard-8gb');
+  const [gameType, setGameType] = useState('ark-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,10 @@ const ArkConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'ark-primal-fear-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 34.99, players: '8-32', description: '', recommended: true, serverType: 'ark-primal-fear-ready' },
-    { id: 'ark-pve-cluster-ready-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '30 GB NVMe', price: 32.99, players: '8-32', description: '', recommended: true, serverType: 'ark-pve-cluster-ready' },
+    { id: 'ark-standard-8gb', name: '8 GB', ram: '8 GB', cpu: '2 vCPU', disk: '80 GB NVMe', price: 28.99, players: '8-32', description: '', recommended: true, serverType: 'ark-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'ark-primal-fear-ready', name: 'ARK Primal Fear Ready', description: 'From $34.99/mo' },
-    { id: 'ark-pve-cluster-ready', name: 'ARK PvE Cluster Ready', description: 'From $32.99/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'ark-standard', name: 'ARK: Survival Evolved', description: 'From $28.99/mo' }];
 
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('ark', fallbackPlans, fallbackGameTypes);
 

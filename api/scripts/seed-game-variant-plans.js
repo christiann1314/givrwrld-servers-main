@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Upserts variant game plans (modded / profile SKUs) for every RAM tier we sell.
- * Pricing is defined here so re-runs work even after legacy base rows are deactivated.
+ * Upserts game plans for every RAM tier we sell.
+ * One stock SKU per game (base Panel egg), except Terraria: Vanilla + tModLoader.
+ * Pricing is defined here so re-runs work even after legacy rows are deactivated.
  */
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
@@ -17,11 +18,9 @@ const isDryRun = process.argv.includes('--dry-run');
 /** Monthly base price before variant surcharge (USD). Keys must cover each game's tierRams. */
 const PRICING = {
   rust: { 2: 9.99, 4: 12.99, 6: 15.49, 8: 18.99, 12: 26.99 },
-  // ARK: 6 GB floor (see migration fix_ark_minimum_resources); no 2/4 GB SKUs.
   ark: { 6: 14.99, 8: 28.99, 12: 42.99 },
   terraria: { 2: 6.99, 4: 8.99, 6: 10.99, 8: 14.99, 12: 21.99 },
   factorio: { 2: 7.99, 4: 10.99, 6: 13.49, 8: 16.99, 12: 24.99 },
-  // Palworld dedicated: practical floor 4 GB.
   palworld: { 4: 14.99, 6: 18.99, 8: 28.99, 12: 40.99 },
   mindustry: { 2: 5.99, 4: 7.99, 6: 9.49, 8: 12.99, 12: 18.99 },
   rimworld: { 4: 12.99, 6: 17.49, 8: 24.99, 12: 34.99 },
@@ -45,6 +44,15 @@ function ssdGbForRam(game, ram) {
   return ram * 10;
 }
 
+function displayNameForVariant(gameEntry, variant, ram) {
+  const label = String(variant.label || '').trim();
+  if (gameEntry.game === 'terraria' && variant.slug === 'vanilla') {
+    return `Terraria Vanilla ${ram}GB`;
+  }
+  if (label) return `${gameEntry.display} ${label} ${ram}GB`;
+  return `${gameEntry.display} ${ram}GB`;
+}
+
 const variantCatalog = [
   {
     game: 'rust',
@@ -52,8 +60,14 @@ const variantCatalog = [
     display: 'Rust',
     tierRams: [2, 4, 6, 8, 12],
     variants: [
-      { slug: 'oxide', label: 'Oxide (uMod)', eggName: 'Rust Oxide (uMod)', surcharge: 3, minRam: 2, description: 'One-click Rust profile for Oxide/uMod communities.' },
-      { slug: 'carbon', label: 'Carbon', eggName: 'Rust Carbon', surcharge: 4, minRam: 2, description: 'One-click Rust profile for Carbon framework communities.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Rust',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Dedicated Rust server on NVMe.',
+      },
     ],
   },
   {
@@ -62,18 +76,38 @@ const variantCatalog = [
     display: 'ARK',
     tierRams: [6, 8, 12],
     variants: [
-      { slug: 'primal-fear-ready', label: 'Primal Fear Ready', eggName: 'ARK Primal Fear Ready', surcharge: 6, minRam: 6, description: 'One-click ARK profile for larger overhaul modpacks.' },
-      { slug: 'pve-cluster-ready', label: 'PvE Cluster Ready', eggName: 'ARK PvE Cluster Ready', surcharge: 4, minRam: 6, description: 'One-click ARK profile for cluster/PvE-first communities.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Ark: Survival Evolved',
+        surcharge: 0,
+        minRam: 6,
+        description: 'Dedicated ARK: Survival Evolved server.',
+      },
     ],
   },
   {
     game: 'terraria',
-    sourceEggName: 'Terraria',
+    sourceEggName: 'Terraria Vanilla',
     display: 'Terraria',
     tierRams: [2, 4, 6, 8, 12],
     variants: [
-      { slug: 'tmodloader', label: 'tModLoader', eggName: 'Terraria tModLoader', surcharge: 3, minRam: 4, description: 'One-click tModLoader Terraria profile.' },
-      { slug: 'calamity-ready', label: 'Calamity Ready', eggName: 'Terraria Calamity Ready', surcharge: 4, minRam: 4, description: 'One-click Calamity-ready Terraria profile.' },
+      {
+        slug: 'vanilla',
+        label: 'Vanilla',
+        eggName: 'Terraria Vanilla',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Vanilla Terraria dedicated server.',
+      },
+      {
+        slug: 'tmodloader',
+        label: 'tModLoader',
+        eggName: 'Terraria tModLoader',
+        surcharge: 3,
+        minRam: 4,
+        description: 'tModLoader Terraria profile.',
+      },
     ],
   },
   {
@@ -82,8 +116,14 @@ const variantCatalog = [
     display: 'Factorio',
     tierRams: [2, 4, 6, 8, 12],
     variants: [
-      { slug: 'space-age-ready', label: 'Space Age Ready', eggName: 'Factorio Space Age Ready', surcharge: 3, minRam: 4, description: 'One-click Space Age-ready Factorio profile.' },
-      { slug: 'bobs-angels-ready', label: "Bob's+Angel's Ready", eggName: "Factorio Bob's+Angel's Ready", surcharge: 4, minRam: 4, description: "One-click Bob's/Angel's-ready Factorio profile." },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Factorio',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Dedicated Factorio server.',
+      },
     ],
   },
   {
@@ -92,8 +132,14 @@ const variantCatalog = [
     display: 'Palworld',
     tierRams: [4, 6, 8, 12],
     variants: [
-      { slug: 'community-plus', label: 'Community Plus', eggName: 'Palworld Community Plus', surcharge: 2, minRam: 4, description: 'One-click Palworld profile for larger communities.' },
-      { slug: 'hardcore', label: 'Hardcore', eggName: 'Palworld Hardcore', surcharge: 1, minRam: 4, description: 'One-click Palworld hardcore-focused profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Palworld',
+        surcharge: 0,
+        minRam: 4,
+        description: 'Dedicated Palworld server.',
+      },
     ],
   },
   {
@@ -102,8 +148,14 @@ const variantCatalog = [
     display: 'Mindustry',
     tierRams: [2, 4, 6, 8, 12],
     variants: [
-      { slug: 'pvp', label: 'PvP', eggName: 'Mindustry PvP', surcharge: 1, minRam: 4, description: 'One-click Mindustry PvP profile.' },
-      { slug: 'survival', label: 'Survival', eggName: 'Mindustry Survival', surcharge: 1.5, minRam: 4, description: 'One-click Mindustry survival profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Mindustry',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Dedicated Mindustry server.',
+      },
     ],
   },
   {
@@ -112,7 +164,14 @@ const variantCatalog = [
     display: 'Rimworld',
     tierRams: [4, 6, 8, 12],
     variants: [
-      { slug: 'multiplayer-ready', label: 'Multiplayer Ready', eggName: 'Rimworld Multiplayer Ready', surcharge: 4, minRam: 4, description: 'One-click Rimworld profile for larger multiplayer setups.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Rimworld',
+        surcharge: 0,
+        minRam: 4,
+        description: 'Dedicated Rimworld multiplayer server.',
+      },
     ],
   },
   {
@@ -121,7 +180,14 @@ const variantCatalog = [
     display: 'Vintage Story',
     tierRams: [4, 6, 8, 12],
     variants: [
-      { slug: 'primitive-plus', label: 'Primitive Plus', eggName: 'Vintage Story Primitive Plus', surcharge: 2, minRam: 4, description: 'One-click Vintage Story immersive profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Vintage Story',
+        surcharge: 0,
+        minRam: 4,
+        description: 'Dedicated Vintage Story server.',
+      },
     ],
   },
   {
@@ -130,7 +196,14 @@ const variantCatalog = [
     display: 'Teeworlds',
     tierRams: [2, 4, 6, 8, 12],
     variants: [
-      { slug: 'instagib', label: 'Instagib', eggName: 'Teeworlds Instagib', surcharge: 1, minRam: 2, description: 'One-click Teeworlds Instagib profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Teeworlds',
+        surcharge: 0,
+        minRam: 2,
+        description: 'Dedicated Teeworlds server.',
+      },
     ],
   },
   {
@@ -139,7 +212,14 @@ const variantCatalog = [
     display: 'Among Us',
     tierRams: [4, 6, 8, 12],
     variants: [
-      { slug: 'proximity-chat-ready', label: 'Proximity Chat Ready', eggName: 'Among Us Proximity Chat Ready', surcharge: 2, minRam: 4, description: 'One-click social/proximity-chat Among Us profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Among Us',
+        surcharge: 0,
+        minRam: 4,
+        description: 'Dedicated Among Us (Impostor) server.',
+      },
     ],
   },
   {
@@ -148,7 +228,14 @@ const variantCatalog = [
     display: 'Veloren',
     tierRams: [4, 6, 8, 12],
     variants: [
-      { slug: 'rp-realm', label: 'RP Realm', eggName: 'Veloren RP Realm', surcharge: 1.5, minRam: 4, description: 'One-click Veloren roleplay-focused profile.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Veloren',
+        surcharge: 0,
+        minRam: 4,
+        description: 'Dedicated Veloren server.',
+      },
     ],
   },
   {
@@ -157,7 +244,14 @@ const variantCatalog = [
     display: 'Enshrouded',
     tierRams: [6, 8, 12],
     variants: [
-      { slug: 'modded', label: 'Modded', eggName: 'Enshrouded Modded', surcharge: 2, minRam: 6, description: 'Enshrouded server with mod support. Add QoL and content mods via panel.' },
+      {
+        slug: 'standard',
+        label: '',
+        eggName: 'Enshrouded',
+        surcharge: 0,
+        minRam: 6,
+        description: 'Dedicated Enshrouded server.',
+      },
     ],
   },
 ];
@@ -203,10 +297,10 @@ async function main() {
     const hasSemiannual = termCols.some((r) => r.column_name === 'price_semiannual');
     const hasYearly = termCols.some((r) => r.column_name === 'price_yearly');
 
-    const allEggNames = [
+    const allEggNames = [...new Set([
       ...catalog.map((g) => g.sourceEggName),
       ...catalog.flatMap((g) => g.variants.map((v) => v.eggName)),
-    ];
+    ])];
     const placeholders = allEggNames.map(() => '?').join(', ');
     const [eggRows] = await conn.execute(
       `SELECT ptero_egg_id, name
@@ -218,11 +312,12 @@ async function main() {
 
     const missingEggs = allEggNames.filter((name) => !eggByName.has(name));
     if (missingEggs.length > 0) {
-      throw new Error(`Missing eggs in app catalog: ${missingEggs.join(', ')}. Run variant egg script and ptero:sync first.`);
+      throw new Error(`Missing eggs in app catalog: ${missingEggs.join(', ')}. Run ptero:bootstrap-eggs, ptero:upgrade-eggs, ptero:sync, and ensure Terraria Vanilla + Terraria tModLoader exist on the panel.`);
     }
 
     const upserts = [];
     const legacyDeactivations = [];
+    const idsByGame = new Map();
     let generatedPlanCount = 0;
 
     for (const gameEntry of catalog) {
@@ -240,6 +335,8 @@ async function main() {
       }
 
       const generatedIdsForGame = [];
+      idsByGame.set(gameEntry.game, generatedIdsForGame);
+
       for (const variant of gameEntry.variants) {
         const variantEggId = eggByName.get(variant.eggName);
         for (const ram of tierRams) {
@@ -285,7 +382,7 @@ async function main() {
             ...(hasSemiannual ? [prices.semiannual] : []),
             ...(hasYearly ? [prices.yearly] : []),
             variantEggId,
-            `${gameEntry.display} ${variant.label} ${ram}GB`,
+            displayNameForVariant(gameEntry, variant, ram),
             variant.description,
             1,
           ];
@@ -342,14 +439,32 @@ async function main() {
     for (const deactivation of legacyDeactivations) {
       await conn.execute(deactivation.sql, deactivation.params);
     }
+
+    for (const gameEntry of catalog) {
+      const ids = idsByGame.get(gameEntry.game) || [];
+      if (ids.length === 0) continue;
+      const ph = ids.map(() => '?').join(', ');
+      await conn.execute(
+        `UPDATE plans
+         SET is_active = 0, updated_at = NOW()
+         WHERE item_type = 'game'
+           AND game = ?
+           AND id NOT IN (${ph})`,
+        [gameEntry.game, ...ids]
+      );
+    }
+
     await conn.execute(
       `UPDATE plans
        SET is_active = 0, updated_at = NOW()
        WHERE item_type = 'game'
-         AND (id LIKE 'mc-vanilla-%' OR id LIKE '%-vanilla-%')`
+         AND (
+           id LIKE 'mc-vanilla-%'
+           OR (id LIKE '%-vanilla-%' AND id NOT LIKE 'terraria-vanilla-%')
+         )`
     );
     await conn.commit();
-    console.log(`✅ Upserted ${generatedPlanCount} plans across ${catalog.length} games; legacy base rows cleaned up.`);
+    console.log(`✅ Upserted ${generatedPlanCount} plans across ${catalog.length} games; legacy rows cleaned up.`);
   } catch (error) {
     try {
       await conn.rollback();

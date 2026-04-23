@@ -12,8 +12,8 @@ const TeeworldsConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('teeworlds-instagib-2gb');
-  const [gameType, setGameType] = useState('teeworlds-instagib');
+  const [planId, setPlanId] = useState('teeworlds-standard-2gb');
+  const [gameType, setGameType] = useState('teeworlds-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,10 +34,10 @@ const TeeworldsConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'teeworlds-instagib-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '10 GB NVMe', price: 5.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds-instagib' },
+    { id: 'teeworlds-standard-2gb', name: '2 GB', ram: '2 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 4.99, players: '2-8', description: '', recommended: true, serverType: 'teeworlds-standard' },
   ];
 
-  const fallbackGameTypes = [{ id: 'teeworlds-instagib', name: 'Teeworlds Instagib', description: 'From $5.99/mo' }];
+  const fallbackGameTypes = [{ id: 'teeworlds-standard', name: 'Teeworlds', description: 'From $4.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('teeworlds', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

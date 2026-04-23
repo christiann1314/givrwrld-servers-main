@@ -18,9 +18,6 @@ import Blog from "./pages/Blog";
 import Status from "./pages/Status";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-import GivrwrldEssentials from "./pages/GivrwrldEssentials";
-import GameExpansionPack from "./pages/GameExpansionPack";
-import CommunityPack from "./pages/CommunityPack";
 import PurchaseConfirmed from "./pages/PurchaseConfirmed";
 import PurchaseSuccess from "./pages/PurchaseSuccess";
 import Dashboard from "./pages/Dashboard";
@@ -59,9 +56,6 @@ export function AppRoutes() {
       <Route path="/status" element={<Status />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
-      <Route path="/upgrade/givrwrld-essentials" element={<GivrwrldEssentials />} />
-      <Route path="/upgrade/game-expansion-pack" element={<GameExpansionPack />} />
-      <Route path="/upgrade/community-pack" element={<CommunityPack />} />
       <Route path="/purchase-confirmed" element={<PurchaseConfirmed />} />
       <Route path="/purchase-success" element={<PurchaseSuccess />} />
       {/* Protected Dashboard Routes */}

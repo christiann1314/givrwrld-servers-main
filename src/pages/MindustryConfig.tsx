@@ -12,8 +12,8 @@ const MindustryConfig = () => {
   const { user } = useAuth();
   const [serverName, setServerName] = useState('');
   const [region] = useState('us-east');
-  const [planId, setPlanId] = useState('mindustry-pvp-4gb');
-  const [gameType, setGameType] = useState('mindustry-pvp');
+  const [planId, setPlanId] = useState('mindustry-standard-4gb');
+  const [gameType, setGameType] = useState('mindustry-standard');
   const [billingTerm, setBillingTerm] = useState('semiannual');
 
   const { run: createCheckout, loading } = useAction(async () => {
@@ -34,14 +34,10 @@ const MindustryConfig = () => {
   });
 
   const fallbackPlans = [
-    { id: 'mindustry-pvp-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 8.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-pvp' },
-    { id: 'mindustry-survival-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '20 GB NVMe', price: 9.49, players: '4-16', description: '', recommended: true, serverType: 'mindustry-survival' },
+    { id: 'mindustry-standard-4gb', name: '4 GB', ram: '4 GB', cpu: '1 vCPU', disk: '40 GB NVMe', price: 7.99, players: '4-16', description: '', recommended: true, serverType: 'mindustry-standard' },
   ];
 
-  const fallbackGameTypes = [
-    { id: 'mindustry-pvp', name: 'Mindustry PvP', description: 'From $8.99/mo' },
-    { id: 'mindustry-survival', name: 'Mindustry Survival', description: 'From $9.49/mo' },
-  ];
+  const fallbackGameTypes = [{ id: 'mindustry-standard', name: 'Mindustry', description: 'From $7.99/mo' }];
   const { plans, gameTypes, getPriceForTerm } = useGamePlanCatalog('mindustry', fallbackPlans, fallbackGameTypes);
 
   React.useEffect(() => {

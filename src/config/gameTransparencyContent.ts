@@ -148,33 +148,33 @@ export function getGameTransparencyContent(slug: string): TransparencyContent | 
     ),
     terraria: () => genericGame(
       'Terraria',
-      ['tModLoader', 'Calamity-ready profiles', 'Panel console & file manager'],
-      'We focus on modded Terraria: tModLoader and Calamity-ready profiles. Manage mods and config in the panel.',
+      ['Vanilla', 'tModLoader', 'Panel console & file manager'],
+      'We host Terraria Vanilla and Terraria tModLoader. Manage worlds and mods in the panel.',
       [
-        { title: 'Choose plan and server type', body: 'Select a plan and server type (tModLoader or Calamity-ready). Complete checkout.' },
-        { title: 'Configure and start', body: 'Set player limit and other options in the panel. Add mods via the file manager.' },
+        { title: 'Choose plan and server type', body: 'Select a plan and server type (Vanilla or tModLoader). Complete checkout.' },
+        { title: 'Configure and start', body: 'Set player limit and other options in the panel. Add mods via the file manager on tModLoader.' },
         { title: 'Share your server', body: 'Share the IP and port from the panel. Players join via the in-game join menu.' },
       ],
       [
-        { question: 'Do you support tModLoader?', answer: 'Yes. Choose tModLoader or a Calamity-ready profile when configuring above.' },
-        { question: 'How do I add Terraria mods?', answer: 'Upload mod files via the panel file manager and enable them in the server config.' },
+        { question: 'Do you support tModLoader?', answer: 'Yes. Pick tModLoader when configuring if you want mod support.' },
+        { question: 'How do I add Terraria mods?', answer: 'On tModLoader, use the workshop and mod tools in the panel file manager. Vanilla uses the stock dedicated server.' },
       ],
-      ['Terraria hosting at GIVRwrld gives you a dedicated server for modded Terraria. Full panel access for config and mods.', 'Terraria is a 2D sandbox adventure game. A dedicated server lets you play with friends and use mods.']
+      ['Terraria hosting at GIVRwrld gives you a dedicated Terraria server with full panel access.', 'Terraria is a 2D sandbox adventure game. A dedicated server lets you play with friends.']
     ),
     factorio: () => genericGame(
       'Factorio',
-      ['Factorio', 'Clusterio', 'Factorio-ModUpdate', 'Panel & mod support'],
-      'We support standard Factorio, Clusterio for multi-server clusters, and mod-update variants. Choose your type above.',
+      ['Factorio dedicated', 'Panel & file manager', 'Mod support'],
+      'We host standard Factorio dedicated servers with full panel access.',
       [
-        { title: 'Pick plan and type', body: 'Choose a plan and server type (Factorio, Clusterio, etc.). Complete checkout.' },
+        { title: 'Pick plan', body: 'Choose a plan and complete checkout.' },
         { title: 'Configure and start', body: 'Set map, mods, and other options in the panel. Start the server when ready.' },
         { title: 'Share with players', body: 'Share the connection details. Players can join via the in-game multiplayer menu.' },
       ],
       [
-        { question: 'Do you support Factorio mods?', answer: 'Yes. You can install mods via the panel. Some eggs support mod sync or one-click mod setup.' },
-        { question: 'What is Clusterio?', answer: 'Clusterio lets you link multiple Factorio servers into a cluster. We offer a Clusterio egg if you need multi-server setup.' },
+        { question: 'Do you support Factorio mods?', answer: 'Yes. You can install mods via the panel file manager and server settings.' },
+        { question: 'Can I change map settings?', answer: 'Yes. Server settings and saves are available through the panel.' },
       ],
-      ['Factorio hosting at GIVRwrld gives you a dedicated server for Factorio or Clusterio. Full control via panel and console.', 'Factorio is a factory-building game. A dedicated server lets you run persistent multiplayer games with mods.']
+      ['Factorio hosting at GIVRwrld gives you a dedicated Factorio server. Full control via panel and console.', 'Factorio is a factory-building game. A dedicated server lets you run persistent multiplayer games with mods.']
     ),
     mindustry: () => genericGame('Mindustry', ['Mindustry', 'Panel & file manager'], 'We offer a Mindindustry server. Manage maps and config via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set options in the panel and share the connection details with players.' }], [{ question: 'What can I configure?', answer: 'You have full access to server config and maps via the panel.' }], ['Mindustry hosting at GIVRwrld gives you a dedicated server for Mindindustry. Panel access for config and maps.']),
     rimworld: () => genericGame('RimWorld', ['RimWorld', 'Mod support', 'Panel & file manager'], 'We offer RimWorld dedicated server support. Add mods via the panel.', [{ title: 'Pick plan', body: 'Choose a plan and complete checkout.' }, { title: 'Configure and share', body: 'Set up mods and config in the panel; share connection details with players.' }], [{ question: 'Do you support RimWorld mods?', answer: 'You can add mods via the file manager. Sync mod list with your players for compatibility.' }], ['RimWorld hosting at GIVRwrld gives you a dedicated server for RimWorld multiplayer. Panel access for mods and config.']),

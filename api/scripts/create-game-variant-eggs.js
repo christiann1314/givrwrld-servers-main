@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+/**
+ * Clones optional “profile” eggs from a base Panel egg into nest "GIVRwrld Games".
+ * Stock SKUs now use the base egg directly (see seed-game-variant-plans.js).
+ * This script is kept for future variant eggs; the catalog may be empty.
+ */
 import { spawnSync } from 'node:child_process';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
@@ -12,98 +17,8 @@ const panelDbContainer = process.env.PANEL_DB_CONTAINER || 'pterodactyl-mariadb-
 const targetNestName = 'GIVRwrld Games';
 const isDryRun = process.argv.includes('--dry-run');
 
-const variantCatalog = [
-  {
-    game: 'rust',
-    sourceEggName: 'Rust',
-    variants: [
-      { slug: 'oxide', eggName: 'Rust Oxide (uMod)', description: 'Rust runtime prepared for Oxide/uMod workflows.' },
-      { slug: 'carbon', eggName: 'Rust Carbon', description: 'Rust runtime prepared for Carbon framework workflows.' },
-    ],
-  },
-  {
-    game: 'ark',
-    sourceEggName: 'Ark: Survival Evolved',
-    variants: [
-      { slug: 'primal-fear-ready', eggName: 'ARK Primal Fear Ready', description: 'ARK runtime tuned for larger overhaul modpacks.' },
-      { slug: 'pve-cluster-ready', eggName: 'ARK PvE Cluster Ready', description: 'ARK runtime profile for cluster and PvE-first communities.' },
-    ],
-  },
-  {
-    game: 'terraria',
-    sourceEggName: 'Terraria',
-    variants: [
-      { slug: 'tmodloader', eggName: 'Terraria tModLoader', description: 'Terraria runtime profile for tModLoader communities.' },
-      { slug: 'calamity-ready', eggName: 'Terraria Calamity Ready', description: 'Terraria runtime profile for Calamity-focused servers.' },
-    ],
-  },
-  {
-    game: 'factorio',
-    sourceEggName: 'Factorio',
-    variants: [
-      { slug: 'space-age-ready', eggName: 'Factorio Space Age Ready', description: 'Factorio runtime profile for expansion-heavy play.' },
-      { slug: 'bobs-angels-ready', eggName: "Factorio Bob's+Angel's Ready", description: "Factorio runtime profile for Bob's/Angel's ecosystems." },
-    ],
-  },
-  {
-    game: 'palworld',
-    sourceEggName: 'Palworld',
-    variants: [
-      { slug: 'community-plus', eggName: 'Palworld Community Plus', description: 'Palworld runtime profile for larger community worlds.' },
-      { slug: 'hardcore', eggName: 'Palworld Hardcore', description: 'Palworld runtime profile for higher difficulty communities.' },
-    ],
-  },
-  {
-    game: 'mindustry',
-    sourceEggName: 'Mindustry',
-    variants: [
-      { slug: 'pvp', eggName: 'Mindustry PvP', description: 'Mindustry runtime profile for competitive PvP sessions.' },
-      { slug: 'survival', eggName: 'Mindustry Survival', description: 'Mindustry runtime profile for co-op survival servers.' },
-    ],
-  },
-  {
-    game: 'rimworld',
-    sourceEggName: 'Rimworld',
-    variants: [
-      { slug: 'multiplayer-ready', eggName: 'Rimworld Multiplayer Ready', description: 'Rimworld runtime profile for heavier multiplayer setups.' },
-    ],
-  },
-  {
-    game: 'vintage-story',
-    sourceEggName: 'Vintage Story',
-    variants: [
-      { slug: 'primitive-plus', eggName: 'Vintage Story Primitive Plus', description: 'Vintage Story profile for immersive survival communities.' },
-    ],
-  },
-  {
-    game: 'teeworlds',
-    sourceEggName: 'Teeworlds',
-    variants: [
-      { slug: 'instagib', eggName: 'Teeworlds Instagib', description: 'Teeworlds profile for fast Instagib rotations.' },
-    ],
-  },
-  {
-    game: 'among-us',
-    sourceEggName: 'Among Us',
-    variants: [
-      { slug: 'proximity-chat-ready', eggName: 'Among Us Proximity Chat Ready', description: 'Among Us runtime profile for social/proximity-based communities.' },
-    ],
-  },
-  {
-    game: 'veloren',
-    sourceEggName: 'Veloren',
-    variants: [
-      { slug: 'rp-realm', eggName: 'Veloren RP Realm', description: 'Veloren runtime profile for roleplay-focused communities.' },
-    ],
-  },
-  {
-    game: 'enshrouded',
-    sourceEggName: 'Enshrouded',
-    variants: [
-      { slug: 'modded', eggName: 'Enshrouded Modded', description: 'Enshrouded server with mod support.' },
-    ],
-  },
-];
+/** @type {Array<{ game: string, sourceEggName: string, variants: Array<{ slug: string, eggName: string, description: string }> }>} */
+const variantCatalog = [];
 
 function shellOrThrow(command, args, label) {
   const result = spawnSync(command, args, { encoding: 'utf8' });
@@ -308,4 +223,3 @@ main().catch((error) => {
   console.error(`\n❌ Variant egg creation failed: ${error.message}`);
   process.exit(1);
 });
-
