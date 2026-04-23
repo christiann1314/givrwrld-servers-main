@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
+  CATALOG_STARTERS,
+  GAME_MIN_RAM_GB,
+  starterMonthlyPriceUsd,
+  type CatalogStarterBundle,
+} from '@/config/gamePlanStarters';
+import {
   Server,
   CreditCard,
   Settings,
@@ -11,6 +17,35 @@ import {
   HeadphonesIcon,
   ChevronLeft,
 } from 'lucide-react';
+
+/** Same wedge order as Deploy so featured games surface first on Order Services. */
+const WEDGE_GAME_IDS = ['minecraft', 'rust', 'palworld', 'ark-asa', 'counter-strike'];
+
+type OrderGameCard = {
+  id: string;
+  name: string;
+  subtitle: string;
+  image: string;
+  configPath: string;
+  price: number;
+  ram: number;
+  cpu: number;
+  disk: number;
+};
+
+function vcoresForRamGb(ram: number): number {
+  if (ram >= 12) return 4;
+  if (ram >= 8) return 3;
+  if (ram >= 6) return 2;
+  if (ram >= 4) return 2;
+  return 1;
+}
+
+function diskGbFallback(game: string, ram: number): number {
+  if (game === 'ark' && ram >= 6) return Math.max(ram * 10, 35);
+  if (game === 'ark-asa' && ram >= 8) return Math.max(ram * 10, 60);
+  return ram * 10;
+}
 
 const DashboardOrder = () => {
   const [gameCards, setGameCards] = useState<any[]>([]);
@@ -59,8 +94,8 @@ const DashboardOrder = () => {
     },
     'counter-strike': {
       name: 'Counter-Strike',
-      subtitle: 'CS:GO dedicated servers',
-      image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg',
+      subtitle: 'Competitive CS:GO dedicated',
+      image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
       configPath: '/configure/counter-strike',
     },
     terraria: {
@@ -119,20 +154,49 @@ const DashboardOrder = () => {
     },
   };
 
+  function getFallbackOrderCards(): OrderGameCard[] {
+    const starters = CATALOG_STARTERS as Record<string, CatalogStarterBundle | undefined>;
+    return (Object.keys(GAME_DISPLAY) as (keyof typeof GAME_DISPLAY)[])
+      .map((game) => {
+        const meta = GAME_DISPLAY[game];
+        const bundle = starters[String(game)];
+        const plan = bundle?.plans?.[0];
+        const ram = plan?.ram_gb ?? GAME_MIN_RAM_GB[String(game)] ?? 2;
+        const monthly = plan?.price ?? starterMonthlyPriceUsd(String(game)) ?? 0;
+        const hasCatalog = Boolean(bundle?.plans?.[0]);
+        const hasListedPrice = starterMonthlyPriceUsd(String(game)) != null;
+        if (!hasCatalog && !hasListedPrice) return null;
+        return {
+          id: String(game),
+          name: meta.name,
+          subtitle: meta.subtitle,
+          image: meta.image,
+          configPath: meta.configPath,
+          price: typeof monthly === 'number' && Number.isFinite(monthly) ? monthly : 0,
+          ram,
+          cpu: vcoresForRamGb(ram),
+          disk: diskGbFallback(String(game), ram),
+        };
+      })
+      .filter(Boolean) as OrderGameCard[];
+  }
+
   React.useEffect(() => {
     let active = true;
     const loadCards = async () => {
       try {
         const response = await api.getPlans();
-        if (!active || !response?.success) return;
-        const gamePlans = (response?.plans || []).filter((p: any) => p.item_type === 'game' && Number(p.is_active) === 1);
+        const gamePlans =
+          response?.success && Array.isArray(response?.plans)
+            ? (response.plans as any[]).filter((p: any) => p.item_type === 'game' && Number(p.is_active) === 1)
+            : [];
         const byGame = new Map<string, any[]>();
         gamePlans.forEach((plan: any) => {
           const key = String(plan.game || '').toLowerCase();
           if (!key) return;
           byGame.set(key, [...(byGame.get(key) || []), plan]);
         });
-        const cards = Array.from(byGame.entries()).map(([game, plans]) => {
+        const apiCards: OrderGameCard[] = Array.from(byGame.entries()).map(([game, plans]) => {
           const sorted = [...plans].sort((a: any, b: any) => Number(a.price_monthly || 0) - Number(b.price_monthly || 0));
           const starter = sorted[0];
           const meta = GAME_DISPLAY[game] || {
@@ -153,7 +217,24 @@ const DashboardOrder = () => {
             disk: Number(starter?.ssd_gb || 0),
           };
         });
-        if (active) setGameCards(cards);
+
+        const apiIds = new Set(apiCards.map((c) => c.id));
+        const merged =
+          apiCards.length > 0
+            ? [...apiCards, ...getFallbackOrderCards().filter((c) => !apiIds.has(c.id))]
+            : getFallbackOrderCards();
+        const wedgeFirst = [...merged].sort((a, b) => {
+          const aIdx = WEDGE_GAME_IDS.indexOf(a.id);
+          const bIdx = WEDGE_GAME_IDS.indexOf(b.id);
+          if (aIdx >= 0 && bIdx >= 0) return aIdx - bIdx;
+          if (aIdx >= 0) return -1;
+          if (bIdx >= 0) return 1;
+          return a.id.localeCompare(b.id);
+        });
+        if (active) setGameCards(wedgeFirst);
+      } catch (e) {
+        console.error('Order Services: failed to load plans', e);
+        if (active) setGameCards(getFallbackOrderCards());
       } finally {
         if (active) setCardsLoading(false);
       }
