@@ -195,11 +195,16 @@ const HowToPage: React.FC = () => {
                   <Radio size={14} />
                   Streamers
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">The /streamers discovery page</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">The /streamers page</h2>
+                <p className="text-sm sm:text-base text-gray-200 max-w-3xl leading-relaxed mb-3">
+                  At the top of <span className="text-white font-medium">/streamers</span> is the{' '}
+                  <span className="text-white font-medium">Stream Station</span> workspace — clips, live feed, signal,
+                  and onboarding. Scroll down for the public directory.
+                </p>
                 <p className="text-sm sm:text-base text-gray-200 max-w-3xl leading-relaxed">
-                  <span className="text-white font-medium">/streamers</span> lists everyone who turned on a public
-                  streamer page and linked Twitch or Kick. Each card shows live-ish status, game, player counts, and
-                  links to <span className="text-white font-medium">watch on Twitch or Kick</span> and{' '}
+                  The directory lists everyone who turned on a public streamer page and linked Twitch or Kick. Each
+                  card shows status, game, player counts, and links to{' '}
+                  <span className="text-white font-medium">watch on Twitch or Kick</span> and{' '}
                   <span className="text-white font-medium">view the public server page</span> on GIVRwrld. Full viewing
                   stays on the stream platform; GIVRwrld is the discovery layer for your community server.
                 </p>

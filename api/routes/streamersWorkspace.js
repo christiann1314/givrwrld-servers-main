@@ -11,6 +11,7 @@ router.get('/summary', (_req, res) => {
     ok: true,
     tier: 'free',
     linked_platforms: [],
+    linked_max: 5,
     workspace_ready_pct: 39,
     headline: "We're prepping your first workspace.",
     body:
