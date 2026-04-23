@@ -107,8 +107,8 @@ const HeroSection = () => {
               </h2>
               <p className="text-base sm:text-lg text-gray-100 leading-relaxed max-w-2xl">
                 Learn every major feature we offer, how the dashboard works, how to manage servers, and how
-                streamer pages and the <span className="text-white font-medium">/streamers</span> discovery page fit
-                into the platform.
+                streamer pages fit together with <span className="text-white font-medium">Stream Station</span> and
+                the <span className="text-white font-medium">/streamers</span> discovery directory.
               </p>
               <div className="inline-flex items-center text-emerald-300 font-semibold text-base">
                 Open the guide

@@ -23,7 +23,7 @@ const featureCards = [
   {
     icon: Radio,
     title: "Streamer pages",
-    body: "Turn on a public page for your server, connect Twitch or Kick, and share a branded page for your community. Others can browse you from /streamers.",
+    body: "Turn on a public page for your server, connect Twitch or Kick, and share a branded page for your community. Others can find you from /streamers (Stream Station plus the discovery directory).",
   },
   {
     icon: CreditCard,
@@ -53,7 +53,7 @@ const quickSteps = [
   "Select a plan, term, and complete checkout.",
   "Go to your dashboard and open Game Panel to manage the server.",
   "Use the server settings tab to enable a public streamer page if you want to promote it.",
-  "Visit /streamers to browse the public directory of creators with a GIVRwrld-hosted server page.",
+  "Visit /streamers for Stream Station (clips, signal, onboarding) and the public directory of creators with a GIVRwrld-hosted server page.",
 ];
 
 const dashboardSections = [
@@ -187,8 +187,13 @@ const HowToPage: React.FC = () => {
 
           <section
             id="streamers-directory"
-            className="rounded-2xl border border-emerald-500/30 bg-gray-900/92 p-6 sm:p-8 shadow-xl mb-8 scroll-mt-24"
+            className="relative rounded-2xl border border-emerald-500/30 bg-gray-900/92 p-6 sm:p-8 shadow-xl mb-8 scroll-mt-24"
           >
+            <div
+              id="stream-station"
+              className="h-px w-full scroll-mt-24 overflow-hidden opacity-0 pointer-events-none"
+              aria-hidden="true"
+            />
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-4">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-black/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 mb-3">

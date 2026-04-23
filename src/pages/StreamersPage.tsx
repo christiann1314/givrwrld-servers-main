@@ -206,7 +206,7 @@ const StreamersPage: React.FC = () => {
               Back to Home
             </Link>
             <Link
-              to="/how-to#streamers-directory"
+              to="/how-to#stream-station"
               className="inline-flex w-fit items-center gap-2 text-sm font-medium text-emerald-300 hover:text-emerald-200"
             >
               How Stream Station works
