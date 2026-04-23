@@ -402,27 +402,33 @@ export async function getOrCreatePterodactylUser(userId, userEmail, displayName,
  */
 export async function getAvailableAllocation(nodeId, panelUrl, panelAppKey) {
   try {
-    // Prefer dedicated allocations endpoint (more reliable than relationship embedding).
-    const allocationsResponse = await fetch(`${panelUrl}/api/application/nodes/${nodeId}/allocations?per_page=100`, {
-      headers: {
-        'Authorization': `Bearer ${panelAppKey}`,
-        'Accept': 'Application/vnd.pterodactyl.v1+json',
-      },
-    });
-
-    if (allocationsResponse.ok) {
-      const allocationsData = await allocationsResponse.json();
-      const allocations = allocationsData?.data || [];
-
+    // Walk all pages; the listing endpoint caps per_page (usually 100) and a
+    // busy node can easily have more than that. Picking from page 1 only
+    // risks handing back an assigned allocation if page 1 is fully used.
+    const PER_PAGE = 100;
+    const MAX_PAGES = 50;
+    for (let page = 1; page <= MAX_PAGES; page += 1) {
+      const pageRes = await fetch(
+        `${panelUrl}/api/application/nodes/${nodeId}/allocations?per_page=${PER_PAGE}&page=${page}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${panelAppKey}`,
+            'Accept': 'Application/vnd.pterodactyl.v1+json',
+          },
+        }
+      );
+      if (!pageRes.ok) break;
+      const pageData = await pageRes.json();
+      const allocations = pageData?.data || [];
       for (const allocation of allocations) {
-        if (!allocation?.attributes?.assigned) {
+        if (allocation?.attributes?.assigned === false) {
           return allocation;
         }
       }
-
-      if (allocations.length > 0) {
-        return allocations[0];
-      }
+      const pagination = pageData?.meta?.pagination || {};
+      const totalPages = Number(pagination.total_pages ?? 1);
+      const currentPage = Number(pagination.current_page ?? page);
+      if (currentPage >= totalPages) break;
     }
 
     // Fallback: attempt node relationship payload if allocations endpoint is unavailable.

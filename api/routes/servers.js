@@ -2088,21 +2088,43 @@ export async function provisionServer(orderId) {
       .filter(Boolean)
       .forEach(pushCandidate);
 
+    // Walk all allocation pages. Pterodactyl's Application API only honours
+    // `?include=server` for populating the `server` relationship, so we MUST
+    // rely on the `assigned` flag alone — the bare `server` attribute in the
+    // listing response is always null regardless of whether an allocation is
+    // in use. Filtering by `server === null` admits assigned ports and makes
+    // the panel reject every create-server payload with `exists` validation.
     try {
-      const allocRes = await fetch(
-        `${panelUrl}/api/application/nodes/${node.ptero_node_id}/allocations?per_page=100`,
-        {
-          headers: {
-            'Authorization': `Bearer ${panelAppKey}`,
-            'Accept': 'Application/vnd.pterodactyl.v1+json',
-          },
+      const PER_PAGE = 100;
+      const MAX_PAGES = 50; // hard cap (5,000 allocations) to bound latency
+      let totalFetched = 0;
+      let pageErrored = false;
+      for (let page = 1; page <= MAX_PAGES; page += 1) {
+        const pageRes = await fetch(
+          `${panelUrl}/api/application/nodes/${node.ptero_node_id}/allocations?per_page=${PER_PAGE}&page=${page}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${panelAppKey}`,
+              'Accept': 'Application/vnd.pterodactyl.v1+json',
+            },
+          }
+        );
+        if (!pageRes.ok) {
+          if (pageRes.status === 401 || pageRes.status === 403) {
+            allocationListUnauthorized = true;
+          } else {
+            allocationListFailed = true;
+          }
+          pageErrored = true;
+          break;
         }
-      );
-      if (allocRes.ok) {
-        const allocData = await allocRes.json();
-        const rows = (allocData?.data || [])
+        const pageData = await pageRes.json();
+        const rows = (pageData?.data || [])
           .map((r) => r?.attributes || {})
-          .filter((a) => a && (a.assigned === false || a.server === null || a.server === undefined))
+          // IMPORTANT: only `assigned === false` means "free". Do NOT OR with
+          // `server === null` — Pterodactyl always returns server=null in this
+          // listing, which would silently admit in-use allocations.
+          .filter((a) => a && a.assigned === false)
           .map((a) => ({
             id: Number(a.id),
             port: Number(a.port),
@@ -2110,14 +2132,18 @@ export async function provisionServer(orderId) {
             alias: a.alias != null ? String(a.alias).trim() : '',
           }))
           .filter((a) => a.id > 0 && Number.isFinite(a.port));
-        rows.sort((x, y) => x.port - y.port);
         for (const a of rows) {
           freeAllocationsSorted.push(a);
           pushCandidate(a.id);
         }
-      } else if (allocRes.status === 401 || allocRes.status === 403) {
-        allocationListUnauthorized = true;
-      } else {
+        totalFetched += (pageData?.data || []).length;
+        const pagination = pageData?.meta?.pagination || {};
+        const totalPages = Number(pagination.total_pages ?? 1);
+        const currentPage = Number(pagination.current_page ?? page);
+        if (currentPage >= totalPages) break;
+      }
+      freeAllocationsSorted.sort((x, y) => x.port - y.port);
+      if (!pageErrored && freeAllocationsSorted.length === 0 && totalFetched === 0) {
         allocationListFailed = true;
       }
     } catch {
