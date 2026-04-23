@@ -60,7 +60,7 @@ const DashboardOrder = () => {
     'counter-strike': {
       name: 'Counter-Strike',
       subtitle: 'CS:GO dedicated servers',
-      image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
+      image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg',
       configPath: '/configure/counter-strike',
     },
     terraria: {

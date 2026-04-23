@@ -131,7 +131,7 @@ const Dashboard = () => {
     ],
     ark: ['https://cdn.akamai.steamstatic.com/steam/apps/2399830/library_hero.jpg'],
     'ark-asa': ['https://cdn.akamai.steamstatic.com/steam/apps/1874880/library_hero.jpg'],
-    'counter-strike': ['https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg'],
+    'counter-strike': ['https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg'],
     terraria: ['https://cdn.akamai.steamstatic.com/steam/apps/105600/library_hero.jpg'],
     factorio: ['https://cdn.akamai.steamstatic.com/steam/apps/427520/library_hero.jpg'],
     mindustry: ['https://cdn.akamai.steamstatic.com/steam/apps/1127400/library_hero.jpg'],

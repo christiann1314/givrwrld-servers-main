@@ -63,7 +63,7 @@ const GAME_DISPLAY: Record<string, Partial<DeployCard>> = {
   'counter-strike': {
     name: 'Counter-Strike',
     subtitle: 'Competitive CS:GO dedicated',
-    image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/library_hero.jpg',
+    image: 'https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg',
     features: ['128-tick friendly hardware', 'Workshop & plugins via panel', 'Low-latency hosting'],
     buttonColor: 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500',
     configPath: '/configure/counter-strike',

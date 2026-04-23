@@ -36,7 +36,7 @@ function heroPriceLabel(gameId: string): string {
 const HeroSection = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-10 lg:gap-14 items-center">
         {/* Left Column - Hero Content */}
           <div className="space-y-8">
           <div className="space-y-6">
@@ -95,7 +95,7 @@ const HeroSection = () => {
           </div>
 
           <Link
-            to="/how-to#stream-station"
+            to="/how-to#streamers-directory"
             className="block rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-r from-emerald-600/20 via-gray-900/90 to-blue-900/30 px-6 py-6 shadow-xl hover:border-emerald-300/60 hover:from-emerald-500/25 hover:to-blue-800/35 transition-all"
           >
             <div className="flex flex-col gap-3">
@@ -106,37 +106,37 @@ const HeroSection = () => {
                 New to GIVRwrld? Read the full user guide before you deploy.
               </h2>
               <p className="text-base sm:text-lg text-gray-100 leading-relaxed max-w-2xl">
-                The guide covers hosting, billing, and the Stream Station workspace on{' '}
-                <span className="text-white font-medium">/streamers</span> — clip-to-publish workflows, how the
-                sidebar maps to creator tasks, and where the public discovery grid lives on the same page.
+                Learn every major feature we offer, how the dashboard works, how to manage servers, and how
+                streamer pages and the <span className="text-white font-medium">/streamers</span> discovery page fit
+                into the platform.
               </p>
               <div className="inline-flex items-center text-emerald-300 font-semibold text-base">
-                Open the guide (Stream Station section)
+                Open the guide
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Right column: three featured games */}
-        <div className="flex items-center justify-center lg:justify-end">
-          <div className="relative w-full max-w-lg rounded-2xl border border-gray-700/60 bg-gradient-to-br from-emerald-900/20 via-gray-900/92 to-gray-950 p-5 sm:p-6 shadow-xl shadow-black/30 overflow-hidden">
-            <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" aria-hidden />
-            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" aria-hidden />
-            <div className="relative space-y-4">
+        {/* Right column: three featured games (larger for visibility) */}
+        <div className="flex items-center justify-center lg:justify-end w-full">
+          <div className="relative w-full max-w-xl lg:max-w-2xl xl:max-w-[42rem] rounded-2xl border border-gray-700/60 bg-gradient-to-br from-emerald-900/20 via-gray-900/92 to-gray-950 p-6 sm:p-8 lg:p-9 shadow-xl shadow-black/30 overflow-hidden">
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" aria-hidden />
+            <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" aria-hidden />
+            <div className="relative space-y-5">
               <div className="text-center lg:text-left">
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/90">Featured titles</p>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm font-semibold uppercase tracking-wider text-emerald-400/90">Featured titles</p>
+                <p className="text-base text-gray-400 mt-1.5 max-w-xl">
                   Jump straight into configure — full catalog and pricing on Deploy.
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {HERO_FEATURED_GAMES.map((game) => (
                   <Link
                     key={game.id}
                     to={game.href}
                     className="group flex flex-col rounded-xl border border-gray-700/70 bg-black/40 overflow-hidden hover:border-emerald-500/45 hover:shadow-lg hover:shadow-emerald-900/20 transition-all duration-300 min-w-0"
                   >
-                    <div className="relative h-24 sm:h-28 overflow-hidden">
+                    <div className="relative h-32 sm:h-40 lg:h-44 overflow-hidden">
                       <img
                         src={game.image}
                         alt=""
@@ -144,10 +144,10 @@ const HeroSection = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
                     </div>
-                    <div className="p-2.5 sm:p-3 flex-1 flex flex-col">
-                      <p className="text-sm font-bold text-white leading-tight truncate">{game.name}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{game.tagline}</p>
-                      <p className="text-[11px] font-medium text-emerald-400/95 mt-auto pt-2">
+                    <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                      <p className="text-base sm:text-lg font-bold text-white leading-tight truncate">{game.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">{game.tagline}</p>
+                      <p className="text-xs sm:text-sm font-medium text-emerald-400/95 mt-auto pt-2">
                         {heroPriceLabel(game.id)}
                       </p>
                     </div>
@@ -157,7 +157,7 @@ const HeroSection = () => {
               <div className="flex justify-center lg:justify-start pt-1">
                 <Link
                   to="/deploy"
-                  className="inline-flex items-center justify-center bg-emerald-600/90 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg border border-emerald-500/40 transition-colors"
+                  className="inline-flex items-center justify-center bg-emerald-600/90 hover:bg-emerald-500 text-white text-base font-semibold px-6 py-3 rounded-lg border border-emerald-500/40 transition-colors"
                 >
                   Browse all games
                 </Link>
