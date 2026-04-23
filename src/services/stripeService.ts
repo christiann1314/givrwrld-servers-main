@@ -21,6 +21,25 @@ export interface CheckoutSessionResponse {
   checkout_url: string;
 }
 
+/**
+ * DB `plans.game` uses full slugs like `counter-strike` and `ark-asa`.
+ * Plan IDs look like `counter-strike-standard-2gb` — never use split('-')[0] alone or you get `counter` / `ark`.
+ */
+const MULTIWORD_GAME_SLUGS = ['counter-strike', 'ark-asa', 'among-us', 'vintage-story'] as const;
+
+function resolveDbGameKeyForCheckout(data: CheckoutSessionData): string {
+  const planId = String(data.plan_id || '').toLowerCase();
+  const modpackId = String(data.modpack_id || '').toLowerCase();
+  const haystack = modpackId || planId;
+  for (const slug of [...MULTIWORD_GAME_SLUGS].sort((a, b) => b.length - a.length)) {
+    if (haystack === slug || haystack.startsWith(`${slug}-`)) return slug;
+    if (planId.startsWith(`${slug}-`)) return slug;
+  }
+  const firstSegment = planId.split('-')[0] || '';
+  const gameAlias: Record<string, string> = { mc: 'minecraft' };
+  return gameAlias[firstSegment] || firstSegment;
+}
+
 export const stripeService = {
   async createCheckoutSession(data: CheckoutSessionData): Promise<CheckoutSessionResponse> {
     console.log('Creating PayPal checkout session with API:', data);
@@ -39,18 +58,17 @@ export const stripeService = {
           const exact = activePlans.find((p: any) => p?.id === data.plan_id);
 
           if (!exact) {
-            const requestedPrefix = (data.plan_id || '').split('-')[0].toLowerCase();
-            const gameAlias: Record<string, string> = {
-              mc: 'minecraft',
-            };
-            const normalizedGame = gameAlias[requestedPrefix] || requestedPrefix;
+            const normalizedGame = resolveDbGameKeyForCheckout(data);
 
             const gameCandidates = activePlans
               .filter((p: any) => String(p?.game || '').toLowerCase() === normalizedGame)
               .sort((a: any, b: any) => Number(a?.ram_gb || 0) - Number(b?.ram_gb || 0));
 
             if (gameCandidates.length > 0) {
-              resolvedPlanId = gameCandidates[0].id;
+              const wantedRam = Number(String(data.plan_id || '').match(/-(\d+)gb$/i)?.[1] || 0);
+              const byRam =
+                wantedRam > 0 ? gameCandidates.find((p: any) => Number(p?.ram_gb || 0) === wantedRam) : null;
+              resolvedPlanId = (byRam || gameCandidates[0]).id;
               console.warn(`Resolved stale plan "${data.plan_id}" to active local plan "${resolvedPlanId}".`);
             }
           }
