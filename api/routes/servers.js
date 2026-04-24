@@ -449,9 +449,17 @@ async function resolvePanelApplicationApiCredentials() {
   ).trim();
   const fromSecretKey = aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null;
   const envKey = String(process.env.PANEL_APP_KEY || '').trim();
-  let panelAppKey = String(fromSecretKey || envKey || '').trim();
-  if (!looksLikePterodactylApplicationApiKey(panelAppKey) && looksLikePterodactylApplicationApiKey(envKey)) {
+  const secretK = String(fromSecretKey || '').trim();
+
+  // Prefer a valid `ptla_` key from the environment when present — ops rotates keys in api/.env and
+  // PM2; a stale but well-formed row in `secrets` would otherwise keep winning and cause 401s.
+  let panelAppKey = '';
+  if (looksLikePterodactylApplicationApiKey(envKey)) {
     panelAppKey = envKey;
+  } else if (looksLikePterodactylApplicationApiKey(secretK)) {
+    panelAppKey = secretK;
+  } else {
+    panelAppKey = envKey || secretK;
   }
   return { panelUrl, panelAppKey };
 }
