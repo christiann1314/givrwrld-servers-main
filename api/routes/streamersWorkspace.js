@@ -30,4 +30,13 @@ router.get('/analytics/summary', (_req, res) => {
   });
 });
 
+/**
+ * Library list stub — full Streamer Suite (`routes/streamers.js` on VPS) uses DB tables.
+ * Public Stream Station UI may call this before the suite is wired in `server.js`; avoid 404.
+ * Shape matches authenticated suite: `{ success, streams }`.
+ */
+router.get('/streams', (_req, res) => {
+  res.json({ success: true, streams: [] });
+});
+
 export default router;

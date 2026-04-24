@@ -11,9 +11,11 @@ export function normalizePlanGameKey(value: unknown): string {
     .replace(/_/g, '-');
   const aliases: Record<string, string> = {
     amongus: 'among-us',
+    among_us: 'among-us',
     among: 'among-us',
     vintagestory: 'vintage-story',
     csgo: 'counter-strike',
+    counter_strike: 'counter-strike',
     'counter-strike-global-offensive': 'counter-strike',
     'counter-strike-go': 'counter-strike',
     'ark-survival-ascended': 'ark-asa',

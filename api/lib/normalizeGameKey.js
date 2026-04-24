@@ -10,6 +10,7 @@ export function normalizeGameKey(value) {
     .replace(/_/g, '-');
   const aliases = {
     amongus: 'among-us',
+    among_us: 'among-us',
     'among-us': 'among-us',
     among: 'among-us',
     vintagestory: 'vintage-story',
