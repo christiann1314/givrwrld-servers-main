@@ -276,6 +276,14 @@ function inferRequiredEnvValue(key, rules, context) {
     return buildSafeToken('Ark', order.id, 32);
   }
   if (upper === 'RCON_PASS') return buildSafeToken('Rcon', order.id, 32);
+  // Steam Game Server Login Token (GSLT). Pterodactyl's CS:GO/Source eggs typically
+  // validate STEAM_ACC as `required|alpha_num|size:32`. We send a 32-char hex
+  // placeholder so the server provisions; the operator (or order metadata) can
+  // replace it with a real GSLT in the Panel after first boot. Server still runs
+  // for LAN/private use without a valid GSLT.
+  if (upper === 'STEAM_ACC' || upper === 'STEAM_TOKEN' || upper === 'GSLT') {
+    return crypto.randomBytes(16).toString('hex');
+  }
   if (upper === 'QUERY_PORT') return String(queryPort);
   if (upper === 'RCON_PORT') return String(rconPort);
   if (upper === 'APP_PORT' || upper === 'SERVER_PORT' || upper === 'PORT') return String(gameServerPort);
@@ -361,11 +369,18 @@ async function getPanelServerByExternalId(panelUrl, panelAppKey, externalId) {
   const safeExternalId = String(externalId || '').trim();
   if (!safeExternalId) return null;
 
+  const key = String(panelAppKey || '').trim();
+  if (!key) {
+    throw new Error(
+      'Pterodactyl Application API key is empty (PANEL_APP_KEY / secrets.panel.PANEL_APP_KEY); cannot lookup server by external_id',
+    );
+  }
+
   const res = await fetch(
     `${String(panelUrl).replace(/\/+$/, '')}/api/application/servers/external/${encodeURIComponent(safeExternalId)}`,
     {
       headers: {
-        Authorization: `Bearer ${panelAppKey}`,
+        Authorization: `Bearer ${key}`,
         Accept: 'Application/vnd.pterodactyl.v1+json',
       },
     }
@@ -374,7 +389,11 @@ async function getPanelServerByExternalId(panelUrl, panelAppKey, externalId) {
   if (res.status === 404) return null;
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Failed to lookup panel server by external_id: ${body}`);
+    const hint =
+      res.status === 401
+        ? ' Hint: use an Application API key (ptla_…), not a Client API key (ptlc_…); ensure api/.env is loaded and PM2 was restarted with --update-env.'
+        : '';
+    throw new Error(`Failed to lookup panel server by external_id: ${body}${hint}`);
   }
 
   const data = await res.json();
@@ -389,17 +408,22 @@ function invalidatePanelApplicationServerSnapshotCache() {
   panelAppServerSnapshot = { expiresAt: 0, servers: null };
 }
 
-async function resolvePanelApplicationCredentialsForDashboard() {
+/** Panel Application API URL + key (trimmed). Prefer DB secrets when AES_KEY is set. */
+async function resolvePanelApplicationApiCredentials() {
   const aesKey = process.env.AES_KEY;
-  const panelUrl =
-    (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
-  const panelAppKey =
+  const panelUrl = String(
+    (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL || '',
+  ).trim();
+  const panelAppKey = String(
     (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) ||
-    process.env.PANEL_APP_KEY;
-  return {
-    panelUrl: panelUrl ? String(panelUrl).trim() : '',
-    panelAppKey: panelAppKey ? String(panelAppKey).trim() : '',
-  };
+      process.env.PANEL_APP_KEY ||
+      '',
+  ).trim();
+  return { panelUrl, panelAppKey };
+}
+
+async function resolvePanelApplicationCredentialsForDashboard() {
+  return resolvePanelApplicationApiCredentials();
 }
 
 async function refreshPanelApplicationServerSnapshot(panelUrl, panelAppKey) {
@@ -1724,12 +1748,7 @@ export async function provisionServer(orderId) {
       let backfilled = false;
       let recovered = false;
 
-      const aesKey = process.env.AES_KEY;
-      const panelUrl =
-        (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
-      const panelAppKey =
-        (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) ||
-        process.env.PANEL_APP_KEY;
+      const { panelUrl, panelAppKey } = await resolvePanelApplicationApiCredentials();
 
       if (panelUrl && panelAppKey) {
         if (o.ptero_server_id == null) {
@@ -1992,10 +2011,7 @@ export async function provisionServer(orderId) {
     await conn.release();
 
     // Get Pterodactyl API credentials.
-    // Use encrypted secrets when AES_KEY is available; otherwise fall back to env vars.
-    const aesKey = process.env.AES_KEY;
-    const panelUrl = (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
-    const panelAppKey = (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) || process.env.PANEL_APP_KEY;
+    const { panelUrl, panelAppKey } = await resolvePanelApplicationApiCredentials();
 
     if (!panelUrl || !panelAppKey) {
       throw new Error('Pterodactyl credentials not found. Set PANEL_URL and PANEL_APP_KEY in api/.env');
@@ -2358,30 +2374,8 @@ export async function provisionServer(orderId) {
         resolvedDockerImage = preferred;
       }
     }
-    if (runtimePolicy?.requiredDockerImage) {
-      if (!egg.ptero_nest_id) {
-        await recordProvisionError(orderId, `Egg ${order.ptero_egg_id} missing ptero_nest_id; cannot validate docker image`);
-        await transitionToFailed(orderId, 'Egg catalog incomplete (nest id)');
-        throw new Error(`Egg ${order.ptero_egg_id} missing ptero_nest_id in catalog`);
-      }
-      try {
-        await validateEggRuntimeForProvision({
-          panelUrl,
-          panelAppKey,
-          nestId: Number(egg.ptero_nest_id),
-          eggId: Number(order.ptero_egg_id),
-          resolvedDockerImage,
-          requiredDockerImage: runtimePolicy.requiredDockerImage,
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        await recordProvisionError(orderId, msg);
-        await transitionToFailed(orderId, msg);
-        throw err;
-      }
-    }
-
-    // ── Catalog pre-flight: validate egg config and override Docker image ──
+    // ── Catalog pre-flight first: lets us override the Docker image to the catalog
+    //    defaultImage (verified working) BEFORE we compare it to the runtime policy. ──
     const preflight = preflightEggValidation({
       eggId: order.ptero_egg_id,
       panelDockerImage: resolvedDockerImage,
@@ -2405,6 +2399,29 @@ export async function provisionServer(orderId) {
         },
         'provision_step',
       );
+    }
+
+    if (runtimePolicy?.requiredDockerImage) {
+      if (!egg.ptero_nest_id) {
+        await recordProvisionError(orderId, `Egg ${order.ptero_egg_id} missing ptero_nest_id; cannot validate docker image`);
+        await transitionToFailed(orderId, 'Egg catalog incomplete (nest id)');
+        throw new Error(`Egg ${order.ptero_egg_id} missing ptero_nest_id in catalog`);
+      }
+      try {
+        await validateEggRuntimeForProvision({
+          panelUrl,
+          panelAppKey,
+          nestId: Number(egg.ptero_nest_id),
+          eggId: Number(order.ptero_egg_id),
+          resolvedDockerImage,
+          requiredDockerImage: runtimePolicy.requiredDockerImage,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await recordProvisionError(orderId, msg);
+        await transitionToFailed(orderId, msg);
+        throw err;
+      }
     }
     if (!preflight.ok) {
       const msg = `Egg catalog validation failed: ${preflight.errors.join('; ')}`;
