@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { GAME_MIN_RAM_GB, starterMonthlyPriceUsd } from '@/config/gamePlanStarters';
+import { normalizePlanGameKey } from '@/lib/normalizePlanGameKey';
 
 type DeployCard = {
   id: string;
@@ -182,7 +183,7 @@ const Deploy = () => {
 
         const byGame = new Map<string, any[]>();
         activeGamePlans.forEach((p: any) => {
-          const key = String(p?.game || '').toLowerCase();
+          const key = normalizePlanGameKey(p?.game);
           if (!key) return;
           byGame.set(key, [...(byGame.get(key) || []), p]);
         });

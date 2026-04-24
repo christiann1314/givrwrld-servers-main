@@ -7,6 +7,7 @@ import {
   starterMonthlyPriceUsd,
   type CatalogStarterBundle,
 } from '@/config/gamePlanStarters';
+import { normalizePlanGameKey } from '@/lib/normalizePlanGameKey';
 import {
   Server,
   CreditCard,
@@ -192,7 +193,7 @@ const DashboardOrder = () => {
             : [];
         const byGame = new Map<string, any[]>();
         gamePlans.forEach((plan: any) => {
-          const key = String(plan.game || '').toLowerCase();
+          const key = normalizePlanGameKey(plan.game);
           if (!key) return;
           byGame.set(key, [...(byGame.get(key) || []), plan]);
         });
