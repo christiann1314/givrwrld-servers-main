@@ -203,6 +203,8 @@ function buildPteroLimitsForGame(gameKey, { memoryMb, diskMb, cpuPercent }) {
   let effectiveDiskMb = diskMb;
   if (key === 'counter-strike') {
     effectiveDiskMb = Math.max(diskMb, 40 * 1024);
+  } else if (key === 'rust') {
+    effectiveDiskMb = Math.max(diskMb, 35 * 1024);
   }
   const base = {
     memory: memoryMb,
@@ -238,10 +240,11 @@ function buildPteroLimitsForGame(gameKey, { memoryMb, diskMb, cpuPercent }) {
   }
   if (key === 'palworld' || key === 'rust' || key === 'enshrouded' || key === 'valheim' || key === 'counter-strike') {
     // Heavier steam-based worlds benefit from swap headroom during world gen,
-    // but do not need a baseline RAM bump.
+    // but do not need a baseline RAM bump. Rust first boot + procgen is spikier.
+    const swapMb = key === 'rust' ? 2048 : 1024;
     return {
       ...base,
-      swap: 1024,
+      swap: swapMb,
       oom_disabled: true,
     };
   }

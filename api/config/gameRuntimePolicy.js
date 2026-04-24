@@ -104,7 +104,13 @@ export const EGG_RUNTIME_POLICY = {
     },
     requiredDockerImage: null,
     https: { required: false },
-    startup: { successLogPatterns: [/Server startup complete/i, /SteamServer Connected/i] },
+    // verifyPlayableFromLogs requires every pattern to match; a single alternation
+    // avoids false failures when Steam wording differs or is delayed.
+    startup: {
+      successLogPatterns: [
+        /(?:Server startup complete|SteamServer Connected|Connected to Steam)/i,
+      ],
+    },
   },
   66: {
     gameKey: 'ark',
