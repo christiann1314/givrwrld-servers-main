@@ -198,14 +198,19 @@ function buildSafeToken(prefix, orderId, length = 24) {
 // and for ARK we give a small 1.5× memory headroom since Linux cgroup swap
 // accounting is unreliable across kernels.
 function buildPteroLimitsForGame(gameKey, { memoryMb, diskMb, cpuPercent }) {
+  const key = String(gameKey || '').toLowerCase();
+  // Disk floors for Steam-heavy eggs so Wings cgroup limits do not sit below install size.
+  let effectiveDiskMb = diskMb;
+  if (key === 'counter-strike') {
+    effectiveDiskMb = Math.max(diskMb, 40 * 1024);
+  }
   const base = {
     memory: memoryMb,
     swap: 0,
-    disk: diskMb,
+    disk: effectiveDiskMb,
     io: 500,
     cpu: cpuPercent,
   };
-  const key = String(gameKey || '').toLowerCase();
   if (key === 'ark') {
     // TheIsland fresh world loads at ~5.7 GiB RSS and hard-OOMs at a 4 GiB
     // cgroup cap. The ARK plan floor in sql/migrations/20260422120000_fix_ark_minimum_resources.sql

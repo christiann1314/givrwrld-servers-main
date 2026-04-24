@@ -77,6 +77,8 @@ function vcoresForRam(ram) {
 function ssdGbForRam(game, ram) {
   if (game === 'ark' && ram >= 6) return Math.max(ram * 10, 35);
   if (game === 'ark-asa' && ram >= 6) return Math.max(ram * 10, 60);
+  // SteamCMD CS install lands ~32+ GiB; ram*10 would give 20 GiB on the 2 GB RAM tier.
+  if (game === 'counter-strike') return Math.max(ram * 10, 40);
   return ram * 10;
 }
 
