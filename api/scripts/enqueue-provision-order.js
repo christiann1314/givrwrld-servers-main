@@ -3,13 +3,8 @@
  * Enqueue a BullMQ provisioning job (requires Redis + provisioner worker).
  * Usage: node api/scripts/enqueue-provision-order.js <order_uuid>
  */
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-import dotenv from 'dotenv';
+import '../config/loadEnv.js';
 import { enqueueProvisionJob, getProvisionQueue } from '../queues/provisionQueue.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const orderId = process.argv[2];
 if (!orderId) {

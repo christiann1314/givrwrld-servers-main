@@ -315,6 +315,27 @@ function inferRequiredEnvValue(key, rules, context) {
 function normalizeEnvValue(key, rawValue, rules, context) {
   const value = String(rawValue ?? '').trim();
   const lowerRules = String(rules || '').toLowerCase();
+  const upperKey = String(key || '').toUpperCase();
+
+  // Source / CS:GO eggs require a 32-char alphanumeric Steam GSLT (STEAM_ACC). Customer typos
+  // or short placeholders must not be forwarded — Panel returns 422. Prefer a real token from
+  // env when set (CSGO_DEFAULT_STEAM_ACC, STEAM_GSLT_DEFAULT, or DEFAULT_STEAM_GSLT), else a
+  // 32-char hex placeholder so provision can complete (replace with a real GSLT in Panel later).
+  if (upperKey === 'STEAM_ACC' || upperKey === 'STEAM_TOKEN' || upperKey === 'GSLT') {
+    const pickValidGslt = (v) => {
+      const s = String(v ?? '').trim();
+      return /^[A-Za-z0-9]{32}$/.test(s) ? s : '';
+    };
+    const fromEnv = pickValidGslt(
+      process.env.CSGO_DEFAULT_STEAM_ACC ||
+        process.env.STEAM_GSLT_DEFAULT ||
+        process.env.DEFAULT_STEAM_GSLT,
+    );
+    const fromInput = pickValidGslt(value);
+    if (fromInput) return fromInput;
+    if (fromEnv) return fromEnv;
+    return inferRequiredEnvValue(key, rules, context);
+  }
 
   if (lowerRules.includes('boolean')) {
     const normalized = value.toLowerCase();
