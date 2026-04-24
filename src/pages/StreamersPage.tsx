@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { api, getApiBase } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
 import type { PublicStreamData } from "@/components/public/PublicStreamSection";
 
 interface PublicStreamerDirectoryItem {
@@ -73,6 +74,55 @@ const DEFAULT_ANALYTICS: AnalyticsSummary = {
   hours_captured: 0,
   note: "Connect Twitch or Kick on your public server page to unlock live signals here.",
 };
+
+/** Map DB-backed `{ success, summary }` into the flat shape the Stream Station UI expects. */
+function normalizeWorkspaceSummaryPayload(raw: unknown): WorkspaceSummary {
+  if (!raw || typeof raw !== "object") return DEFAULT_SUMMARY;
+  const o = raw as Record<string, unknown>;
+  if (o.success && o.summary && typeof o.summary === "object") {
+    const s = o.summary as Record<string, unknown>;
+    const ready = Number(s.streamsReady || 0);
+    const inprog = Number(s.streamsInProgress || 0);
+    const total = Number(s.streamsTotal || 0);
+    const pct = total > 0 ? Math.round((ready / Math.max(total, 1)) * 100) : 39;
+    return {
+      ok: true,
+      tier: String(s.tier || "free"),
+      linked_platforms: [],
+      linked_max: Number(s.maxConnections ?? 5),
+      workspace_ready_pct: Math.min(100, Math.max(5, pct)),
+      headline:
+        total > 0
+          ? `${ready} VODs ready${inprog ? ` · ${inprog} importing` : ""}`
+          : DEFAULT_SUMMARY.headline!,
+      body: DEFAULT_SUMMARY.body!,
+    };
+  }
+  return { ...DEFAULT_SUMMARY, ...(o as WorkspaceSummary) };
+}
+
+function normalizeAnalyticsPayload(raw: unknown): AnalyticsSummary {
+  if (!raw || typeof raw !== "object") return DEFAULT_ANALYTICS;
+  const o = raw as Record<string, unknown>;
+  if (o.success && o.analytics && typeof o.analytics === "object") {
+    const a = o.analytics as Record<string, unknown>;
+    const t = (a.today as Record<string, unknown>) || {};
+    const clips = Number(t.clips_completed || 0);
+    const imports = Number(t.imports_completed || 0);
+    const live = (a.live as Record<string, unknown>) || {};
+    const streamsReady = Number(live.streams_ready || 0);
+    const clipsReady = Number(live.clips_ready || 0);
+    return {
+      ok: true,
+      headline: `Today's signal (${clips} clips, ${imports} imports)`,
+      status: clips + imports > 0 ? "active" : "idle",
+      clips_today: clips,
+      hours_captured: 0,
+      note: `Library: ${streamsReady} streams ready, ${clipsReady} clips ready to publish.`,
+    };
+  }
+  return { ...DEFAULT_ANALYTICS, ...(o as AnalyticsSummary) };
+}
 
 const statusTone: Record<string, string> = {
   online: "bg-emerald-500/20 text-emerald-200 border-emerald-400/50",
@@ -146,12 +196,17 @@ const StreamersPage: React.FC = () => {
     async function loadWorkspace() {
       setWorkspaceFetchLoading(true);
       try {
+        const headers: Record<string, string> = {};
+        const tok = getAccessToken();
+        if (tok) headers.Authorization = `Bearer ${tok}`;
         const [sRes, aRes] = await Promise.all([
-          fetch(`${base}/api/streamers/summary`, { credentials: "include" }),
-          fetch(`${base}/api/streamers/analytics/summary`, { credentials: "include" }),
+          fetch(`${base}/api/streamers/summary`, { credentials: "include", headers }),
+          fetch(`${base}/api/streamers/analytics/summary`, { credentials: "include", headers }),
         ]);
-        const sJson = sRes.ok ? ((await sRes.json()) as WorkspaceSummary) : null;
-        const aJson = aRes.ok ? ((await aRes.json()) as AnalyticsSummary) : null;
+        const sRaw = sRes.ok ? await sRes.json().catch(() => null) : null;
+        const aRaw = aRes.ok ? await aRes.json().catch(() => null) : null;
+        const sJson = sRes.ok ? normalizeWorkspaceSummaryPayload(sRaw) : null;
+        const aJson = aRes.ok ? normalizeAnalyticsPayload(aRaw) : null;
         if (!active) return;
         if (sJson) setSummary({ ...DEFAULT_SUMMARY, ...sJson });
         else if (!sRes.ok) setSummary({ ...DEFAULT_SUMMARY });
