@@ -8,14 +8,14 @@
  *   node api/scripts/purge-panel-servers-except.js --keep=cjm
  *   node api/scripts/purge-panel-servers-except.js --keep=cjm --dry-run
  *   node api/scripts/purge-panel-servers-except.js --keep=cjm --apply
+ *
+ * Keep one production server (substring matched case-insensitively against
+ * Panel name, identifier, and external_id), e.g. Terraria:
+ *   node api/scripts/purge-panel-servers-except.js --keep=terraria-baeb3a35 --dry-run
+ *   node api/scripts/purge-panel-servers-except.js --keep=terraria-baeb3a35 --apply
  */
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import '../config/loadEnv.js';
 import pool from '../config/database.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const PANEL_URL = (process.env.PANEL_URL || '').replace(/\/+$/, '');
 const PANEL_APP_KEY = process.env.PANEL_APP_KEY;
@@ -34,7 +34,8 @@ function shouldKeep(att) {
   if (!keep) return false;
   const name = String(att?.name || '').toLowerCase();
   const ident = String(att?.identifier || '').toLowerCase();
-  return name.includes(keep) || ident.includes(keep);
+  const ext = String(att?.external_id || '').toLowerCase();
+  return name.includes(keep) || ident.includes(keep) || ext.includes(keep);
 }
 
 async function listAllServers() {
@@ -138,6 +139,18 @@ async function main() {
       `DELETE FROM ptero_node_capacity_ledger WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
       orderIds,
     );
+    try {
+      await pool.execute(
+        `DELETE FROM server_public_snapshots WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+        orderIds,
+      );
+      await pool.execute(
+        `DELETE FROM server_public_pages WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+        orderIds,
+      );
+    } catch (e) {
+      console.warn('Optional cleanup server_public_* skipped:', e?.message || e);
+    }
     console.log(`\nReset ${orderIds.length} order(s) to paid and released ledger.`);
   }
 
