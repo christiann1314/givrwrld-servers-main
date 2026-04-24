@@ -7,7 +7,8 @@ import pool from '../config/database.js';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { authenticate } from '../middleware/auth.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
-import { getDecryptedSecret, getOrCreatePterodactylUser } from '../utils/mysql.js';
+import { getOrCreatePterodactylUser } from '../utils/mysql.js';
+import { resolvePanelApplicationApiCredentials } from '../lib/panelApplicationApiCredentials.js';
 
 const router = express.Router();
 
@@ -17,9 +18,7 @@ function randomPanelPassword() {
 }
 
 async function resolvePanelCredentials() {
-  const aesKey = process.env.AES_KEY;
-  const panelUrlRaw = (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL;
-  const panelAppKey = (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) || process.env.PANEL_APP_KEY;
+  const { panelUrl: panelUrlRaw, panelAppKey } = await resolvePanelApplicationApiCredentials();
 
   if (!panelUrlRaw || !panelAppKey) {
     throw new Error('Pterodactyl panel is not configured. Set PANEL_URL and PANEL_APP_KEY.');

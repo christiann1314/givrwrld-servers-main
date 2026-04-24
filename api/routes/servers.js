@@ -37,6 +37,7 @@ import {
   mapPterodactylErrorToHttp,
 } from '../services/pterodactylService.js';
 import { getModProfileForOrder } from '../config/modProfiles.js';
+import { resolvePanelApplicationApiCredentials } from '../lib/panelApplicationApiCredentials.js';
 import {
   getAllocationCountForEgg,
   rankAllocationGroups,
@@ -427,41 +428,6 @@ let panelAppServerSnapshot = { expiresAt: 0, servers: /** @type {any[] | null} *
 
 function invalidatePanelApplicationServerSnapshotCache() {
   panelAppServerSnapshot = { expiresAt: 0, servers: null };
-}
-
-/** True when value looks like a Pterodactyl Application API key (`ptla_…`). */
-function looksLikePterodactylApplicationApiKey(k) {
-  const s = String(k || '').trim();
-  if (!s.startsWith('ptla_')) return false;
-  return s.length >= 32 && s.length <= 256;
-}
-
-/**
- * Panel Application API URL + key (trimmed).
- * When AES_KEY is set, DB secrets win first — but a bad decrypt (wrong key / stale row)
- * can yield a non-empty string that still gets HTTP 401 from Panel. In that case prefer
- * `process.env.PANEL_APP_KEY` when it looks like a real `ptla_` token.
- */
-async function resolvePanelApplicationApiCredentials() {
-  const aesKey = process.env.AES_KEY;
-  const panelUrl = String(
-    (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL || '',
-  ).trim();
-  const fromSecretKey = aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null;
-  const envKey = String(process.env.PANEL_APP_KEY || '').trim();
-  const secretK = String(fromSecretKey || '').trim();
-
-  // Prefer a valid `ptla_` key from the environment when present — ops rotates keys in api/.env and
-  // PM2; a stale but well-formed row in `secrets` would otherwise keep winning and cause 401s.
-  let panelAppKey = '';
-  if (looksLikePterodactylApplicationApiKey(envKey)) {
-    panelAppKey = envKey;
-  } else if (looksLikePterodactylApplicationApiKey(secretK)) {
-    panelAppKey = secretK;
-  } else {
-    panelAppKey = envKey || secretK;
-  }
-  return { panelUrl, panelAppKey };
 }
 
 async function resolvePanelApplicationCredentialsForDashboard() {
