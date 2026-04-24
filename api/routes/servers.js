@@ -429,17 +429,30 @@ function invalidatePanelApplicationServerSnapshotCache() {
   panelAppServerSnapshot = { expiresAt: 0, servers: null };
 }
 
-/** Panel Application API URL + key (trimmed). Prefer DB secrets when AES_KEY is set. */
+/** True when value looks like a Pterodactyl Application API key (`ptla_…`). */
+function looksLikePterodactylApplicationApiKey(k) {
+  const s = String(k || '').trim();
+  if (!s.startsWith('ptla_')) return false;
+  return s.length >= 32 && s.length <= 256;
+}
+
+/**
+ * Panel Application API URL + key (trimmed).
+ * When AES_KEY is set, DB secrets win first — but a bad decrypt (wrong key / stale row)
+ * can yield a non-empty string that still gets HTTP 401 from Panel. In that case prefer
+ * `process.env.PANEL_APP_KEY` when it looks like a real `ptla_` token.
+ */
 async function resolvePanelApplicationApiCredentials() {
   const aesKey = process.env.AES_KEY;
   const panelUrl = String(
     (aesKey ? await getDecryptedSecret('panel', 'PANEL_URL', aesKey) : null) || process.env.PANEL_URL || '',
   ).trim();
-  const panelAppKey = String(
-    (aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null) ||
-      process.env.PANEL_APP_KEY ||
-      '',
-  ).trim();
+  const fromSecretKey = aesKey ? await getDecryptedSecret('panel', 'PANEL_APP_KEY', aesKey) : null;
+  const envKey = String(process.env.PANEL_APP_KEY || '').trim();
+  let panelAppKey = String(fromSecretKey || envKey || '').trim();
+  if (!looksLikePterodactylApplicationApiKey(panelAppKey) && looksLikePterodactylApplicationApiKey(envKey)) {
+    panelAppKey = envKey;
+  }
   return { panelUrl, panelAppKey };
 }
 
