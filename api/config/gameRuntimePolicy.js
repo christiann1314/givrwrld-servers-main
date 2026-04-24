@@ -216,7 +216,9 @@ export const EGG_RUNTIME_POLICY = {
       game: { protocol: 'udp', usesPrimaryAllocation: true },
       http: { protocol: 'tcp', usesExtraAllocationIndex: 1 },
     },
-    requiredDockerImage: 'ghcr.io/parkervcp/yolks:dotnet_7',
+    // Must match the Panel egg’s resolved Docker image (Impostor egg currently defaults to dotnet_10).
+    // If this drifts again, either re-sync the egg in Panel or relax validation (see validateEggRuntime.js).
+    requiredDockerImage: 'ghcr.io/parkervcp/yolks:dotnet_10',
     https: {
       required: true,
       proxyTarget: 'http',
