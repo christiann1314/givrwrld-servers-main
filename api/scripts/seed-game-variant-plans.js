@@ -373,14 +373,33 @@ async function main() {
         ]),
       ),
     ];
+    // Only resolve plan→egg mappings against nests that the live Pterodactyl
+    // *Application API* exposes. Phantom/orphaned nests still present in Panel
+    // MariaDB will mirror into ptero_eggs (we want the ground truth) but they
+    // MUST NOT be chosen by the seed, otherwise plans get pinned to egg ids
+    // that 404 at provision time. Default 1,2,3,4 = the live nests today
+    // (Minecraft / Source Engine / Voice / Rust). Override via env if a new
+    // visible nest is added.
+    const allowList = (process.env.PTERO_PLAN_NEST_ALLOWLIST || '1,2,3,4')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const nestPlaceholders = allowList.map(() => '?').join(', ');
     const placeholders = allEggNames.map(() => '?').join(', ');
     const [eggRows] = await conn.execute(
-      `SELECT ptero_egg_id, name
+      `SELECT ptero_egg_id, ptero_nest_id, name
        FROM ptero_eggs
-       WHERE name IN (${placeholders})`,
-      allEggNames
+       WHERE name IN (${placeholders})
+         AND ptero_nest_id IN (${nestPlaceholders})
+       ORDER BY ptero_nest_id ASC, ptero_egg_id ASC`,
+      [...allEggNames, ...allowList]
     );
-    const eggByName = new Map(eggRows.map((r) => [r.name, Number(r.ptero_egg_id)]));
+    const eggByName = new Map();
+    for (const r of eggRows) {
+      // First (lowest nest id, lowest egg id) wins → guarantees a deterministic
+      // pick when the same egg name exists in multiple allow-listed nests.
+      if (!eggByName.has(r.name)) eggByName.set(r.name, Number(r.ptero_egg_id));
+    }
     wireEggNameAliases(eggByName);
 
     const requiredCanonicalNames = [

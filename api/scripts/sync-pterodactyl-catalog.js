@@ -248,11 +248,28 @@ async function main() {
       byGame.get(game).push(row);
     }
 
+    // Restrict the egg pool used for plan auto-mapping to nests that the live
+    // Application API exposes. The full ptero_eggs mirror still tracks every
+    // egg (including phantom/orphaned nests in Panel MariaDB), but plans must
+    // only land on eggs that the Application API can actually create — anything
+    // else 404s at provision time.
+    const planNestAllowList = (process.env.PTERO_PLAN_NEST_ALLOWLIST || '1,2,3,4')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const eggsForPlanMapping = eggs.filter((e) => planNestAllowList.includes(e.pteroNestId));
+    if (eggsForPlanMapping.length !== eggs.length) {
+      const skipped = eggs.length - eggsForPlanMapping.length;
+      console.log(
+        `\nℹ Excluding ${skipped} egg(s) from plan auto-mapping (nests outside PTERO_PLAN_NEST_ALLOWLIST=${planNestAllowList.join(',')}).`
+      );
+    }
+
     const mapped = [];
     const unsupported = [];
 
     for (const [game, gamePlans] of byGame.entries()) {
-      const chosenEgg = chooseEggForGame(game, eggs);
+      const chosenEgg = chooseEggForGame(game, eggsForPlanMapping);
       if (!chosenEgg) {
         unsupported.push(game);
         continue;
