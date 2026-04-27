@@ -158,6 +158,12 @@ async function main() {
       WHERE game = 'minecraft'
         AND id REGEXP '^mc-[0-9]+gb$'
     `;
+    const deactivateLegacyMinecraftNumericSql = `
+      UPDATE plans
+      SET is_active = 0, updated_at = NOW()
+      WHERE game = 'minecraft'
+        AND id REGEXP '^minecraft-[0-9]+gb$'
+    `;
     const deactivateMinecraftVanillaSql = `
       UPDATE plans
       SET is_active = 0, updated_at = NOW()
@@ -167,7 +173,9 @@ async function main() {
 
     if (isDryRun) {
       console.log(`Would upsert ${statements.length} Minecraft variant plans.`);
-      console.log('Would deactivate legacy IDs matching ^mc-[0-9]+gb$ and mc-vanilla-%.');
+      console.log(
+        'Would deactivate legacy IDs matching ^mc-[0-9]+gb$, ^minecraft-[0-9]+gb$, and mc-vanilla-%.',
+      );
       return;
     }
 
@@ -176,9 +184,12 @@ async function main() {
       await conn.execute(s.sql, s.params);
     }
     await conn.execute(legacyDeactivateSql);
+    await conn.execute(deactivateLegacyMinecraftNumericSql);
     await conn.execute(deactivateMinecraftVanillaSql);
     await conn.commit();
-    console.log(`✅ Upserted ${statements.length} Minecraft variant plans and deactivated legacy Minecraft defaults.`);
+    console.log(
+      `✅ Upserted ${statements.length} Minecraft variant plans and deactivated legacy Minecraft defaults (mc-Ngb, minecraft-Ngb, mc-vanilla).`,
+    );
   } catch (error) {
     try {
       await conn.rollback();
